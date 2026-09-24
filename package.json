@@ -1,0 +1,46 @@
+{
+  "name": "mock-maker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test:phase1": "node scripts/test-phase1.mjs",
+    "test:phase2": "tsx scripts/test-phase2.mjs",
+    "test:100": "tsx scripts/test-100-generation.mjs",
+    "test:phase3": "tsx scripts/test-phase3.mjs",
+    "test:phase4": "tsx scripts/test-phase4.mjs",
+    "test:all": "node scripts/test-phase1.mjs && tsx scripts/test-phase2.mjs && tsx scripts/test-100-generation.mjs && tsx scripts/test-phase3.mjs && tsx scripts/test-phase4.mjs"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "jszip": "^3.10.2",
+    "lucide-react": "^1.47.0",
+    "next": "16.3.6",
+    "next-themes": "^0.4.6",
+    "papaparse": "^5.7.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/papaparse": "^5.5.2",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  },
+  "packageManager": "pnpm@12.5.1"
+}
