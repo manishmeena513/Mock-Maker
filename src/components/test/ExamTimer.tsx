@@ -11,11 +11,13 @@ interface ExamTimerProps {
 }
 
 export function ExamTimer({ initialMinutes, startedAt, onTimeUp, className = "" }: ExamTimerProps) {
-  // Compute initial remaining seconds using server startedAt to persist across reloads
   const calculateInitialRemaining = (): number => {
     const totalSeconds = initialMinutes * 60;
     if (startedAt) {
-      const elapsedSeconds = Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000));
+      const elapsedSeconds = Math.max(
+        0,
+        Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000)
+      );
       return Math.max(0, totalSeconds - elapsedSeconds);
     }
     return totalSeconds;
@@ -58,18 +60,18 @@ export function ExamTimer({ initialMinutes, startedAt, onTimeUp, className = "" 
       role="timer"
       aria-live="polite"
       aria-label={`Time remaining: ${timeString}`}
-      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border font-mono text-sm font-bold transition-all ${
+      className={`inline-flex items-center gap-2 h-9 px-3 rounded-lg border font-mono text-xs sm:text-sm font-bold tracking-tight transition-colors ${
         isLowTime
-          ? "bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800 animate-pulse"
+          ? "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800"
           : isWarningTime
-          ? "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
-          : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+          ? "bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800"
+          : "bg-slate-100/90 text-slate-800 border-slate-200 dark:bg-[#131c2e] dark:text-slate-100 dark:border-slate-800"
       } ${className}`}
     >
       {isLowTime ? (
-        <AlertTriangle className="w-4 h-4 text-rose-500" aria-hidden="true" />
+        <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" aria-hidden="true" />
       ) : (
-        <Clock className="w-4 h-4 text-slate-500 dark:text-slate-400" aria-hidden="true" />
+        <Clock className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" aria-hidden="true" />
       )}
       <span>{timeString}</span>
     </div>

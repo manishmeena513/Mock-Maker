@@ -2,58 +2,109 @@
 
 @layer base {
   :root {
-    --background: #f8fafc;
+    /* Light Mode — Warm/Neutral Editorial & Academic Palette */
+    --background: #f8f9fa;
     --foreground: #0f172a;
+    --surface: #f1f5f9;
     --card: #ffffff;
     --card-foreground: #0f172a;
-    --primary: #2563eb;
+    --elevated: #ffffff;
+    --primary: #1d4ed8;
+    --primary-hover: #1e40af;
     --primary-foreground: #ffffff;
     --secondary: #f1f5f9;
     --secondary-foreground: #1e293b;
     --muted: #f1f5f9;
     --muted-foreground: #64748b;
-    --accent: #f8fafc;
-    --accent-foreground: #0f172a;
-    --destructive: #ef4444;
+    --accent: #eff6ff;
+    --accent-foreground: #1e3a8a;
+    --destructive: #dc2626;
     --destructive-foreground: #ffffff;
     --border: #e2e8f0;
-    --input: #e2e8f0;
-    --ring: #3b82f6;
-    --radius: 0.5rem;
-    --success: #10b981;
-    --warning: #f59e0b;
+    --border-subtle: #f1f5f9;
+    --input: #cbd5e1;
+    --ring: #2563eb;
+    --radius: 0.625rem;
+    --success: #059669;
+    --warning: #d97706;
   }
 
   .dark {
-    --background: #090d16;
+    /* Dark Mode — Intentional Deep Charcoal/Navy Academic Theme (Never Pure #000000) */
+    --background: #0b0f17;
     --foreground: #f8fafc;
-    --card: #0f172a;
+    --surface: #111827;
+    --card: #131c2e;
     --card-foreground: #f8fafc;
+    --elevated: #1e293b;
     --primary: #3b82f6;
+    --primary-hover: #2563eb;
     --primary-foreground: #ffffff;
     --secondary: #1e293b;
-    --secondary-foreground: #f8fafc;
-    --muted: #1e293b;
+    --secondary-foreground: #f1f5f9;
+    --muted: #161f30;
     --muted-foreground: #94a3b8;
-    --accent: #1e293b;
-    --accent-foreground: #f8fafc;
-    --destructive: #dc2626;
+    --accent: #172554;
+    --accent-foreground: #dbeafe;
+    --destructive: #ef4444;
     --destructive-foreground: #ffffff;
     --border: #1e293b;
-    --input: #1e293b;
-    --ring: #60a5fa;
+    --border-subtle: #162032;
+    --input: #334155;
+    --ring: #3b82f6;
     --success: #10b981;
     --warning: #f59e0b;
   }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-elevated: var(--elevated);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-feature-settings: "rlig" 1, "calt" 1;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-feature-settings: "rlig" 1, "calt" 1, "cv02" 1, "cv03" 1, "cv04" 1, "cv11" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbars for question palette */
+/* Academic Question Readability Standard */
+.question-prose {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  letter-spacing: -0.005em;
+  color: var(--foreground);
+}
+
+/* Subtle Focus Ring for Accessibility */
+*:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Refined Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -63,7 +114,7 @@ body {
 }
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 3px;
+  border-radius: 9999px;
 }
 .dark ::-webkit-scrollbar-thumb {
   background: #334155;

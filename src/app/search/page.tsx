@@ -24,7 +24,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const page = resolvedParams.page ? parseInt(resolvedParams.page, 10) : 1;
   const sourceYear = resolvedParams.year ? parseInt(resolvedParams.year, 10) : undefined;
 
-  // Strict student privacy: only approved questions are accessible through public search
   const { questions, pagination } = await getPaginatedQuestions({
     examId: resolvedParams.exam,
     subjectId: resolvedParams.subject,
@@ -40,16 +39,16 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   });
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
-      <div>
-        <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-          Question Bank Search
-        </span>
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-1">
-          Explore Question Bank
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+      <div className="pb-5 border-b border-slate-200/90 dark:border-slate-800/90">
+        <div className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
+          Verified Question Repository
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+          Question Explorer
         </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Search authentic previous-year questions (80%) and syllabus-aligned model questions (20%) with verified explanations.
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Filter and study verified past commission papers (PYQs) and moderated model questions with structured explanations.
         </p>
       </div>
 

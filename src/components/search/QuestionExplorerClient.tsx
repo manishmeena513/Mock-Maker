@@ -57,20 +57,16 @@ export function QuestionExplorerClient({
   const [selectedTopic, setSelectedTopic] = useState(currentFilters.topic || "all");
   const [selectedType, setSelectedType] = useState(currentFilters.type || "all");
   const [selectedDifficulty, setSelectedDifficulty] = useState(currentFilters.difficulty || "all");
-  const [selectedYear, setSelectedYear] = useState(currentFilters.year || "");
-  const [selectedPaper, setSelectedPaper] = useState(currentFilters.paper || "");
+  const [selectedYear, setSelectedYear] = useState(currentFilters.year || "all");
 
-  // Available subjects based on exam selection
-  const availableSubjects = selectedExam !== "all"
-    ? subjects.filter((s) => s.exam_id === selectedExam)
-    : subjects;
+  const availableSubjects =
+    selectedExam !== "all" ? subjects.filter((s) => s.exam_id === selectedExam) : subjects;
 
-  // Available topics based on subject selection
-  const availableTopics = selectedSubject !== "all"
-    ? topics.filter((t) => t.subject_id === selectedSubject)
-    : topics;
+  const availableTopics =
+    selectedSubject !== "all" ? topics.filter((t) => t.subject_id === selectedSubject) : topics;
 
-  // Update URL search parameters
+  const years = [2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
+
   const applyFilters = (newParams: Record<string, string | null | undefined>) => {
     const params = new URLSearchParams(searchParams?.toString() || "");
 
@@ -82,7 +78,6 @@ export function QuestionExplorerClient({
       }
     });
 
-    // Reset to page 1 on filter changes unless page itself is specified
     if (!("page" in newParams)) {
       params.delete("page");
     }
@@ -104,38 +99,44 @@ export function QuestionExplorerClient({
     setSelectedTopic("all");
     setSelectedType("all");
     setSelectedDifficulty("all");
-    setSelectedYear("");
-    setSelectedPaper("");
+    setSelectedYear("all");
     router.push(pathname);
   };
 
+  const resolveExamName = (examId: string) =>
+    exams.find((e) => e.id === examId)?.name || "UPSC CSE";
+  const resolveSubjectName = (subjectId: string) =>
+    subjects.find((s) => s.id === subjectId)?.name || "General Studies";
+  const resolveTopicName = (topicId: string, fallbackConcept?: string) =>
+    topics.find((t) => t.id === topicId)?.name || fallbackConcept || "Syllabus Concept";
+
   return (
     <div className="space-y-6">
-      {/* Search & Multi-Faceted Filters */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
-        {/* Search Bar */}
-        <form onSubmit={handleSearchSubmit} className="relative">
-          <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-3.5" />
+      {/* Search & 6-Column Refined Filter Bar */}
+      <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5 shadow-2xs space-y-4">
+        {/* Search Input */}
+        <form onSubmit={handleSearchSubmit} className="relative flex items-center">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search questions by concept (e.g. 'Fundamental Rights', 'Monsoon', 'Ordinance')..."
-            className="w-full pl-11 pr-24 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+            placeholder="Search questions by concept, constitutional article, keyword..."
+            className="w-full h-11 pl-10 pr-24 rounded-lg border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600"
           />
           <button
             type="submit"
-            className="absolute right-2 top-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition"
+            className="absolute right-1.5 h-8 px-3.5 rounded-md text-xs font-semibold bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white transition-colors cursor-pointer"
           >
             Search
           </button>
         </form>
 
-        {/* Multi-Faceted Dropdowns */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 pt-2">
-          {/* Exam Filter */}
+        {/* Refined Filter Bar: Exam | Subject | Topic | Type | Difficulty | Year */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-1">
+          {/* 1. Exam */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
               Exam
             </label>
             <select
@@ -147,7 +148,7 @@ export function QuestionExplorerClient({
                 setSelectedTopic("all");
                 applyFilters({ exam: val, subject: null, topic: null });
               }}
-              className="w-full py-2 px-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-semibold"
+              className="w-full h-9 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-xs font-medium text-slate-800 dark:text-slate-200"
             >
               <option value="all">All Exams</option>
               {exams.map((exam) => (
@@ -158,9 +159,9 @@ export function QuestionExplorerClient({
             </select>
           </div>
 
-          {/* Subject Filter */}
+          {/* 2. Subject */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
               Subject
             </label>
             <select
@@ -171,7 +172,7 @@ export function QuestionExplorerClient({
                 setSelectedTopic("all");
                 applyFilters({ subject: val, topic: null });
               }}
-              className="w-full py-2 px-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-semibold"
+              className="w-full h-9 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-xs font-medium text-slate-800 dark:text-slate-200"
             >
               <option value="all">All Subjects</option>
               {availableSubjects.map((sub) => (
@@ -182,9 +183,9 @@ export function QuestionExplorerClient({
             </select>
           </div>
 
-          {/* Topic Filter */}
+          {/* 3. Topic */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
               Topic
             </label>
             <select
@@ -194,7 +195,7 @@ export function QuestionExplorerClient({
                 setSelectedTopic(val);
                 applyFilters({ topic: val });
               }}
-              className="w-full py-2 px-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-semibold"
+              className="w-full h-9 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-xs font-medium text-slate-800 dark:text-slate-200"
             >
               <option value="all">All Topics</option>
               {availableTopics.map((top) => (
@@ -205,9 +206,9 @@ export function QuestionExplorerClient({
             </select>
           </div>
 
-          {/* Type Filter */}
+          {/* 4. Type */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
               Type
             </label>
             <select
@@ -217,17 +218,17 @@ export function QuestionExplorerClient({
                 setSelectedType(val);
                 applyFilters({ type: val });
               }}
-              className="w-full py-2 px-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-semibold"
+              className="w-full h-9 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-xs font-medium text-slate-800 dark:text-slate-200"
             >
               <option value="all">All Types</option>
-              <option value="PYQ">Verified PYQs (80%)</option>
-              <option value="MODEL">Model Questions (20%)</option>
+              <option value="PYQ">Verified PYQ</option>
+              <option value="MODEL">Model Question</option>
             </select>
           </div>
 
-          {/* Difficulty Filter */}
+          {/* 5. Difficulty */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
               Difficulty
             </label>
             <select
@@ -237,69 +238,111 @@ export function QuestionExplorerClient({
                 setSelectedDifficulty(val);
                 applyFilters({ difficulty: val });
               }}
-              className="w-full py-2 px-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-semibold"
+              className="w-full h-9 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-xs font-medium text-slate-800 dark:text-slate-200"
             >
-              <option value="all">All Difficulties</option>
+              <option value="all">All Levels</option>
               <option value="easy">Easy</option>
               <option value="moderate">Moderate</option>
               <option value="hard">Hard</option>
             </select>
           </div>
 
-          {/* Reset Filters */}
-          <div className="flex items-end">
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              className="w-full py-2 px-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-600 dark:text-slate-400 flex items-center justify-center gap-1.5 transition"
+          {/* 6. Year */}
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
+              Year (PYQ)
+            </label>
+            <select
+              value={selectedYear}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedYear(val);
+                applyFilters({ year: val });
+              }}
+              className="w-full h-9 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-xs font-medium text-slate-800 dark:text-slate-200"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset</span>
-            </button>
+              <option value="all">All Years</option>
+              {years.map((yr) => (
+                <option key={yr} value={String(yr)}>
+                  {yr}
+                </option>
+              ))}
+            </select>
           </div>
+        </div>
+
+        {/* Active Filter Status & Reset Strip */}
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
+          <div>
+            Showing <strong className="font-mono text-slate-900 dark:text-white">{initialQuestions.length}</strong> of{" "}
+            <strong className="font-mono text-slate-900 dark:text-white">{pagination.totalItems}</strong> verified questions
+            {isPending && (
+              <span className="ml-2 text-blue-600 dark:text-blue-400 font-semibold">
+                Updating...
+              </span>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>Reset Filters</span>
+          </button>
         </div>
       </div>
 
-      {/* Results Header with Serverless Pagination Status */}
-      <div className="flex items-center justify-between text-xs text-slate-500">
-        <span>
-          Showing {initialQuestions.length} of <strong>{pagination.totalItems}</strong> matching questions (Page {pagination.page} of {pagination.totalPages})
-        </span>
-
-        {isPending && <span className="font-bold text-blue-600 animate-pulse">Filtering...</span>}
-      </div>
-
-      {/* Questions List */}
+      {/* Results List */}
       {initialQuestions.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-12 text-center text-slate-500 space-y-3">
-          <Filter className="w-10 h-10 text-slate-400 mx-auto" />
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">
-            No questions matched your search criteria
+        <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-12 text-center space-y-3">
+          <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 mx-auto flex items-center justify-center text-slate-400">
+            <Filter className="w-5 h-5" />
+          </div>
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+            No questions matched your filters
           </h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Try adjusting your search terms or relaxing subject and type filters.
+            Try clearing your search query or broadening the selected examination, subject, or year filters.
           </p>
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-xs font-semibold bg-blue-700 text-white cursor-pointer"
+          >
+            Reset All Filters
+          </button>
         </div>
       ) : (
         <div className="space-y-4">
           {initialQuestions.map((q) => {
             const isExpanded = expandedQuestionId === q.id;
+            const examName = resolveExamName(q.exam_id);
+            const subjectName = resolveSubjectName(q.subject_id);
+            const topicName = resolveTopicName(q.topic_id, q.explanation?.concept);
 
             return (
               <div
                 key={q.id}
-                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-4"
+                className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5 sm:p-6 shadow-2xs space-y-4"
               >
-                {/* Meta Header */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-2">
+                {/* Metadata Header */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-3.5 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex flex-wrap items-center gap-2">
                     <QuestionTypeBadge
                       type={q.type}
-                      sourceYear={q.source_year}
-                      examName={q.type === "PYQ" ? q.source_paper || undefined : undefined}
+                      examName={examName}
+                      sourceYear={q.type === "PYQ" ? q.source_year : null}
                     />
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                      {q.difficulty}
+                    <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                      {subjectName}
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                      {topicName}
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[11px] font-semibold capitalize bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                      {q.difficulty === "moderate" ? "Medium" : q.difficulty}
                     </span>
                   </div>
 
@@ -307,26 +350,29 @@ export function QuestionExplorerClient({
                 </div>
 
                 {/* Question Text */}
-                <p className="text-sm sm:text-base font-medium text-slate-900 dark:text-white leading-relaxed">
+                <p className="text-sm sm:text-base font-normal text-slate-900 dark:text-white leading-relaxed">
                   {q.question_text}
                 </p>
 
-                {/* Toggle Solution */}
-                <div className="pt-2 flex items-center justify-between">
+                {/* Expand Options & Solution */}
+                <div className="pt-1 flex items-center justify-between">
                   <button
                     type="button"
                     onClick={() => setExpandedQuestionId(isExpanded ? null : q.id)}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                    className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                   >
-                    <BookOpen className="w-4 h-4" />
-                    <span>{isExpanded ? "Hide Full Solution" : "View Options & Solution"}</span>
-                    {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    <BookOpen className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    <span>{isExpanded ? "Hide Solution" : "View Options & Explanation"}</span>
+                    {isExpanded ? (
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    )}
                   </button>
                 </div>
 
-                {/* Expanded Solution Drawer */}
                 {isExpanded && (
-                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4 animate-in fade-in-50 duration-150">
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                       {(["A", "B", "C", "D"] as const).map((opt) => {
                         const optText =
@@ -342,13 +388,13 @@ export function QuestionExplorerClient({
                         return (
                           <div
                             key={opt}
-                            className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 ${
+                            className={`p-3 rounded-lg border flex items-start gap-2.5 ${
                               isCorrect
-                                ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 font-bold text-emerald-900 dark:text-emerald-200"
-                                : "border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300"
+                                ? "bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-600 font-semibold text-emerald-950 dark:text-emerald-200"
+                                : "border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-slate-700 dark:text-slate-300"
                             }`}
                           >
-                            <span className="font-bold">{opt}.</span>
+                            <span className="font-mono font-bold">{opt}.</span>
                             <span>{optText}</span>
                           </div>
                         );
@@ -369,20 +415,20 @@ export function QuestionExplorerClient({
         </div>
       )}
 
-      {/* Server-Side Pagination Controls */}
+      {/* Pagination Bar */}
       {pagination.totalPages > 1 && (
         <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
           <button
             type="button"
             disabled={!pagination.hasPrevPage || isPending}
             onClick={() => applyFilters({ page: String(pagination.page - 1) })}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131c2e] hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span>Previous Page</span>
+            <span>Previous</span>
           </button>
 
-          <span className="text-xs font-semibold text-slate-500">
+          <span className="text-xs font-mono font-semibold text-slate-500">
             Page {pagination.page} of {pagination.totalPages}
           </span>
 
@@ -390,9 +436,9 @@ export function QuestionExplorerClient({
             type="button"
             disabled={!pagination.hasNextPage || isPending}
             onClick={() => applyFilters({ page: String(pagination.page + 1) })}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131c2e] hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
           >
-            <span>Next Page</span>
+            <span>Next</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

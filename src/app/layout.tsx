@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/shared/Navbar";
+import { AppShell } from "@/components/shared/AppShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,7 +20,7 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mockmaster.in";
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "MockMaster — 80% Verified PYQs + 20% AI Model Questions",
+    default: "MockMaster — 80% Verified PYQs + 20% Reviewed Model Questions",
     template: "%s | MockMaster",
   },
   description:
@@ -63,10 +64,10 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <body className="min-h-full flex flex-col bg-[#f8f9fa] dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 transition-colors duration-150">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <Navbar />
-          <main className="flex-1 flex flex-col">{children}</main>
+          <AppShell>{children}</AppShell>
         </ThemeProvider>
       </body>
     </html>

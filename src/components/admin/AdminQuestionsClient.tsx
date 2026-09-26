@@ -4,22 +4,19 @@ import React, { useState, useTransition, useMemo } from "react";
 import { Question, Exam, VerificationStatus } from "@/types/database";
 import { QuestionTypeBadge } from "@/components/shared/QuestionTypeBadge";
 import { previewCsvImportAction, previewZipImportAction, confirmImportAction } from "@/app/actions/import";
-import { ImportPreviewResult, ParsedRowResult } from "@/lib/import/importService";
+import { ImportPreviewResult } from "@/lib/import/importService";
 import {
   UploadCloud,
   Layers,
-  Filter,
   CheckCircle2,
   XCircle,
-  Clock,
-  Search,
-  Plus,
   AlertTriangle,
-  ArrowRight,
   FileText,
   FileArchive,
-  Trash2,
+  Check,
+  Loader2,
 } from "lucide-react";
+import { Badge, Card } from "@/components/ui/primitives";
 
 interface AdminQuestionsClientProps {
   initialQuestions: Question[];
@@ -27,6 +24,16 @@ interface AdminQuestionsClientProps {
   initialBatchId?: string;
   initialTab?: string;
 }
+
+const IMPORT_PIPELINE_STAGES = [
+  "Uploading",
+  "Extracting",
+  "Scanning",
+  "Parsing",
+  "Validating",
+  "Checking duplicates",
+  "Ready for review",
+] as const;
 
 export function AdminQuestionsClient({
   initialQuestions,
@@ -38,6 +45,7 @@ export function AdminQuestionsClient({
     initialTab === "import" ? "import" : "list"
   );
   const [questions, setQuestions] = useState<Question[]>(initialQuestions);
+  const [confirmRejectId, setConfirmRejectId] = useState<string | null>(null);
 
   // Filters
   const [selectedExamId, setSelectedExamId] = useState("all");
@@ -49,12 +57,13 @@ export function AdminQuestionsClient({
   // Import State
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importType, setImportType] = useState<"CSV" | "ZIP">("ZIP");
+  const [isDragging, setIsDragging] = useState(false);
+  const [pipelineStageIndex, setPipelineStageIndex] = useState<number>(-1);
   const [isProcessing, startProcessTransition] = useTransition();
   const [previewResult, setPreviewResult] = useState<ImportPreviewResult | null>(null);
   const [importSuccessMsg, setImportSuccessMsg] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
 
-  // Filtered Questions List
   const filteredQuestions = useMemo(() => {
     return questions.filter((q) => {
       if (selectedExamId !== "all" && q.exam_id !== selectedExamId) return false;
@@ -73,39 +82,49 @@ export function AdminQuestionsClient({
     });
   }, [questions, selectedExamId, selectedStatus, selectedType, batchFilter, searchQuery]);
 
-  // Handle Question Verification Status Change (Approve / Reject)
   const handleStatusChange = (questionId: string, newStatus: VerificationStatus) => {
     setQuestions((prev) =>
       prev.map((q) => (q.id === questionId ? { ...q, verification_status: newStatus } : q))
     );
+    setConfirmRejectId(null);
   };
 
-  // Handle File Input Change for Import
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImportFile(file);
-      setPreviewResult(null);
-      setImportError(null);
-      setImportSuccessMsg(null);
-      if (file.name.toLowerCase().endsWith(".zip")) {
-        setImportType("ZIP");
-      } else if (file.name.toLowerCase().endsWith(".csv")) {
-        setImportType("CSV");
-      }
+  const selectFile = (file: File) => {
+    setImportFile(file);
+    setPreviewResult(null);
+    setImportError(null);
+    setImportSuccessMsg(null);
+    setPipelineStageIndex(0);
+    if (file.name.toLowerCase().endsWith(".zip")) {
+      setImportType("ZIP");
+    } else if (file.name.toLowerCase().endsWith(".csv")) {
+      setImportType("CSV");
     }
   };
 
-  // Preview Import Action
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) selectFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) selectFile(file);
+  };
+
   const handleGeneratePreview = () => {
     if (!importFile) return;
     setImportError(null);
+    setPipelineStageIndex(2);
 
     startProcessTransition(async () => {
       try {
         const formData = new FormData();
         formData.append("file", importFile);
 
+        setPipelineStageIndex(4);
         let res: ImportPreviewResult;
         if (importType === "ZIP") {
           res = await previewZipImportAction(formData);
@@ -113,17 +132,18 @@ export function AdminQuestionsClient({
           res = await previewCsvImportAction(formData);
         }
         setPreviewResult(res);
+        setPipelineStageIndex(6);
       } catch (err: unknown) {
+        setPipelineStageIndex(-1);
         if (err instanceof Error) {
           setImportError(err.message);
         } else {
-          setImportError("Failed to parse file.");
+          setImportError("Failed to parse and validate archive.");
         }
       }
     });
   };
 
-  // Confirm Import Execution
   const handleConfirmImport = () => {
     if (!previewResult || !importFile) return;
 
@@ -137,15 +157,16 @@ export function AdminQuestionsClient({
         });
 
         setImportSuccessMsg(
-          `Successfully imported ${res.importedCount} questions under batch ID: ${res.batchId}. All items set to 'pending' verification.`
+          `Imported ${res.importedCount} verified rows under batch ID ${res.batchId}. Items are queued with 'pending' verification status.`
         );
         setPreviewResult(null);
         setImportFile(null);
+        setPipelineStageIndex(-1);
       } catch (err: unknown) {
         if (err instanceof Error) {
           setImportError(err.message);
         } else {
-          setImportError("Import failed.");
+          setImportError("Import commit failed.");
         }
       }
     });
@@ -153,48 +174,61 @@ export function AdminQuestionsClient({
 
   return (
     <div className="space-y-6">
-      {/* Tab Navigation */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800">
-        <button
-          onClick={() => setActiveTab("list")}
-          className={`pb-3 px-4 font-bold text-sm border-b-2 transition flex items-center gap-2 ${
-            activeTab === "list"
-              ? "border-blue-600 text-blue-600 dark:text-blue-400"
-              : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          <span>Question Bank ({questions.length})</span>
-        </button>
+      {/* Page Header & Tab Switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[var(--border)]">
+        <div>
+          <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+            Repository Controller
+          </span>
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)] mt-1">
+            Question Bank &amp; Bulk Import
+          </h1>
+        </div>
 
-        <button
-          onClick={() => setActiveTab("import")}
-          className={`pb-3 px-4 font-bold text-sm border-b-2 transition flex items-center gap-2 ${
-            activeTab === "import"
-              ? "border-blue-600 text-blue-600 dark:text-blue-400"
-              : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"
-          }`}
-        >
-          <UploadCloud className="w-4 h-4" />
-          <span>Bulk Import (ZIP / CSV)</span>
-        </button>
+        <div className="inline-flex items-center p-1 rounded-xl bg-[var(--muted)] border border-[var(--border)]">
+          <button
+            type="button"
+            onClick={() => setActiveTab("list")}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              activeTab === "list"
+                ? "bg-[var(--card)] text-[var(--foreground)] shadow-xs"
+                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Question Bank ({questions.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("import")}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              activeTab === "import"
+                ? "bg-[var(--card)] text-[var(--foreground)] shadow-xs"
+                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            }`}
+          >
+            <UploadCloud className="w-3.5 h-3.5" />
+            <span>ZIP / CSV Import</span>
+          </button>
+        </div>
       </div>
 
       {/* TAB 1: QUESTION BANK LIST */}
       {activeTab === "list" && (
         <div className="space-y-4">
           {/* Filter Bar */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs grid grid-cols-1 sm:grid-cols-5 gap-3">
+          <Card className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
                 Examination
               </label>
               <select
                 value={selectedExamId}
                 onChange={(e) => setSelectedExamId(e.target.value)}
-                className="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-medium"
+                className="w-full h-9 px-2.5 text-xs rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] font-medium"
               >
-                <option value="all">All Exams</option>
+                <option value="all">All Examinations</option>
                 {exams.map((ex) => (
                   <option key={ex.id} value={ex.id}>
                     {ex.name}
@@ -204,71 +238,74 @@ export function AdminQuestionsClient({
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
                 Verification Status
               </label>
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-medium"
+                className="w-full h-9 px-2.5 text-xs rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] font-medium"
               >
                 <option value="all">All Statuses</option>
-                <option value="approved">Approved (Live in Mocks)</option>
-                <option value="pending">Pending Approval</option>
+                <option value="approved">Approved (Live)</option>
+                <option value="pending">Pending Review</option>
                 <option value="rejected">Rejected</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                Question Type
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
+                Source Type
               </label>
               <select
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-medium"
+                className="w-full h-9 px-2.5 text-xs rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] font-medium"
               >
                 <option value="all">All Types</option>
-                <option value="PYQ">Previous Year (PYQ)</option>
-                <option value="MODEL">AI Model Question</option>
+                <option value="PYQ">Verified PYQ</option>
+                <option value="MODEL">Model Question</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
                 Import Batch ID
               </label>
               <input
                 type="text"
                 value={batchFilter}
                 onChange={(e) => setBatchFilter(e.target.value)}
-                placeholder="Filter by batch..."
-                className="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-mono"
+                placeholder="Filter by batch ID..."
+                className="w-full h-9 px-2.5 text-xs rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] font-mono"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                Search Question Text
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
+                Keyword Search
               </label>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search keywords..."
-                className="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+                placeholder="Search stem or concept..."
+                className="w-full h-9 px-2.5 text-xs rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]"
               />
             </div>
-          </div>
+          </Card>
 
-          {/* Results Table */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden">
-            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
-              <span>Showing {filteredQuestions.length} questions</span>
+          {/* Dense Question Table */}
+          <Card className="overflow-hidden">
+            <div className="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between text-xs text-[var(--muted-foreground)]">
+              <span>
+                Showing <strong className="text-[var(--foreground)] tabular-nums">{filteredQuestions.length}</strong> matching questions
+              </span>
               {batchFilter && (
                 <button
+                  type="button"
                   onClick={() => setBatchFilter("")}
-                  className="text-blue-600 font-bold hover:underline"
+                  className="text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer"
                 >
                   Clear Batch Filter
                 </button>
@@ -277,116 +314,191 @@ export function AdminQuestionsClient({
 
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
+                <thead className="bg-[var(--muted)]/60 text-[var(--muted-foreground)] uppercase tracking-wider border-b border-[var(--border)]">
                   <tr>
-                    <th className="py-3 px-4">Type</th>
-                    <th className="py-3 px-4">Question Text</th>
-                    <th className="py-3 px-4">Concept / Topic</th>
+                    <th className="py-3 px-4">Source Badge</th>
+                    <th className="py-3 px-4">Question Stem &amp; Key</th>
+                    <th className="py-3 px-4">Concept</th>
                     <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Source / File</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                    <th className="py-3 px-4">Provenance</th>
+                    <th className="py-3 px-4 text-right">Moderation</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody className="divide-y divide-[var(--border)]">
                   {filteredQuestions.slice(0, 50).map((q) => (
-                    <tr key={q.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <QuestionTypeBadge type={q.type} sourceYear={q.source_year} />
+                    <tr key={q.id} className="hover:bg-[var(--muted)]/30 transition">
+                      <td className="py-3.5 px-4 whitespace-nowrap align-top">
+                        <QuestionTypeBadge type={q.type} sourceYear={q.source_year} compact />
                       </td>
-                      <td className="py-3 px-4 max-w-md">
-                        <div className="font-medium text-slate-900 dark:text-white line-clamp-2">
+                      <td className="py-3.5 px-4 max-w-md align-top">
+                        <div className="font-medium text-[var(--foreground)] line-clamp-2 leading-relaxed">
                           {q.question_text}
                         </div>
-                        <div className="text-[11px] text-slate-500 mt-1">
-                          Ans: <strong className="text-emerald-600">{q.correct_answer}</strong>
+                        <div className="text-[11px] text-[var(--muted-foreground)] mt-1">
+                          Key: <strong className="text-emerald-600 dark:text-emerald-400">{q.correct_answer}</strong> • Difficulty:{" "}
+                          <span className="capitalize">{q.difficulty}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400 font-medium">
+                      <td className="py-3.5 px-4 text-[var(--muted-foreground)] font-medium align-top">
                         {q.explanation.concept}
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-0.5 rounded-full font-bold text-[10px] uppercase ${
+                      <td className="py-3.5 px-4 whitespace-nowrap align-top">
+                        <Badge
+                          variant={
                             q.verification_status === "approved"
-                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+                              ? "pyq"
                               : q.verification_status === "rejected"
-                              ? "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-200 dark:border-rose-800"
-                              : "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
-                          }`}
+                              ? "danger"
+                              : "warning"
+                          }
                         >
-                          {q.verification_status}
-                        </span>
+                          {q.verification_status === "pending"
+                            ? "PENDING REVIEW"
+                            : q.verification_status.toUpperCase()}
+                        </Badge>
                       </td>
-                      <td className="py-3 px-4 text-slate-500 text-[11px] whitespace-nowrap">
+                      <td className="py-3.5 px-4 text-[var(--muted-foreground)] text-[11px] whitespace-nowrap align-top">
                         {q.import_source_filename ? (
                           <div>
                             <span className="font-mono">{q.import_source_filename}</span>
-                            <span className="text-slate-400 ml-1">r{q.import_source_row}</span>
+                            <span className="opacity-70 ml-1">r{q.import_source_row}</span>
                           </div>
                         ) : (
-                          q.source_paper || "Manual Seed"
+                          q.source_paper || "Verified Seed"
                         )}
                       </td>
-                      <td className="py-3 px-4 text-right whitespace-nowrap space-x-1">
-                        {q.verification_status !== "approved" && (
-                          <button
-                            onClick={() => handleStatusChange(q.id, "approved")}
-                            className="px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[10px] transition"
-                            title="Approve for live tests"
-                          >
-                            Approve
-                          </button>
-                        )}
-                        {q.verification_status !== "rejected" && (
-                          <button
-                            onClick={() => handleStatusChange(q.id, "rejected")}
-                            className="px-2 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[10px] transition"
-                            title="Reject question"
-                          >
-                            Reject
-                          </button>
-                        )}
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap align-top">
+                        <div className="inline-flex items-center gap-1.5">
+                          {q.verification_status !== "approved" && (
+                            <button
+                              type="button"
+                              onClick={() => handleStatusChange(q.id, "approved")}
+                              className="px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/70 font-semibold text-[11px] transition cursor-pointer"
+                            >
+                              Approve
+                            </button>
+                          )}
+                          {q.verification_status !== "rejected" && (
+                            <>
+                              {confirmRejectId === q.id ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleStatusChange(q.id, "rejected")}
+                                  className="px-2.5 py-1 rounded-md bg-red-600 text-white font-semibold text-[11px] transition cursor-pointer"
+                                >
+                                  Confirm Reject
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmRejectId(q.id)}
+                                  className="px-2.5 py-1 rounded-md bg-red-50 dark:bg-red-950/50 hover:bg-red-100 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/70 font-semibold text-[11px] transition cursor-pointer"
+                                >
+                                  Reject
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* TAB 2: BULK IMPORT (ZIP / CSV) */}
       {activeTab === "import" && (
         <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-5">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                Bulk Question Import (ZIP Archive or CSV)
-              </h2>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Upload a <strong>.zip file containing multiple CSVs</strong> or a <strong>single .csv file</strong>. All imported questions are inserted with <code>verification_status = &apos;pending&apos;</code> and <code>type = &apos;PYQ&apos;</code>.
-              </p>
+          <Card className="p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h2 className="text-lg font-bold text-[var(--foreground)]">
+                  ZIP &amp; CSV Bulk Question Importer
+                </h2>
+                <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                  Recursive archive scanning, Zip-Slip path sanitization, Zod schema validation, and SHA-256 duplicate filtering.
+                </p>
+              </div>
+              <Badge variant="primary">MAX 25 MB</Badge>
+            </div>
+
+            {/* 7-Stage Upload Progress Pipeline */}
+            <div className="p-4 rounded-xl bg-[var(--muted)]/50 border border-[var(--border)]">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] mb-3">
+                Ingestion Pipeline Status
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                {IMPORT_PIPELINE_STAGES.map((stage, idx) => {
+                  const isCompleted = pipelineStageIndex > idx;
+                  const isCurrent = pipelineStageIndex === idx;
+                  return (
+                    <div
+                      key={stage}
+                      className={`p-2.5 rounded-lg border text-xs font-medium flex items-center gap-2 transition ${
+                        isCompleted
+                          ? "border-emerald-300 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300"
+                          : isCurrent
+                          ? "border-blue-500 bg-blue-50/80 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-semibold"
+                          : "border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)]"
+                      }`}
+                    >
+                      <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 bg-current/10">
+                        {isCompleted ? <Check className="w-3 h-3" /> : idx + 1}
+                      </span>
+                      <span className="truncate">{stage}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {importSuccessMsg && (
-              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold flex items-center gap-2.5">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>{importSuccessMsg}</span>
               </div>
             )}
 
             {importError && (
-              <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-semibold flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+              <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800 text-xs font-semibold flex items-center gap-2.5">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{importError}</span>
               </div>
             )}
 
-            {/* Upload Area */}
-            <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-8 text-center space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 mx-auto flex items-center justify-center">
-                {importType === "ZIP" ? <FileArchive className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
+            {/* Drag-and-drop Upload Card */}
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center space-y-4 transition ${
+                isDragging
+                  ? "border-blue-600 bg-blue-50/40 dark:bg-blue-950/20"
+                  : "border-[var(--border)] hover:border-slate-400 dark:hover:border-slate-700 bg-[var(--muted)]/20"
+              }`}
+            >
+              <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 mx-auto flex items-center justify-center">
+                {importType === "ZIP" ? (
+                  <FileArchive className="w-6 h-6" />
+                ) : (
+                  <FileText className="w-6 h-6" />
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-[var(--foreground)]">
+                  Drop ZIP or CSV file here or browse
+                </p>
+                <p className="text-xs text-[var(--muted-foreground)] max-w-md mx-auto">
+                  Supports multi-CSV `.zip` bundles and standalone `.csv` question sheets. All imported rows default to `pending` verification.
+                </p>
               </div>
 
               <div>
@@ -399,48 +511,55 @@ export function AdminQuestionsClient({
                 />
                 <label
                   htmlFor="bulk-import-file"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs bg-blue-600 text-white hover:bg-blue-700 cursor-pointer transition shadow-sm"
+                  className="inline-flex items-center gap-2 h-10 px-5 rounded-xl font-semibold text-xs bg-blue-600 text-white hover:bg-blue-700 cursor-pointer transition shadow-xs"
                 >
                   <UploadCloud className="w-4 h-4" />
-                  <span>Choose ZIP or CSV File</span>
+                  <span>Select Archive from Disk</span>
                 </label>
               </div>
 
-              {importFile ? (
-                <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                  Selected: <span className="font-mono text-blue-600">{importFile.name}</span> (
-                  {(importFile.size / 1024).toFixed(1)} KB)
+              {importFile && (
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs font-medium text-[var(--foreground)]">
+                  <span className="font-mono text-blue-600 dark:text-blue-400 font-semibold">
+                    {importFile.name}
+                  </span>
+                  <span className="text-[var(--muted-foreground)] tabular-nums">
+                    ({(importFile.size / 1024).toFixed(1)} KB)
+                  </span>
                 </div>
-              ) : (
-                <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  Drag and drop a .zip archive (containing multiple syllabus CSV files) or a single .csv file here. Max 25 MB.
-                </p>
               )}
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex items-center justify-end gap-3">
               <button
                 type="button"
                 disabled={!importFile || isProcessing}
                 onClick={handleGeneratePreview}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 disabled:opacity-40 transition cursor-pointer"
+                className="inline-flex items-center gap-2 h-10 px-5 rounded-xl text-xs font-semibold bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 disabled:opacity-40 transition cursor-pointer"
               >
-                {isProcessing ? "Processing & Validating..." : "Validate & Preview Import"}
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Scanning &amp; Validating...</span>
+                  </>
+                ) : (
+                  <span>Run Validation &amp; Preview</span>
+                )}
               </button>
             </div>
-          </div>
+          </Card>
 
-          {/* Import Preview Component */}
+          {/* Import Preview Summary & Error Table */}
           {previewResult && (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <Card className="p-6 sm:p-8 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[var(--border)]">
                 <div>
-                  <h3 className="font-bold text-lg text-slate-900 dark:text-white">
-                    Import Preview & Duplicate Analysis
+                  <h3 className="font-bold text-base text-[var(--foreground)]">
+                    Import Preview &amp; Duplicate Analysis
                   </h3>
-                  <p className="text-xs text-slate-500">
-                    Review validation checks before committing questions to the question bank.
+                  <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                    Inspect row-by-row schema validation and duplicate hashes before committing to the database.
                   </p>
                 </div>
 
@@ -448,102 +567,104 @@ export function AdminQuestionsClient({
                   type="button"
                   disabled={previewResult.validRowsCount === 0 || isProcessing}
                   onClick={handleConfirmImport}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm disabled:opacity-40 cursor-pointer"
+                  className="inline-flex items-center gap-2 h-10 px-5 rounded-xl font-semibold text-xs bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-xs disabled:opacity-40 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>
-                    Confirm & Import {previewResult.validRowsCount} Approved Rows
+                    Confirm Import ({previewResult.validRowsCount} Valid Rows)
                   </span>
                 </button>
               </div>
 
-              {/* Summary Stats Strip */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-                  <div className="text-[11px] font-bold uppercase text-slate-500">
-                    Files Processed
+              {/* 4 Summary Metric Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 rounded-xl bg-[var(--muted)]/50 border border-[var(--border)]">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+                    Files Scanned
                   </div>
-                  <div className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+                  <div className="text-2xl font-bold text-[var(--foreground)] tabular-nums mt-1">
                     {previewResult.totalFiles}
                   </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">
-                    {previewResult.validFilesCount} valid, {previewResult.invalidFilesCount} invalid
+                  <div className="text-[11px] text-[var(--muted-foreground)] mt-0.5">
+                    {previewResult.validFilesCount} valid • {previewResult.invalidFilesCount} invalid
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-                  <div className="text-[11px] font-bold uppercase text-emerald-700 dark:text-emerald-400">
-                    Valid Questions
+                <div className="p-4 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/25 border border-emerald-200 dark:border-emerald-800/70">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                    Valid Rows
                   </div>
-                  <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
-                    {previewResult.validRowsCount} 🟢
+                  <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums mt-1">
+                    {previewResult.validRowsCount}
                   </div>
-                  <div className="text-[10px] text-emerald-600/80 mt-0.5">Ready to insert as pending</div>
+                  <div className="text-[11px] text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">
+                    Ready for pending queue
+                  </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-rose-50/60 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800">
-                  <div className="text-[11px] font-bold uppercase text-rose-700 dark:text-rose-400">
-                    Invalid Questions
+                <div className="p-4 rounded-xl bg-red-50/60 dark:bg-red-950/25 border border-red-200 dark:border-red-800/70">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-red-700 dark:text-red-400">
+                    Invalid Rows
                   </div>
-                  <div className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1">
-                    {previewResult.invalidRowsCount} 🔴
+                  <div className="text-2xl font-bold text-red-600 dark:text-red-400 tabular-nums mt-1">
+                    {previewResult.invalidRowsCount}
                   </div>
-                  <div className="text-[10px] text-rose-600/80 mt-0.5">Will be rejected</div>
+                  <div className="text-[11px] text-red-700/80 dark:text-red-400/80 mt-0.5">
+                    Failed Zod schema check
+                  </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-                  <div className="text-[11px] font-bold uppercase text-amber-700 dark:text-amber-400">
-                    Duplicates
+                <div className="p-4 rounded-xl bg-amber-50/60 dark:bg-amber-950/25 border border-amber-200 dark:border-amber-800/70">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                    Duplicate Rows
                   </div>
-                  <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">
-                    {previewResult.duplicateRowsCount} 🟡
+                  <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 tabular-nums mt-1">
+                    {previewResult.duplicateRowsCount}
                   </div>
-                  <div className="text-[10px] text-amber-600/80 mt-0.5">Excluded from import</div>
+                  <div className="text-[11px] text-amber-700/80 dark:text-amber-400/80 mt-0.5">
+                    Skipped automatically
+                  </div>
                 </div>
               </div>
 
-              {/* Rows List */}
-              <div className="overflow-x-auto max-h-96 border border-slate-200 dark:border-slate-800 rounded-xl">
+              {/* Row Details Table */}
+              <div className="overflow-x-auto max-h-96 border border-[var(--border)] rounded-xl">
                 <table className="w-full text-xs text-left">
-                  <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 uppercase tracking-wider sticky top-0">
+                  <thead className="bg-[var(--muted)] text-[var(--muted-foreground)] uppercase tracking-wider sticky top-0 border-b border-[var(--border)]">
                     <tr>
-                      <th className="py-2.5 px-3">File & Row</th>
-                      <th className="py-2.5 px-3">Status</th>
-                      <th className="py-2.5 px-3">Question Preview</th>
-                      <th className="py-2.5 px-3">Validation Note / Error</th>
+                      <th className="py-2.5 px-4">Source File &amp; Row</th>
+                      <th className="py-2.5 px-4">Status</th>
+                      <th className="py-2.5 px-4">Question Stem Preview</th>
+                      <th className="py-2.5 px-4">Validation Diagnostics</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  <tbody className="divide-y divide-[var(--border)]">
                     {previewResult.rows.map((r, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                        <td className="py-2.5 px-3 whitespace-nowrap font-mono text-[11px]">
+                      <tr key={idx} className="hover:bg-[var(--muted)]/30">
+                        <td className="py-2.5 px-4 whitespace-nowrap font-mono text-[11px] text-[var(--muted-foreground)]">
                           {r.filename} (r{r.rowNumber})
                         </td>
-                        <td className="py-2.5 px-3 whitespace-nowrap">
+                        <td className="py-2.5 px-4 whitespace-nowrap">
                           {r.status === "valid" ? (
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px]">
-                              🟢 Valid
-                            </span>
+                            <Badge variant="pyq">VALID</Badge>
                           ) : r.status === "duplicate" ? (
-                            <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-bold text-[10px]">
-                              🟡 Duplicate
-                            </span>
+                            <Badge variant="warning">DUPLICATE</Badge>
                           ) : (
-                            <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 font-bold text-[10px]">
-                              🔴 Invalid
-                            </span>
+                            <Badge variant="danger">INVALID</Badge>
                           )}
                         </td>
-                        <td className="py-2.5 px-3 max-w-sm truncate text-slate-800 dark:text-slate-200">
+                        <td className="py-2.5 px-4 max-w-sm truncate text-[var(--foreground)]">
                           {r.previewQuestionText}
                         </td>
-                        <td className="py-2.5 px-3 text-slate-500 text-[11px]">
+                        <td className="py-2.5 px-4 text-[11px]">
                           {r.errors && r.errors.length > 0 ? (
-                            <span className="text-rose-600 font-medium">
+                            <span className="text-red-600 dark:text-red-400 font-medium">
                               {r.errors.join("; ")}
                             </span>
                           ) : (
-                            <span className="text-emerald-600 font-medium">Valid CSV row</span>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                              Passed schema &amp; hash checks
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -551,7 +672,7 @@ export function AdminQuestionsClient({
                   </tbody>
                 </table>
               </div>
-            </div>
+            </Card>
           )}
         </div>
       )}

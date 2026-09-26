@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { getAllQuestions, getExams, getImportBatches } from "@/lib/db";
+import { getAllQuestions, getImportBatches } from "@/lib/db";
 import {
   Layers,
   ShieldCheck,
@@ -8,18 +8,16 @@ import {
   Clock,
   UploadCloud,
   ArrowRight,
-  CheckCircle2,
-  AlertTriangle,
   Award,
   XCircle,
 } from "lucide-react";
+import { Badge, Card } from "@/components/ui/primitives";
 
 export default async function AdminDashboardPage() {
   const allQuestions = await getAllQuestions();
-  const exams = await getExams();
   const importBatches = await getImportBatches();
 
-  // Explicit Phase 3 Quality Control Metrics
+  // 8 Administrative Quality Control Metrics
   const totalQuestions = allQuestions.length;
   const approvedPyqCount = allQuestions.filter(
     (q) => q.type === "PYQ" && q.verification_status === "approved"
@@ -43,24 +41,31 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-[var(--border)]">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-            Administrative Control Center
+            Content Management &amp; Integrity
           </span>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-1">
-            Platform Analytics & Overview
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--foreground)] mt-1">
+            Platform Quality Overview
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Manage question bank verification, review AI-generated items, and monitor bulk import batches.
+          <p className="text-sm text-[var(--muted-foreground)] mt-1">
+            Monitor question bank verification states, moderate AI model items, and audit bulk CSV/ZIP imports.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/admin/model-questions"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl font-semibold text-xs border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] transition"
+          >
+            <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <span>Moderation Queue ({pendingModelCount})</span>
+          </Link>
           <Link
             href="/admin/questions?tab=import"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl font-semibold text-xs bg-blue-600 text-white hover:bg-blue-700 transition shadow-xs"
           >
             <UploadCloud className="w-4 h-4" />
             <span>Import ZIP / CSV</span>
@@ -68,225 +73,222 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Metrics Grid: Exactly 8 Administrative Quality Control Metrics */}
+      {/* 8 KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* 1. Total Questions */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-            <Layers className="w-4 h-4 text-blue-500" />
+        <Card className="p-5">
+          <div className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] flex items-center justify-between">
             <span>Total Questions</span>
+            <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900 dark:text-white mt-2">
+          <div className="text-3xl font-bold text-[var(--foreground)] tabular-nums mt-2">
             {totalQuestions}
           </div>
-          <p className="text-xs text-slate-500 mt-1">In question bank</p>
-        </div>
+          <p className="text-xs text-[var(--muted-foreground)] mt-1">Total repository items</p>
+        </Card>
 
-        {/* 2. Approved PYQs */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
-          <div className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4" />
+        <Card className="p-5">
+          <div className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center justify-between">
             <span>Approved PYQs</span>
+            <ShieldCheck className="w-4 h-4" />
           </div>
-          <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2">
+          <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums mt-2">
             {approvedPyqCount}
           </div>
-          <p className="text-xs text-slate-500 mt-1">Active in 80% mocks</p>
-        </div>
+          <p className="text-xs text-[var(--muted-foreground)] mt-1">Eligible for 80% PYQ pool</p>
+        </Card>
 
-        {/* 3. Pending PYQs */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
-          <div className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-            <Clock className="w-4 h-4" />
+        <Card className="p-5">
+          <div className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center justify-between">
             <span>Pending PYQs</span>
+            <Clock className="w-4 h-4" />
           </div>
-          <div className="text-3xl font-extrabold text-amber-600 dark:text-amber-400 mt-2">
+          <div className="text-3xl font-bold text-amber-600 dark:text-amber-400 tabular-nums mt-2">
             {pendingPyqCount}
           </div>
-          <p className="text-xs text-slate-500 mt-1">From CSV/ZIP imports</p>
-        </div>
+          <p className="text-xs text-[var(--muted-foreground)] mt-1">Awaiting verification</p>
+        </Card>
 
-        {/* 4. Approved Model Questions */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
-          <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4" />
+        <Card className="p-5">
+          <div className="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 flex items-center justify-between">
             <span>Approved Model</span>
+            <Sparkles className="w-4 h-4" />
           </div>
-          <div className="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 mt-2">
+          <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 tabular-nums mt-2">
             {approvedModelCount}
           </div>
-          <p className="text-xs text-slate-500 mt-1">Active in 20% mocks</p>
-        </div>
+          <p className="text-xs text-[var(--muted-foreground)] mt-1">Eligible for 20% Model pool</p>
+        </Card>
 
-        {/* 5. Pending Model Questions */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
-          <div className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
-            <Clock className="w-4 h-4" />
+        <Card className="p-5">
+          <div className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center justify-between">
             <span>Pending Model</span>
+            <Clock className="w-4 h-4" />
           </div>
-          <div className="text-3xl font-extrabold text-purple-600 dark:text-purple-400 mt-2">
+          <div className="text-3xl font-bold text-amber-600 dark:text-amber-400 tabular-nums mt-2">
             {pendingModelCount}
           </div>
-          <p className="text-xs text-slate-500 mt-1">Awaiting review</p>
-        </div>
+          <p className="text-xs text-[var(--muted-foreground)] mt-1">In AI moderation queue</p>
+        </Card>
 
-        {/* 6. Rejected Questions */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
-          <div className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
-            <XCircle className="w-4 h-4" />
+        <Card className="p-5">
+          <div className="text-xs font-semibold uppercase tracking-wider text-red-700 dark:text-red-400 flex items-center justify-between">
             <span>Rejected Items</span>
+            <XCircle className="w-4 h-4" />
           </div>
-          <div className="text-3xl font-extrabold text-rose-600 dark:text-rose-400 mt-2">
+          <div className="text-3xl font-bold text-red-600 dark:text-red-400 tabular-nums mt-2">
             {rejectedCount}
           </div>
-          <p className="text-xs text-slate-500 mt-1">Excluded from tests</p>
-        </div>
+          <p className="text-xs text-[var(--muted-foreground)] mt-1">Excluded from student mocks</p>
+        </Card>
 
-        {/* 7. Import Batches */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
-          <div className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
-            <UploadCloud className="w-4 h-4" />
+        <Card className="p-5">
+          <div className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] flex items-center justify-between">
             <span>Import Batches</span>
+            <UploadCloud className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900 dark:text-white mt-2">
+          <div className="text-3xl font-bold text-[var(--foreground)] tabular-nums mt-2">
             {importBatchCount}
           </div>
-          <p className="text-xs text-slate-500 mt-1">Total batches logged</p>
-        </div>
+          <p className="text-xs text-[var(--muted-foreground)] mt-1">Logged archive uploads</p>
+        </Card>
 
-        {/* 8. AI Generation Activity */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
-          <div className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4" />
-            <span>AI Activity</span>
+        <Card className="p-5">
+          <div className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] flex items-center justify-between">
+            <span>AI Generated</span>
+            <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-2">
+          <div className="text-3xl font-bold text-[var(--foreground)] tabular-nums mt-2">
             {aiGeneratedActivityCount}
           </div>
-          <p className="text-xs text-slate-500 mt-1">Model items generated</p>
-        </div>
+          <p className="text-xs text-[var(--muted-foreground)] mt-1">Total Gemini synthesis items</p>
+        </Card>
       </div>
 
       {/* Quick Action Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <Card className="p-6 flex flex-col justify-between space-y-4">
           <div>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold mb-3">
-              <UploadCloud className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3">
+              <UploadCloud className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-base text-slate-900 dark:text-white">
-              Bulk Import (ZIP / CSV)
+            <h3 className="font-bold text-base text-[var(--foreground)]">
+              Bulk Import Pipeline (ZIP / CSV)
             </h3>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              Upload a ZIP archive containing multiple CSV files with duplicate detection, Zod validation, and batch tracking.
+            <p className="text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
+              Upload recursive ZIP archives or CSV spreadsheets with automatic path-traversal protection, Zod validation, and SHA-256 duplicate checks.
             </p>
           </div>
           <Link
             href="/admin/questions?tab=import"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
           >
-            <span>Open Importer</span>
+            <span>Launch Import Pipeline</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
-        </div>
+        </Card>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-4">
+        <Card className="p-6 flex flex-col justify-between space-y-4">
           <div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold mb-3">
-              <Sparkles className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-3">
+              <Sparkles className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-base text-slate-900 dark:text-white">
+            <h3 className="font-bold text-base text-[var(--foreground)]">
               Model Question Review Queue
             </h3>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              Review, approve, or reject AI-generated questions before they are made live in student mocks.
+            <p className="text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
+              Audit AI-generated model questions for factual accuracy and structured explanations before approving for the 20% pool.
             </p>
           </div>
           <Link
             href="/admin/model-questions"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
           >
-            <span>Review Queue ({pendingModelCount})</span>
+            <span>Open Moderation Queue ({pendingModelCount})</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
-        </div>
+        </Card>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-4">
+        <Card className="p-6 flex flex-col justify-between space-y-4">
           <div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold mb-3">
-              <Award className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-3">
+              <Award className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-base text-slate-900 dark:text-white">
-              Exam Syllabi & Marking Schemes
+            <h3 className="font-bold text-base text-[var(--foreground)]">
+              Exam Syllabi &amp; Marking Schemes
             </h3>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              Configure supported examinations, subjects, topics, and negative marking penalty formulas.
+            <p className="text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
+              Manage UPSC CSE, UPPSC, and SSC CGL marking penalties, durations, and subject-topic hierarchies.
             </p>
           </div>
           <Link
             href="/admin/exams"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline"
           >
-            <span>Manage Taxonomy</span>
+            <span>Configure Taxonomy</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
-        </div>
+        </Card>
       </div>
 
       {/* Recent Import Batches Table */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-bold text-base text-slate-900 dark:text-white">
-            Recent Question Import Batches
-          </h3>
-          <span className="text-xs text-slate-500">
-            {importBatches.length} total batches processed
-          </span>
+      <Card className="overflow-hidden">
+        <div className="p-5 border-b border-[var(--border)] flex items-center justify-between">
+          <div>
+            <h3 className="font-bold text-base text-[var(--foreground)]">
+              Recent Question Import Batches
+            </h3>
+            <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
+              Audit trail of uploaded CSV and ZIP question archives
+            </p>
+          </div>
+          <Badge variant="default">{importBatches.length} Batches</Badge>
         </div>
 
         {importBatches.length === 0 ? (
-          <div className="text-center py-8 text-xs text-slate-500">
-            No bulk imports run yet. Upload a CSV or ZIP file to populate questions.
+          <div className="text-center py-10 text-xs text-[var(--muted-foreground)]">
+            No bulk imports recorded yet. Upload a CSV or ZIP archive to populate the repository.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
-              <thead className="text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+              <thead className="bg-[var(--muted)]/60 text-[var(--muted-foreground)] uppercase tracking-wider border-b border-[var(--border)]">
                 <tr>
-                  <th className="py-2.5 px-3">Batch ID</th>
-                  <th className="py-2.5 px-3">Filename</th>
-                  <th className="py-2.5 px-3">Type</th>
-                  <th className="py-2.5 px-3">Imported Rows</th>
-                  <th className="py-2.5 px-3">Status</th>
-                  <th className="py-2.5 px-3">Date</th>
-                  <th className="py-2.5 px-3">Action</th>
+                  <th className="py-3 px-4">Batch ID</th>
+                  <th className="py-3 px-4">Archive / Filename</th>
+                  <th className="py-3 px-4">Format</th>
+                  <th className="py-3 px-4">Imported Rows</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Timestamp</th>
+                  <th className="py-3 px-4 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-[var(--border)]">
                 {importBatches.map((b) => (
-                  <tr key={b.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                    <td className="py-2.5 px-3 font-mono text-[11px]">{b.id}</td>
-                    <td className="py-2.5 px-3 font-semibold">{b.filename}</td>
-                    <td className="py-2.5 px-3">
-                      <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-bold">
-                        {b.import_type}
-                      </span>
+                  <tr key={b.id} className="hover:bg-[var(--muted)]/40 transition">
+                    <td className="py-3 px-4 font-mono text-[11px] text-[var(--muted-foreground)]">
+                      {b.id}
                     </td>
-                    <td className="py-2.5 px-3 font-bold text-emerald-600">{b.imported_rows}</td>
-                    <td className="py-2.5 px-3">
-                      <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold capitalize">
-                        {b.status}
-                      </span>
+                    <td className="py-3 px-4 font-semibold text-[var(--foreground)]">
+                      {b.filename}
                     </td>
-                    <td className="py-2.5 px-3 text-slate-500">
+                    <td className="py-3 px-4">
+                      <Badge variant="default">{b.import_type}</Badge>
+                    </td>
+                    <td className="py-3 px-4 font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                      {b.imported_rows}
+                    </td>
+                    <td className="py-3 px-4">
+                      <Badge variant="pyq">{b.status.toUpperCase()}</Badge>
+                    </td>
+                    <td className="py-3 px-4 text-[var(--muted-foreground)] tabular-nums">
                       {new Date(b.created_at).toLocaleDateString()}
                     </td>
-                    <td className="py-2.5 px-3">
+                    <td className="py-3 px-4 text-right">
                       <Link
                         href={`/admin/questions?batchId=${b.id}`}
-                        className="text-blue-600 dark:text-blue-400 font-bold hover:underline"
+                        className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
                       >
-                        View Batch →
+                        Inspect Batch →
                       </Link>
                     </td>
                   </tr>
@@ -295,7 +297,7 @@ export default async function AdminDashboardPage() {
             </table>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

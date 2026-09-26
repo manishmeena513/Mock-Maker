@@ -3,8 +3,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Award, Mail, Lock, ArrowRight, ShieldCheck } from "lucide-react";
+import { BookOpenCheck, Mail, Lock, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Card } from "@/components/ui/primitives";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,7 +27,6 @@ export default function LoginPage() {
       });
 
       if (error) {
-        // If placeholder credentials or user not found, navigate to dashboard gracefully
         if (error.message.includes("fetch") || error.message.includes("Invalid API key")) {
           router.push("/dashboard");
           return;
@@ -57,69 +57,69 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950">
-      <div className="max-w-md w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 shadow-sm">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 font-bold text-xl text-slate-900 dark:text-white">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-[var(--background)]">
+      <Card className="max-w-md w-full p-8">
+        <div className="text-center mb-7">
+          <Link href="/" className="inline-flex items-center gap-2.5 font-bold text-lg text-[var(--foreground)]">
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white">
-              <Award className="w-5 h-5" />
+              <BookOpenCheck className="w-4 h-4" />
             </div>
             <span>MockMaster</span>
           </Link>
-          <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white mt-4">
-            Sign In to Your Account
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Access your mock test history, weak topic analytics, and revision notes.
+          <h1 className="text-xl font-bold tracking-tight text-[var(--foreground)] mt-4">
+            Sign in to your workspace
+          </h1>
+          <p className="text-xs text-[var(--muted-foreground)] mt-1">
+            Access your mock attempt history, diagnostic analytics, and saved bookmarks.
           </p>
         </div>
 
         {errorMsg && (
-          <div className="mb-4 p-3 rounded-lg bg-rose-50 text-rose-700 text-xs font-semibold border border-rose-200">
-            {errorMsg}
+          <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-xs font-medium border border-red-200 dark:border-red-800/70 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{errorMsg}</span>
           </div>
         )}
 
         <form onSubmit={handleEmailLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5">
               Email Address
             </label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              <Mail className="w-4 h-4 text-[var(--muted-foreground)] absolute left-3 top-3" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="aspirant@upsc.gov.in"
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                placeholder="aspirant@example.com"
+                className="w-full h-10 pl-9 pr-3 text-sm rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] focus:outline-hidden focus:ring-2 focus:ring-blue-600"
               />
             </div>
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
                 Password
               </label>
               <Link
                 href="/auth/reset-password"
                 className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
               >
-                Forgot?
+                Forgot password?
               </Link>
             </div>
             <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              <Lock className="w-4 h-4 text-[var(--muted-foreground)] absolute left-3 top-3" />
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                className="w-full h-10 pl-9 pr-3 text-sm rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] focus:outline-hidden focus:ring-2 focus:ring-blue-600"
               />
             </div>
           </div>
@@ -127,22 +127,22 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-xl font-bold text-sm bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm cursor-pointer"
+            className="w-full h-10 rounded-lg font-semibold text-sm bg-blue-600 text-white hover:bg-blue-700 transition shadow-xs cursor-pointer disabled:opacity-60"
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
 
         <div className="my-6 flex items-center gap-3">
-          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
-          <span className="text-[11px] font-semibold text-slate-400 uppercase">OR</span>
-          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+          <div className="flex-1 h-px bg-[var(--border)]" />
+          <span className="text-[11px] font-semibold text-[var(--muted-foreground)] uppercase">or</span>
+          <div className="flex-1 h-px bg-[var(--border)]" />
         </div>
 
         <button
           type="button"
           onClick={handleGoogleLogin}
-          className="w-full py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm transition flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full h-10 rounded-lg border border-[var(--border)] hover:bg-[var(--muted)] text-[var(--foreground)] font-semibold text-sm transition flex items-center justify-center gap-2 cursor-pointer"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path
@@ -165,13 +165,13 @@ export default function LoginPage() {
           <span>Continue with Google</span>
         </button>
 
-        <p className="mt-6 text-center text-xs text-slate-500">
+        <p className="mt-6 text-center text-xs text-[var(--muted-foreground)]">
           Don&apos;t have an account?{" "}
-          <Link href="/auth/signup" className="font-bold text-blue-600 dark:text-blue-400 hover:underline">
-            Sign up free
+          <Link href="/auth/signup" className="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+            Create free account
           </Link>
         </p>
-      </div>
+      </Card>
     </div>
   );
 }

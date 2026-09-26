@@ -13,7 +13,7 @@ export default async function ConfigurePage({ searchParams }: ConfigurePageProps
   const exams = await getExams();
 
   return (
-    <div className="py-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
+    <div className="py-6 sm:py-8">
       <MockConfigWizard
         exams={exams}
         subjects={SEED_SUBJECTS}

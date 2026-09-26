@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, ShieldCheck, Zap, AlertCircle, Sparkles, ArrowRight, Loader2 } from "lucide-react";
+import { Check, ShieldCheck, AlertCircle, ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Badge, Card } from "@/components/ui/primitives";
 
 interface PricingClientProps {
   currentPlan?: string;
@@ -15,7 +16,7 @@ declare global {
   }
 }
 
-export function PricingClient({ currentPlan = "FREE", userEmail = "" }: PricingClientProps) {
+export function PricingClient({ currentPlan = "FREE" }: PricingClientProps) {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -40,11 +41,7 @@ export function PricingClient({ currentPlan = "FREE", userEmail = "" }: PricingC
 
       const order = data.order;
 
-      // In dev fallback or when key is mock key, simulate successful payment via webhook
       if (!order.keyId || order.keyId === "rzp_test_mock_key") {
-        // Trigger dev instant activation
-        const fakeSig = "dev_simulated_signature";
-        // Simulate webhook
         const webhookRes = await fetch("/api/payments/webhook", {
           method: "POST",
           headers: {
@@ -77,7 +74,6 @@ export function PricingClient({ currentPlan = "FREE", userEmail = "" }: PricingC
         }
       }
 
-      // If Razorpay SDK is present or standard checkout
       router.push("/dashboard?upgraded=true");
       router.refresh();
     } catch (err: unknown) {
@@ -101,14 +97,14 @@ export function PricingClient({ currentPlan = "FREE", userEmail = "" }: PricingC
 
       {/* Billing Interval Toggle */}
       <div className="flex justify-center">
-        <div className="inline-flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <div className="inline-flex items-center p-1 rounded-xl bg-[var(--muted)] border border-[var(--border)]">
           <button
             type="button"
             onClick={() => setBillingCycle("monthly")}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+            className={`px-4 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
               billingCycle === "monthly"
-                ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                ? "bg-[var(--card)] text-[var(--foreground)] shadow-xs"
+                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
             Monthly Billing
@@ -116,14 +112,14 @@ export function PricingClient({ currentPlan = "FREE", userEmail = "" }: PricingC
           <button
             type="button"
             onClick={() => setBillingCycle("annual")}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
               billingCycle === "annual"
-                ? "bg-blue-600 text-white shadow-xs"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                ? "bg-[var(--card)] text-[var(--foreground)] shadow-xs"
+                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
-            <span>Annual Aspirant</span>
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-500 text-white">
+            <span>Annual Pass</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-600 text-white">
               Save 50%
             </span>
           </button>
@@ -131,141 +127,118 @@ export function PricingClient({ currentPlan = "FREE", userEmail = "" }: PricingC
       </div>
 
       {/* Plan Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto items-stretch">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto items-stretch">
         {/* Free Plan */}
-        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 flex flex-col justify-between shadow-xs">
+        <Card className="p-7 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Free Aspirant</h3>
-                <p className="text-xs text-slate-500 mt-1">Foundation practice for daily revision</p>
+                <h3 className="text-lg font-bold text-[var(--foreground)]">Free Aspirant</h3>
+                <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                  Daily practice and standard PYQ verification
+                </p>
               </div>
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                Free
-              </span>
+              <Badge variant="default">STANDARD</Badge>
             </div>
 
-            <div className="mt-6 flex items-baseline gap-1">
-              <span className="text-4xl font-extrabold text-slate-900 dark:text-white">₹0</span>
-              <span className="text-xs text-slate-500">/ forever</span>
+            <div className="mt-6 flex items-baseline gap-1.5 pb-6 border-b border-[var(--border)]">
+              <span className="text-4xl font-bold text-[var(--foreground)] tabular-nums">₹0</span>
+              <span className="text-xs text-[var(--muted-foreground)]">/ forever</span>
             </div>
 
-            <ul className="mt-8 space-y-3.5 text-sm text-slate-600 dark:text-slate-300">
+            <ul className="mt-6 space-y-3 text-sm text-[var(--foreground)]">
               <li className="flex items-center gap-3">
-                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span><strong>3 Mock Tests</strong> per day</span>
               </li>
               <li className="flex items-center gap-3">
-                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Up to <strong>20 Saved Questions</strong> for revision</span>
+                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Up to <strong>20 Saved Questions</strong> in Revision Hub</span>
               </li>
               <li className="flex items-center gap-3">
-                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Strict <strong>80:20 Authentic Ratio</strong></span>
+                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Strict <strong>80:20 Authentic Question Mix</strong></span>
               </li>
               <li className="flex items-center gap-3">
-                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Official UPSC, UPPSC & SSC CGL verified PYQs</span>
+                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Official UPSC, UPPSC &amp; SSC CGL verified PYQs</span>
               </li>
               <li className="flex items-center gap-3">
-                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Official negative marking calculation</span>
-              </li>
-              <li className="flex items-center gap-3 text-slate-400 dark:text-slate-500 line-through">
-                <span>Detailed PYQ vs Model Diagnostic Analytics</span>
-              </li>
-              <li className="flex items-center gap-3 text-slate-400 dark:text-slate-500 line-through">
-                <span>Unlimited targeted mistake retest drills</span>
+                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Official commission negative marking</span>
               </li>
             </ul>
           </div>
 
-          <div className="mt-8">
+          <div className="mt-8 pt-4">
             <button
               disabled
-              className="w-full py-3 rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed"
+              className="w-full h-11 rounded-xl text-sm font-semibold bg-[var(--muted)] text-[var(--muted-foreground)] cursor-not-allowed"
             >
-              {!isCurrentPlanPremium ? "Current Plan" : "Downgrade (Automatic on Expiry)"}
+              {!isCurrentPlanPremium ? "Current Active Plan" : "Included in Account"}
             </button>
           </div>
-        </div>
+        </Card>
 
         {/* Premium Plan */}
-        <div className="rounded-3xl border-2 border-blue-600 dark:border-blue-500 bg-gradient-to-b from-blue-50/50 to-white dark:from-blue-950/20 dark:to-slate-900 p-8 flex flex-col justify-between shadow-lg relative">
-          <div className="absolute -top-3.5 right-8">
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-600 text-white shadow-sm flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>RECOMMENDED FOR SERIOUS ASPIRANTS</span>
-            </span>
-          </div>
-
+        <Card className="p-7 border-2 border-blue-600 dark:border-blue-500 flex flex-col justify-between relative">
           <div>
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                  {billingCycle === "annual" ? "Annual Aspirant" : "Monthly Pro"}
+                <h3 className="text-lg font-bold text-[var(--foreground)]">
+                  {billingCycle === "annual" ? "Annual Aspirant Pro" : "Monthly Pro"}
                 </h3>
-                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                  Full exam preparation suite with unlimited practice
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
+                  Unrestricted mock generation &amp; deep diagnostic telemetry
                 </p>
               </div>
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">
-                PRO
-              </span>
+              <Badge variant="primary">RECOMMENDED</Badge>
             </div>
 
-            <div className="mt-6 flex items-baseline gap-1">
-              <span className="text-4xl font-extrabold text-slate-900 dark:text-white">
+            <div className="mt-6 flex items-baseline gap-1.5 pb-6 border-b border-[var(--border)]">
+              <span className="text-4xl font-bold text-[var(--foreground)] tabular-nums">
                 ₹{billingCycle === "annual" ? "2,999" : "499"}
               </span>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-[var(--muted-foreground)]">
                 / {billingCycle === "annual" ? "year (₹250/mo)" : "month"}
               </span>
             </div>
 
-            <ul className="mt-8 space-y-3.5 text-sm text-slate-700 dark:text-slate-200">
+            <ul className="mt-6 space-y-3 text-sm text-[var(--foreground)]">
               <li className="flex items-center gap-3">
-                <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 font-bold" />
-                <span><strong>Unlimited Mock Tests</strong> (No 3/day cap)</span>
+                <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                <span><strong>Unlimited Mock Tests</strong> (No daily cap)</span>
               </li>
               <li className="flex items-center gap-3">
                 <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                <span><strong>Unlimited Saved Questions</strong> & revision bookmarks</span>
+                <span><strong>Unlimited Saved Questions</strong> &amp; revision tags</span>
               </li>
               <li className="flex items-center gap-3">
                 <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                <span>Full <strong>80:20 PYQ vs Model Diagnostic</strong> analytics</span>
+                <span>Full <strong>PYQ vs Model Diagnostic</strong> breakdown</span>
               </li>
               <li className="flex items-center gap-3">
                 <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                <span><strong>Topic Mastery Tracking</strong> & Mistake Classifier</span>
+                <span><strong>Topic Mastery Tracking</strong> &amp; 7-Category Mistake Review</span>
               </li>
               <li className="flex items-center gap-3">
                 <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                <span><strong>Unlimited Retest Drills</strong> from mistake pool</span>
-              </li>
-              <li className="flex items-center gap-3">
-                <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                <span>Immediate access to newly imported PYQ batches</span>
-              </li>
-              <li className="flex items-center gap-3">
-                <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                <span>100% focused, distraction-free environment</span>
+                <span><strong>Unlimited Retest Drills</strong> from weak-area pools</span>
               </li>
             </ul>
           </div>
 
-          <div className="mt-8">
+          <div className="mt-8 pt-4">
             <button
               type="button"
               onClick={() => handleSubscribe(billingCycle)}
               disabled={isCurrentPlanPremium || Boolean(loadingPlan)}
-              className="w-full py-3.5 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm shadow-blue-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full h-11 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white transition shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loadingPlan ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Processing Checkout...</span>
+                  <span>Initializing Checkout...</span>
                 </>
               ) : isCurrentPlanPremium ? (
                 <>
@@ -274,95 +247,85 @@ export function PricingClient({ currentPlan = "FREE", userEmail = "" }: PricingC
                 </>
               ) : (
                 <>
-                  <span>Upgrade to Premium</span>
+                  <span>Upgrade to Pro</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
-            <p className="text-center text-[11px] text-slate-500 mt-2">
-              Instant activation • Razorpay & Cards accepted • Cancel anytime
+            <p className="text-center text-[11px] text-[var(--muted-foreground)] mt-2">
+              Instant activation • UPI, NetBanking &amp; Cards accepted
             </p>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Feature Comparison Matrix */}
-      <div className="max-w-4xl mx-auto mt-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">
-          Detailed Feature Comparison
+      <Card className="max-w-4xl mx-auto p-6 sm:p-8">
+        <h3 className="text-base font-bold text-[var(--foreground)] mb-5">
+          Plan Specification Comparison
         </h3>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-100 dark:border-slate-800 text-xs font-bold uppercase text-slate-400">
-                <th className="py-3 px-4">Feature</th>
-                <th className="py-3 px-4">Free Plan</th>
-                <th className="py-3 px-4 text-blue-600 dark:text-blue-400">Premium Plan</th>
+              <tr className="border-b border-[var(--border)] text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+                <th className="py-3 px-4">Capability</th>
+                <th className="py-3 px-4">Free Aspirant</th>
+                <th className="py-3 px-4 text-blue-600 dark:text-blue-400">Pro Plan</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-[var(--border)]">
               <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200">Daily Mock Test Attempts</td>
-                <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">3 mocks / day</td>
-                <td className="py-3.5 px-4 font-bold text-blue-600 dark:text-blue-400">Unlimited</td>
+                <td className="py-3.5 px-4 font-medium text-[var(--foreground)]">Daily Mock Test Attempts</td>
+                <td className="py-3.5 px-4 text-[var(--muted-foreground)]">3 mocks / day</td>
+                <td className="py-3.5 px-4 font-semibold text-blue-600 dark:text-blue-400">Unlimited</td>
               </tr>
               <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200">Revision Bookmarks Quota</td>
-                <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">20 questions</td>
-                <td className="py-3.5 px-4 font-bold text-blue-600 dark:text-blue-400">Unlimited</td>
+                <td className="py-3.5 px-4 font-medium text-[var(--foreground)]">Revision Hub Bookmarks</td>
+                <td className="py-3.5 px-4 text-[var(--muted-foreground)]">20 questions</td>
+                <td className="py-3.5 px-4 font-semibold text-blue-600 dark:text-blue-400">Unlimited</td>
               </tr>
               <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200">Strict 80:20 Authentic Ratio</td>
-                <td className="py-3.5 px-4 text-emerald-600 font-semibold">Included</td>
-                <td className="py-3.5 px-4 text-emerald-600 font-semibold">Included</td>
+                <td className="py-3.5 px-4 font-medium text-[var(--foreground)]">80% Verified PYQ + 20% Model Ratio</td>
+                <td className="py-3.5 px-4 text-emerald-600 dark:text-emerald-400 font-semibold">Included</td>
+                <td className="py-3.5 px-4 text-emerald-600 dark:text-emerald-400 font-semibold">Included</td>
               </tr>
               <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200">Official Negative Marking Schemes</td>
-                <td className="py-3.5 px-4 text-emerald-600 font-semibold">Included</td>
-                <td className="py-3.5 px-4 text-emerald-600 font-semibold">Included</td>
+                <td className="py-3.5 px-4 font-medium text-[var(--foreground)]">Official Negative Marking Schemes</td>
+                <td className="py-3.5 px-4 text-emerald-600 dark:text-emerald-400 font-semibold">Included</td>
+                <td className="py-3.5 px-4 text-emerald-600 dark:text-emerald-400 font-semibold">Included</td>
               </tr>
               <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200">Instant Structured Explanations</td>
-                <td className="py-3.5 px-4 text-emerald-600 font-semibold">Included</td>
-                <td className="py-3.5 px-4 text-emerald-600 font-semibold">Included</td>
+                <td className="py-3.5 px-4 font-medium text-[var(--foreground)]">PYQ vs Model Accuracy Analytics</td>
+                <td className="py-3.5 px-4 text-[var(--muted-foreground)]">Standard Summary</td>
+                <td className="py-3.5 px-4 font-semibold text-blue-600 dark:text-blue-400">Full Diagnostic Breakdown</td>
               </tr>
               <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200">PYQ vs Model Performance Analytics</td>
-                <td className="py-3.5 px-4 text-slate-400">Basic</td>
-                <td className="py-3.5 px-4 font-bold text-blue-600 dark:text-blue-400">Deep Diagnostic Breakdown</td>
-              </tr>
-              <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200">Targeted Retest Drills</td>
-                <td className="py-3.5 px-4 text-slate-400">1 per day</td>
-                <td className="py-3.5 px-4 font-bold text-blue-600 dark:text-blue-400">Unlimited</td>
-              </tr>
-              <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200">Gamification / Badges / Streaks</td>
-                <td className="py-3.5 px-4 text-slate-500">None (Focus only)</td>
-                <td className="py-3.5 px-4 text-slate-500">None (Focus only)</td>
+                <td className="py-3.5 px-4 font-medium text-[var(--foreground)]">Targeted Weak-Topic Retest Drills</td>
+                <td className="py-3.5 px-4 text-[var(--muted-foreground)]">1 per day</td>
+                <td className="py-3.5 px-4 font-semibold text-blue-600 dark:text-blue-400">Unlimited</td>
               </tr>
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       {/* Authenticity Guarantee Card */}
-      <div className="max-w-4xl mx-auto rounded-3xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-6 sm:p-8">
+      <Card className="max-w-4xl mx-auto p-6 bg-[var(--muted)]/40">
         <div className="flex items-start gap-4">
-          <div className="p-3 rounded-2xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 shrink-0">
-            <ShieldCheck className="w-6 h-6" />
+          <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shrink-0">
+            <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="text-base font-bold text-slate-900 dark:text-white">
-              The MockMaster Authenticity Guarantee
+            <h4 className="text-sm font-bold text-[var(--foreground)]">
+              Source Authenticity Guarantee
             </h4>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-              Every single Previous Year Question on MockMaster comes from official question papers published by the UPSC, UPPSC, or SSC commissions. We never hallucinate or invent question sources. Model questions are strictly vetted and tagged so you always know exactly what you are practicing.
+            <p className="text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
+              Every Previous Year Question on MockMaster is sourced from official UPSC, UPPSC, and SSC examination papers with verified year attribution. Model questions are strictly separated and clearly labeled so your benchmark remains trustworthy.
             </p>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

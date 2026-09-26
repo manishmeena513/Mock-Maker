@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = {
   title: "Pricing & Plans — Transparent, Serious Exam Preparation",
   description:
-    "Choose between our generous Free plan or Premium for unlimited authentic mock test generation, topic mastery tracking, and unlimited revision bookmarks.",
+    "Choose between our Free Aspirant plan or Pro for unlimited authentic mock test generation, topic mastery tracking, and unlimited revision bookmarks.",
 };
 
 export default async function PricingPage() {
@@ -29,16 +29,16 @@ export default async function PricingPage() {
   const planStatus = await getUserPlanStatus(userId);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-12 space-y-12">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
       <div className="text-center max-w-2xl mx-auto space-y-3">
         <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-          Transparent Pricing
+          Transparent Academic Plans
         </span>
-        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--foreground)]">
           Straightforward Plans for Serious Aspirants
         </h1>
-        <p className="text-base text-slate-600 dark:text-slate-400">
-          No games, streaks, or fake points. Authentic 80:20 mocks designed to help you clear prelims with confidence.
+        <p className="text-sm sm:text-base text-[var(--muted-foreground)] leading-relaxed">
+          No streaks, leaderboards, or artificial points. Authentic 80:20 PYQ + Model mock tests engineered for competitive preliminary examinations.
         </p>
       </div>
 
