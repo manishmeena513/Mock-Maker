@@ -11,18 +11,19 @@ import {
   finalizeMockTest,
   updateMockQuestionMistake,
   createRetestDrill,
+  getAllSubjects,
+  getAllTopics,
 } from "@/lib/db";
-import { SEED_SUBJECTS, SEED_TOPICS } from "@/lib/data/seedData";
+import { ALL_CATALOG_SUBJECTS, ALL_CATALOG_TOPICS } from "@/lib/data/examTaxonomy";
 import {
   MockTest,
   Question,
-  DifficultyLevel,
   TestMode,
   MistakeCategory,
   SubjectPerformanceSummary,
   TopicPerformanceSummary,
 } from "@/types/database";
-import { assertCanCreateMock } from "@/lib/plans";
+import { assertCanCreateMock, assertCanCreateRetest } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/server";
 
 const MockConfigSchema = z.object({
@@ -30,6 +31,7 @@ const MockConfigSchema = z.object({
   subjectIds: z.array(z.string()).default([]),
   topicIds: z.array(z.string()).default([]),
   questionCount: z.number().int().min(5).max(100).default(25),
+  pyqRatio: z.number().int().min(0).max(100).default(80),
   difficulty: z.enum(["easy", "moderate", "hard"]).default("moderate"),
   mode: z.enum(["practice", "exam"]).default("practice"),
   timeLimitMinutes: z.number().int().min(5).max(180).optional(),
@@ -83,7 +85,7 @@ export async function generateMockAction(input: MockConfigInput) {
     // fallback to default-user
   }
 
-  // Phase 4: Centralized plan limit enforcement
+  // Centralized plan limit enforcement
   await assertCanCreateMock(userId);
 
   const exam = await getExamBySlug(validated.examSlug);
@@ -92,30 +94,39 @@ export async function generateMockAction(input: MockConfigInput) {
   }
 
   const requestedTotal = validated.questionCount;
-  const targetPyqCount = Math.round(requestedTotal * 0.8);
+  const pyqRatio = typeof validated.pyqRatio === "number" ? validated.pyqRatio : 80;
+  const targetPyqCount = Math.round(requestedTotal * (pyqRatio / 100));
   const targetModelCount = requestedTotal - targetPyqCount;
 
   // 1. Fetch available approved PYQs matching exact selection
-  const exactPyqs = await getQuestionsPool({
-    examId: exam.id,
-    subjectIds: validated.subjectIds.length > 0 ? validated.subjectIds : undefined,
-    topicIds: validated.topicIds.length > 0 ? validated.topicIds : undefined,
-    type: "PYQ",
-  });
+  const exactPyqs =
+    targetPyqCount > 0
+      ? await getQuestionsPool({
+          examId: exam.id,
+          subjectIds: validated.subjectIds.length > 0 ? validated.subjectIds : undefined,
+          topicIds: validated.topicIds.length > 0 ? validated.topicIds : undefined,
+          type: "PYQ",
+          userId,
+        })
+      : [];
 
   // 2. Fetch available approved MODEL questions matching exact selection
-  const exactModels = await getQuestionsPool({
-    examId: exam.id,
-    subjectIds: validated.subjectIds.length > 0 ? validated.subjectIds : undefined,
-    topicIds: validated.topicIds.length > 0 ? validated.topicIds : undefined,
-    type: "MODEL",
-  });
+  const exactModels =
+    targetModelCount > 0
+      ? await getQuestionsPool({
+          examId: exam.id,
+          subjectIds: validated.subjectIds.length > 0 ? validated.subjectIds : undefined,
+          topicIds: validated.topicIds.length > 0 ? validated.topicIds : undefined,
+          type: "MODEL",
+          userId,
+        })
+      : [];
 
   const selectedPyqs: Question[] = [];
   const selectedModels: Question[] = [];
   const usedIds = new Set<string>();
 
-  // Add exact PYQs up to target
+  // Add exact PYQs up to targetPyqCount
   exactPyqs.forEach((q) => {
     if (selectedPyqs.length < targetPyqCount && !usedIds.has(q.id)) {
       selectedPyqs.push(q);
@@ -123,7 +134,7 @@ export async function generateMockAction(input: MockConfigInput) {
     }
   });
 
-  // Add exact Models up to target
+  // Add exact Models up to targetModelCount
   exactModels.forEach((q) => {
     if (selectedModels.length < targetModelCount && !usedIds.has(q.id)) {
       selectedModels.push(q);
@@ -133,42 +144,49 @@ export async function generateMockAction(input: MockConfigInput) {
 
   let ratioWarning: string | null = null;
 
-  // MULTI-TIER FALLBACK: If selected items < requestedTotal, expand pool to deliver full test
+  // MULTI-TIER FALLBACK: If selected items < requestedTotal, expand pool while respecting targetPyqCount & targetModelCount first
   if (selectedPyqs.length + selectedModels.length < requestedTotal) {
     const initialMatched = selectedPyqs.length + selectedModels.length;
 
     // Tier 2: Expand to parent subjects if specific topics were filtered
     if (validated.topicIds.length > 0) {
-      const subjectPyqs = await getQuestionsPool({
-        examId: exam.id,
-        subjectIds: validated.subjectIds.length > 0 ? validated.subjectIds : undefined,
-        type: "PYQ",
-      });
-      subjectPyqs.forEach((q) => {
-        if (selectedPyqs.length < targetPyqCount && !usedIds.has(q.id)) {
-          selectedPyqs.push(q);
-          usedIds.add(q.id);
-        }
-      });
+      if (selectedPyqs.length < targetPyqCount) {
+        const subjectPyqs = await getQuestionsPool({
+          examId: exam.id,
+          subjectIds: validated.subjectIds.length > 0 ? validated.subjectIds : undefined,
+          type: "PYQ",
+          userId,
+        });
+        subjectPyqs.forEach((q) => {
+          if (selectedPyqs.length < targetPyqCount && !usedIds.has(q.id)) {
+            selectedPyqs.push(q);
+            usedIds.add(q.id);
+          }
+        });
+      }
 
-      const subjectModels = await getQuestionsPool({
-        examId: exam.id,
-        subjectIds: validated.subjectIds.length > 0 ? validated.subjectIds : undefined,
-        type: "MODEL",
-      });
-      subjectModels.forEach((q) => {
-        if (selectedModels.length + selectedPyqs.length < requestedTotal && !usedIds.has(q.id)) {
-          selectedModels.push(q);
-          usedIds.add(q.id);
-        }
-      });
+      if (selectedModels.length < targetModelCount) {
+        const subjectModels = await getQuestionsPool({
+          examId: exam.id,
+          subjectIds: validated.subjectIds.length > 0 ? validated.subjectIds : undefined,
+          type: "MODEL",
+          userId,
+        });
+        subjectModels.forEach((q) => {
+          if (selectedModels.length < targetModelCount && !usedIds.has(q.id)) {
+            selectedModels.push(q);
+            usedIds.add(q.id);
+          }
+        });
+      }
     }
 
-    // Tier 3: Expand to entire Exam Pool to guarantee requested question count
-    if (selectedPyqs.length + selectedModels.length < requestedTotal) {
+    // Tier 3: Expand to entire Exam Pool while strictly respecting targetPyqCount and targetModelCount
+    if (selectedPyqs.length < targetPyqCount) {
       const allExamPyqs = await getQuestionsPool({
         examId: exam.id,
         type: "PYQ",
+        userId,
       });
       allExamPyqs.forEach((q) => {
         if (selectedPyqs.length < targetPyqCount && !usedIds.has(q.id)) {
@@ -176,22 +194,25 @@ export async function generateMockAction(input: MockConfigInput) {
           usedIds.add(q.id);
         }
       });
+    }
 
+    if (selectedModels.length < targetModelCount) {
       const allExamModels = await getQuestionsPool({
         examId: exam.id,
         type: "MODEL",
+        userId,
       });
       allExamModels.forEach((q) => {
-        if (selectedModels.length + selectedPyqs.length < requestedTotal && !usedIds.has(q.id)) {
+        if (selectedModels.length < targetModelCount && !usedIds.has(q.id)) {
           selectedModels.push(q);
           usedIds.add(q.id);
         }
       });
     }
 
-    // Tier 4: If still short, fill remaining with any additional questions from bank
+    // Tier 4: Only if the entire exam pool lacks enough of one type (PYQ or Model), fill remaining from available approved questions of the exam
     if (selectedPyqs.length + selectedModels.length < requestedTotal) {
-      const allExamQuestions = await getQuestionsPool({ examId: exam.id });
+      const allExamQuestions = await getQuestionsPool({ examId: exam.id, userId });
       for (const q of allExamQuestions) {
         if (selectedPyqs.length + selectedModels.length >= requestedTotal) break;
         if (!usedIds.has(q.id)) {
@@ -203,8 +224,13 @@ export async function generateMockAction(input: MockConfigInput) {
     }
 
     const finalCount = selectedPyqs.length + selectedModels.length;
-    if (initialMatched < requestedTotal) {
-      ratioWarning = `Included all ${initialMatched} questions from your specific selection, plus ${finalCount - initialMatched} syllabus questions to fulfill your requested ${finalCount}-question test.`;
+    if (
+      selectedPyqs.length !== targetPyqCount ||
+      selectedModels.length !== targetModelCount
+    ) {
+      ratioWarning = `Requested ${pyqRatio}/${100 - pyqRatio} ratio (${targetPyqCount} PYQ + ${targetModelCount} Model). Adjusted to ${selectedPyqs.length} PYQ + ${selectedModels.length} Model based on available verified pool for ${exam.name}.`;
+    } else if (initialMatched < requestedTotal) {
+      ratioWarning = `Included all ${initialMatched} questions from your specific topic selection, plus ${finalCount - initialMatched} sibling syllabus questions to fulfill your ${finalCount}-question (${pyqRatio}/${100 - pyqRatio} PYQ/Model) paper.`;
     }
   }
 
@@ -212,7 +238,9 @@ export async function generateMockAction(input: MockConfigInput) {
   const combined = [...selectedPyqs, ...selectedModels];
 
   if (combined.length === 0) {
-    throw new Error("No approved questions found matching the selected exam, subjects, or topics.");
+    throw new Error(
+      `No approved questions are currently in the bank for ${exam.name}. Please select an exam with verified questions (e.g., UPSC CSE, UPPSC PCS, or SSC CGL) or add questions via Admin Import / AI Generation.`
+    );
   }
 
   // Shuffle question order using Fisher-Yates
@@ -225,7 +253,10 @@ export async function generateMockAction(input: MockConfigInput) {
   const randomizedCombined = combined.map(shuffleQuestionOptions);
 
   const mockId = `mock-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-  const timeLimit = validated.timeLimitMinutes || exam.time_limit_minutes || Math.max(15, randomizedCombined.length * 1.5);
+  const timeLimit =
+    validated.timeLimitMinutes ||
+    exam.time_limit_minutes ||
+    Math.max(15, Math.round(randomizedCombined.length * 1.5));
 
   const mockTestRecord: MockTest = {
     id: mockId,
@@ -237,6 +268,8 @@ export async function generateMockAction(input: MockConfigInput) {
     total_questions: randomizedCombined.length,
     pyq_count: selectedPyqs.length,
     model_count: selectedModels.length,
+    pyq_ratio: pyqRatio,
+    is_retest: false,
     time_limit_minutes: Math.round(timeLimit),
     marking_scheme: exam.marking_scheme,
     status: "in_progress",
@@ -259,6 +292,7 @@ export async function generateMockAction(input: MockConfigInput) {
     totalQuestions: randomizedCombined.length,
     pyqCount: selectedPyqs.length,
     modelCount: selectedModels.length,
+    pyqRatio,
     ratioWarning,
   };
 }
@@ -327,7 +361,19 @@ export async function generateRetestDrillAction({
   if (!questionIds || questionIds.length === 0) {
     throw new Error("No question IDs provided for retest drill");
   }
-  const drillId = await createRetestDrill(questionIds);
+  let userId = "default-user";
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user?.id) userId = user.id;
+  } catch {
+    // fallback
+  }
+
+  await assertCanCreateRetest(userId);
+  const drillId = await createRetestDrill(questionIds, userId);
   return { success: true, drillId };
 }
 
@@ -337,6 +383,8 @@ export async function finalizeMockAction(mockId: string) {
 
   const { test, questions } = data;
   const scheme = test.marking_scheme;
+  const allSubjects = await getAllSubjects(true);
+  const allTopics = await getAllTopics(true);
 
   let totalCorrect = 0;
   let totalWrong = 0;
@@ -365,8 +413,15 @@ export async function finalizeMockAction(mockId: string) {
     const subId = q?.subject_id || "general-subject";
     const topId = q?.topic_id || "general-topic";
 
-    const subName = SEED_SUBJECTS.find((s) => s.id === subId)?.name || "General Subject";
-    const topName = SEED_TOPICS.find((t) => t.id === topId)?.name || q?.explanation?.concept || "Topic Concept";
+    const subName =
+      allSubjects.find((s) => s.id === subId)?.name ||
+      ALL_CATALOG_SUBJECTS.find((s) => s.id === subId)?.name ||
+      "General Subject";
+    const topName =
+      allTopics.find((t) => t.id === topId)?.name ||
+      ALL_CATALOG_TOPICS.find((t) => t.id === topId)?.name ||
+      q?.explanation?.concept ||
+      "Topic Concept";
 
     if (!subjectAgg[subId]) {
       subjectAgg[subId] = {

@@ -1,26 +1,24 @@
 import Link from "next/link";
-import { getExams } from "@/lib/db";
-import { SEED_QUESTIONS, SEED_SUBJECTS } from "@/lib/data/seedData";
+import { getExams, getAllSubjects, getAllQuestions } from "@/lib/db";
 import {
   ShieldCheck,
   ArrowRight,
-  BookOpen,
   Award,
-  CheckCircle2,
   BarChart3,
   RotateCcw,
   Sliders,
-  Clock,
-  FileCheck2,
   Search,
-  Layers,
 } from "lucide-react";
 
 export default async function HomePage() {
-  const exams = await getExams();
+  const [exams, allSubjects, allQuestions] = await Promise.all([
+    getExams(),
+    getAllSubjects(),
+    getAllQuestions({ status: "approved" }),
+  ]);
 
-  const totalPyqs = SEED_QUESTIONS.filter((q) => q.type === "PYQ").length;
-  const totalModels = SEED_QUESTIONS.filter((q) => q.type === "MODEL").length;
+  const totalPyqs = allQuestions.filter((q) => q.type === "PYQ").length;
+  const totalModels = allQuestions.filter((q) => q.type === "MODEL").length;
 
   const coreCapabilities = [
     {
@@ -213,21 +211,21 @@ export default async function HomePage() {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
-              Examination Syllabi
+              Examination Syllabi ({exams.length} Official Commissions)
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
               Supported Competitive Examinations
             </h2>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md">
-            Each examination enforces its official marking scheme, negative marking penalty, and subject-wise question taxonomy.
+            Each examination enforces its official marking scheme, negative marking penalty, and subject-wise question taxonomy across Civil Services, SSC, Banking, Defence, Railways, and Teaching.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {exams.map((exam) => {
-            const examSubjects = SEED_SUBJECTS.filter((s) => s.exam_id === exam.id);
-            const examQuestions = SEED_QUESTIONS.filter((q) => q.exam_id === exam.id);
+          {exams.slice(0, 6).map((exam) => {
+            const examSubjects = allSubjects.filter((s) => s.exam_id === exam.id);
+            const examQuestions = allQuestions.filter((q) => q.exam_id === exam.id);
             const examPyqs = examQuestions.filter((q) => q.type === "PYQ").length;
             const examModels = examQuestions.filter((q) => q.type === "MODEL").length;
 
@@ -240,10 +238,14 @@ export default async function HomePage() {
                   <div className="flex items-center justify-between gap-2 mb-4">
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>{examQuestions.length} Verified Questions</span>
+                      <span>
+                        {examQuestions.length > 0
+                          ? `${examQuestions.length} Verified Questions`
+                          : `${examSubjects.length} Official Subjects`}
+                      </span>
                     </span>
                     <span className="text-xs font-mono text-slate-400 dark:text-slate-500">
-                      {exam.time_limit_minutes}m
+                      {exam.time_limit_minutes || exam.default_time_minutes || 60}m
                     </span>
                   </div>
 
@@ -303,13 +305,42 @@ export default async function HomePage() {
                     href={`/exam/${exam.slug}`}
                     className="inline-flex items-center justify-center h-9 px-3 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors"
                   >
-                    <span>Syllabus & Bank</span>
+                    <span>Syllabus &amp; Bank</span>
                   </Link>
                 </div>
               </div>
             );
           })}
         </div>
+
+        {/* Complete 22-Examination Directory */}
+        {exams.length > 6 && (
+          <div className="mt-8 rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+              <div className="text-sm font-bold text-slate-900 dark:text-white">
+                Complete Examination Catalog ({exams.length} Supported Examinations)
+              </div>
+              <Link
+                href="/mock/configure"
+                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Configure Custom Ratio Mock →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+              {exams.map((exam) => (
+                <Link
+                  key={exam.id}
+                  href={`/exam/${exam.slug}`}
+                  className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a] hover:border-blue-400 dark:hover:border-blue-600 transition text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between gap-1.5"
+                >
+                  <span className="truncate">{exam.name}</span>
+                  <ArrowRight className="w-3 h-3 text-slate-400 shrink-0" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Core Capabilities Section */}
@@ -362,34 +393,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="mt-auto py-8 border-t border-slate-200/90 dark:border-slate-800/90 bg-[#f8f9fa] dark:bg-[#0b0f17] text-xs text-slate-500 dark:text-slate-400">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-md bg-blue-700 dark:bg-blue-600 flex items-center justify-center text-white">
-              <Award className="w-3.5 h-3.5" />
-            </div>
-            <span className="font-bold text-slate-900 dark:text-white">MockMaster</span>
-            <span className="text-slate-300 dark:text-slate-700">|</span>
-            <span>Competitive Examination Preparation Platform</span>
-          </div>
-          <div className="flex items-center gap-4 text-[11px]">
-            <Link href="/mock/configure" className="hover:text-slate-900 dark:hover:text-white transition">
-              Configure Mock
-            </Link>
-            <Link href="/search" className="hover:text-slate-900 dark:hover:text-white transition">
-              Question Explorer
-            </Link>
-            <Link href="/revision" className="hover:text-slate-900 dark:hover:text-white transition">
-              Revision Hub
-            </Link>
-            <Link href="/pricing" className="hover:text-slate-900 dark:hover:text-white transition">
-              Pricing
-            </Link>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

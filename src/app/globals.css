@@ -1,7 +1,9 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   :root {
+    color-scheme: light;
     /* Light Mode — Warm/Neutral Editorial & Academic Palette */
     --background: #f8f9fa;
     --foreground: #0f172a;
@@ -30,6 +32,7 @@
   }
 
   .dark {
+    color-scheme: dark;
     /* Dark Mode — Intentional Deep Charcoal/Navy Academic Theme (Never Pure #000000) */
     --background: #0b0f17;
     --foreground: #f8fafc;
@@ -118,4 +121,15 @@ body {
 }
 .dark ::-webkit-scrollbar-thumb {
   background: #334155;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

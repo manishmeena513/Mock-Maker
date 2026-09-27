@@ -1,4 +1,5 @@
-import { canUserCreateMock, canUserSaveQuestion } from "./limits";
+import { canUserCreateMock, canUserSaveQuestion, canUserCreateRetest } from "./limits";
+import { normalizePlanTier } from "./plans";
 import { getUserPlan } from "@/lib/db";
 import { UserPlanType } from "@/types/database";
 
@@ -19,7 +20,7 @@ export class PlanUpgradeRequiredError extends Error {
   public code = "PLAN_UPGRADE_REQUIRED";
   public requiredPlan: UserPlanType;
 
-  constructor(message: string, requiredPlan: UserPlanType = "PREMIUM") {
+  constructor(message: string, requiredPlan: UserPlanType = "PRO") {
     super(message);
     this.name = "PlanUpgradeRequiredError";
     this.requiredPlan = requiredPlan;
@@ -48,18 +49,30 @@ export async function assertCanSaveQuestion(userId: string = "default-user"): Pr
   }
 }
 
+export async function assertCanCreateRetest(userId: string = "default-user"): Promise<void> {
+  const check = await canUserCreateRetest(userId);
+  if (!check.allowed) {
+    throw new PlanLimitExceededError(
+      check.reason || "Daily mistake retest drill limit reached.",
+      check.currentCount,
+      check.maxAllowed
+    );
+  }
+}
+
 export async function requirePlan(
   userId: string = "default-user",
-  requiredPlan: UserPlanType = "PREMIUM",
+  requiredPlan: UserPlanType = "PRO",
   featureName: string = "this feature"
 ): Promise<void> {
   const { plan } = await getUserPlan(userId);
-  const normalizedPlan = (plan || "free").toLowerCase();
-  const normalizedRequired = (requiredPlan || "premium").toLowerCase();
+  const currentTier = normalizePlanTier(plan);
+  const targetTier = normalizePlanTier(requiredPlan);
 
-  if (normalizedRequired === "premium" && normalizedPlan !== "premium") {
+  const rank: Record<string, number> = { FREE: 0, PRO: 1, ELITE: 2 };
+  if (rank[currentTier] < rank[targetTier]) {
     throw new PlanUpgradeRequiredError(
-      `Access to ${featureName} requires a MockMaster Premium subscription.`,
+      `Access to ${featureName} requires a MockMaster ${targetTier} subscription.`,
       requiredPlan
     );
   }

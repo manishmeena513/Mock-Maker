@@ -1,7 +1,19 @@
 import { PaymentProvider, SubscriptionStatus, UserPlanType } from "@/types/database";
 
+export type CheckoutPlanId =
+  | "pro_monthly"
+  | "pro_yearly"
+  | "elite_monthly"
+  | "elite_yearly"
+  | "PRO_MONTHLY"
+  | "PRO_YEARLY"
+  | "ELITE_MONTHLY"
+  | "ELITE_YEARLY"
+  | "premium_monthly"
+  | "premium_annual";
+
 export interface CreateOrderParams {
-  planId: "premium_monthly" | "premium_annual";
+  planId: CheckoutPlanId;
   userId: string;
   userEmail?: string;
   userName?: string;
@@ -13,8 +25,18 @@ export interface PaymentOrder {
   currency: string;
   provider: PaymentProvider;
   planId: string;
+  planType: UserPlanType;
+  billingCycle: "monthly" | "yearly";
   keyId?: string; // Client-side public key for checkout widget
   notes?: Record<string, string>;
+}
+
+export interface VerifyCheckoutSignatureInput {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+  planId: CheckoutPlanId;
+  userId: string;
 }
 
 export interface WebhookVerificationInput {
@@ -29,8 +51,11 @@ export interface PaymentWebhookResult {
   provider: PaymentProvider;
   userId?: string;
   planType?: UserPlanType;
+  planCode?: string;
+  billingCycle?: "monthly" | "yearly";
   amountPaid?: number;
   currency?: string;
+  providerOrderId?: string;
   providerSubscriptionId?: string;
   providerCustomerId?: string;
   status?: SubscriptionStatus;

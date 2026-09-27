@@ -1,6 +1,14 @@
 import React from "react";
 import Link from "next/link";
-import { getAllQuestions, getImportBatches } from "@/lib/db";
+import {
+  getAllQuestions,
+  getImportBatches,
+  getAllSubscriptionsForAdmin,
+  getAllPaymentTransactionsForAdmin,
+  getAIGenerationLogs,
+  getSystemSettings,
+  getAllExamsForAdmin,
+} from "@/lib/db";
 import {
   Layers,
   ShieldCheck,
@@ -10,12 +18,29 @@ import {
   ArrowRight,
   Award,
   XCircle,
+  CreditCard,
+  Settings,
 } from "lucide-react";
 import { Badge, Card } from "@/components/ui/primitives";
 
 export default async function AdminDashboardPage() {
-  const allQuestions = await getAllQuestions();
-  const importBatches = await getImportBatches();
+  const [
+    allQuestions,
+    importBatches,
+    subscriptions,
+    paymentTransactions,
+    aiLogs,
+    systemSettings,
+    allExams,
+  ] = await Promise.all([
+    getAllQuestions(),
+    getImportBatches(),
+    getAllSubscriptionsForAdmin(),
+    getAllPaymentTransactionsForAdmin(),
+    getAIGenerationLogs(8),
+    getSystemSettings(),
+    getAllExamsForAdmin(),
+  ]);
 
   // 8 Administrative Quality Control Metrics
   const totalQuestions = allQuestions.length;
@@ -217,16 +242,124 @@ export default async function AdminDashboardPage() {
               Exam Syllabi &amp; Marking Schemes
             </h3>
             <p className="text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
-              Manage UPSC CSE, UPPSC, and SSC CGL marking penalties, durations, and subject-topic hierarchies.
+              Manage all {allExams.length} competitive exam syllabi, marking penalties, durations, and subject-topic hierarchies.
             </p>
           </div>
           <Link
             href="/admin/exams"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline"
           >
-            <span>Configure Taxonomy</span>
+            <span>Configure Taxonomy ({allExams.length} Exams)</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
+        </Card>
+      </div>
+
+      {/* Subscriptions & Payments Ledger + System Settings */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <Card className="lg:col-span-7 overflow-hidden">
+          <div className="p-5 border-b border-[var(--border)] flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <CreditCard className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-[var(--foreground)]">
+                  Subscriptions &amp; Payment Ledger
+                </h3>
+                <p className="text-xs text-[var(--muted-foreground)]">
+                  Active FREE / PRO / ELITE plans &amp; Razorpay transactions
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="pyq">{subscriptions.length} Subs</Badge>
+              <Badge variant="default">{paymentTransactions.length} Txns</Badge>
+            </div>
+          </div>
+
+          {paymentTransactions.length === 0 ? (
+            <div className="text-center py-8 px-4 text-xs text-[var(--muted-foreground)]">
+              No payment transactions recorded yet. Razorpay orders (`PRO_MONTHLY`, `PRO_YEARLY`, `ELITE_MONTHLY`, `ELITE_YEARLY`) appear here automatically.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-[var(--muted)]/60 text-[var(--muted-foreground)] uppercase tracking-wider border-b border-[var(--border)]">
+                  <tr>
+                    <th className="py-2.5 px-4">Order ID</th>
+                    <th className="py-2.5 px-4">Plan</th>
+                    <th className="py-2.5 px-4">Amount</th>
+                    <th className="py-2.5 px-4">Status</th>
+                    <th className="py-2.5 px-4">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border)]">
+                  {paymentTransactions.slice(0, 6).map((tx) => (
+                    <tr key={tx.id} className="hover:bg-[var(--muted)]/40 transition">
+                      <td className="py-2.5 px-4 font-mono text-[11px] text-[var(--muted-foreground)]">
+                        {tx.provider_order_id}
+                      </td>
+                      <td className="py-2.5 px-4 font-bold text-[var(--foreground)]">
+                        {tx.plan_code}
+                      </td>
+                      <td className="py-2.5 px-4 font-semibold tabular-nums text-[var(--foreground)]">
+                        ₹{Math.round((tx.amount_paise || 0) / 100)}
+                      </td>
+                      <td className="py-2.5 px-4">
+                        <Badge variant={tx.status === "paid" ? "pyq" : tx.status === "failed" ? "danger" : "warning"}>
+                          {tx.status.toUpperCase()}
+                        </Badge>
+                      </td>
+                      <td className="py-2.5 px-4 text-[var(--muted-foreground)] tabular-nums">
+                        {new Date(tx.created_at).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        <Card className="lg:col-span-5 p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <Settings className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-[var(--foreground)]">
+                    System Settings &amp; AI Telemetry
+                  </h3>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    Runtime parameters &amp; Gemini synthesis status
+                  </p>
+                </div>
+              </div>
+              <Badge variant="model">{aiLogs.length} AI Runs</Badge>
+            </div>
+
+            <div className="mt-4 space-y-2.5">
+              {Object.entries(systemSettings).map(([key, val]) => (
+                <div
+                  key={key}
+                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--muted)]/40 border border-[var(--border)] text-xs"
+                >
+                  <span className="font-mono text-[11px] text-[var(--muted-foreground)]">{key}</span>
+                  <span className="font-bold text-[var(--foreground)]">{String(val)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-between text-xs text-[var(--muted-foreground)]">
+            <span>Active Catalog Exams: <strong className="text-[var(--foreground)]">{allExams.filter((e) => e.is_active !== false).length} / {allExams.length}</strong></span>
+            <Link href="/pricing" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">
+              View Pricing Page →
+            </Link>
+          </div>
         </Card>
       </div>
 

@@ -1,53 +1,16 @@
-import { PLAN_LIMITS } from "./config";
-import { getUserPlan, getUserDailyMockCount, getUserSavedQuestionCount } from "@/lib/db";
+import { getUserEntitlements, UserEntitlements } from "./entitlements";
+import { getUserDailyRetestCount } from "@/lib/db";
 import { UserPlanType } from "@/types/database";
 
-export interface UserPlanStatus {
+export interface UserPlanStatus extends UserEntitlements {
   plan: UserPlanType;
-  validUntil: string | null;
-  dailyMocksUsed: number;
-  dailyMocksLimit: number;
-  dailyMocksRemaining: number;
-  savedQuestionsCount: number;
-  savedQuestionsLimit: number;
-  savedQuestionsRemaining: number;
-  hasAdvancedAnalytics: boolean;
-  allowAiGeneration: boolean;
 }
 
 export async function getUserPlanStatus(userId: string = "default-user"): Promise<UserPlanStatus> {
-  const { plan, validUntil } = await getUserPlan(userId);
-  const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.FREE;
-
-  const [dailyMocksUsed, savedQuestionsCount] = await Promise.all([
-    getUserDailyMockCount(userId),
-    getUserSavedQuestionCount(userId),
-  ]);
-
-  const dailyMocksLimit = limits.dailyMockLimit ?? limits.maxMocksPerDay ?? 3;
-  const savedQuestionsLimit = limits.maxSavedQuestions ?? 20;
-
-  const dailyMocksRemaining =
-    dailyMocksLimit === Infinity
-      ? Infinity
-      : Math.max(0, dailyMocksLimit - dailyMocksUsed);
-
-  const savedQuestionsRemaining =
-    savedQuestionsLimit === Infinity
-      ? Infinity
-      : Math.max(0, savedQuestionsLimit - savedQuestionsCount);
-
+  const ent = await getUserEntitlements(userId);
   return {
-    plan,
-    validUntil,
-    dailyMocksUsed,
-    dailyMocksLimit,
-    dailyMocksRemaining,
-    savedQuestionsCount,
-    savedQuestionsLimit,
-    savedQuestionsRemaining,
-    hasAdvancedAnalytics: Boolean(limits.hasAdvancedAnalytics),
-    allowAiGeneration: Boolean(limits.allowAiGeneration ?? limits.canGenerateAIQuestions),
+    ...ent,
+    plan: ent.rawPlan,
   };
 }
 
@@ -61,7 +24,7 @@ export async function canUserCreateMock(userId: string = "default-user"): Promis
   if (status.dailyMocksLimit !== Infinity && status.dailyMocksUsed >= status.dailyMocksLimit) {
     return {
       allowed: false,
-      reason: `You have reached the daily limit of ${status.dailyMocksLimit} mock tests for Free plan users. Upgrade to Premium for unlimited test generation.`,
+      reason: `You have reached the daily limit of ${status.dailyMocksLimit} mock tests for ${status.tier} plan users. Upgrade to Pro (₹59/mo) or Elite (₹99/mo) for higher or unlimited daily mock tests.`,
       currentCount: status.dailyMocksUsed,
       maxAllowed: status.dailyMocksLimit,
     };
@@ -84,7 +47,7 @@ export async function canUserSaveQuestion(userId: string = "default-user"): Prom
   if (status.savedQuestionsLimit !== Infinity && status.savedQuestionsCount >= status.savedQuestionsLimit) {
     return {
       allowed: false,
-      reason: `You have reached your bookmark capacity (${status.savedQuestionsLimit} questions) for Free plan users. Upgrade to Premium for unlimited revision bookmarks.`,
+      reason: `You have reached your bookmark capacity (${status.savedQuestionsLimit} questions) for ${status.tier} plan users. Upgrade to Pro or Elite for expanded revision capacity.`,
       currentCount: status.savedQuestionsCount,
       maxAllowed: status.savedQuestionsLimit,
     };
@@ -94,5 +57,32 @@ export async function canUserSaveQuestion(userId: string = "default-user"): Prom
     allowed: true,
     currentCount: status.savedQuestionsCount,
     maxAllowed: status.savedQuestionsLimit,
+  };
+}
+
+export async function canUserCreateRetest(userId: string = "default-user"): Promise<{
+  allowed: boolean;
+  reason?: string;
+  currentCount: number;
+  maxAllowed: number;
+}> {
+  const [status, dailyRetestsUsed] = await Promise.all([
+    getUserPlanStatus(userId),
+    getUserDailyRetestCount(userId),
+  ]);
+  const limit = status.dailyRetestLimit ?? 2;
+  if (limit !== Infinity && dailyRetestsUsed >= limit) {
+    return {
+      allowed: false,
+      reason: `You have reached the daily limit of ${limit} mistake retest drills for ${status.tier} plan users. Upgrade to Pro (15/day) or Elite (Unlimited) for more retests.`,
+      currentCount: dailyRetestsUsed,
+      maxAllowed: limit,
+    };
+  }
+
+  return {
+    allowed: true,
+    currentCount: dailyRetestsUsed,
+    maxAllowed: limit,
   };
 }

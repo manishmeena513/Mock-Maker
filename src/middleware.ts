@@ -8,11 +8,31 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  const path = request.nextUrl.pathname;
+  const isProtectedRoute =
+    path.startsWith("/dashboard") ||
+    path.startsWith("/revision") ||
+    path.startsWith("/admin") ||
+    path.startsWith("/test/");
+
+  // Prevent browser Back button from serving stale authenticated pages after logout
+  if (isProtectedRoute) {
+    response.headers.set(
+      "Cache-Control",
+      "private, no-store, no-cache, must-revalidate"
+    );
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   // If using placeholder credentials in local dev, allow requests through
-  if (!supabaseUrl || !supabaseKey || supabaseKey === "mock-anon-key-placeholder" || supabaseKey === "mock-anon-key") {
+  if (
+    !supabaseUrl ||
+    !supabaseKey ||
+    supabaseKey === "mock-anon-key-placeholder" ||
+    supabaseKey === "mock-anon-key"
+  ) {
     return response;
   }
 
@@ -29,6 +49,12 @@ export async function middleware(request: NextRequest) {
           response = NextResponse.next({
             request,
           });
+          if (isProtectedRoute) {
+            response.headers.set(
+              "Cache-Control",
+              "private, no-store, no-cache, must-revalidate"
+            );
+          }
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options);
           });
@@ -37,11 +63,11 @@ export async function middleware(request: NextRequest) {
     });
 
     // IMPORTANT: Always call getUser() for secure JWT verification
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    const path = request.nextUrl.pathname;
     const isAuthRoute = path.startsWith("/auth");
-    const isProtectedRoute = path.startsWith("/dashboard") || path.startsWith("/revision") || path.startsWith("/admin");
 
     if (!user && isProtectedRoute) {
       const redirectUrl = new URL("/auth/login", request.url);

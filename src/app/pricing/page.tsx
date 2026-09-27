@@ -1,12 +1,13 @@
 import { Metadata } from "next";
 import { PricingClient } from "@/components/pricing/PricingClient";
 import { getUserPlanStatus } from "@/lib/plans/limits";
+import { getUserPaymentTransactions } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Pricing & Plans — Transparent, Serious Exam Preparation",
+  title: "Pricing & Plans — Free, Pro (₹59/mo) & Elite (₹99/mo)",
   description:
-    "Choose between our Free Aspirant plan or Pro for unlimited authentic mock test generation, topic mastery tracking, and unlimited revision bookmarks.",
+    "Choose between Free, Pro (₹59/month or ₹599/year), and Elite (₹99/month or ₹999/year) plans for authentic PYQ + Model competitive exam preparation.",
 };
 
 export default async function PricingPage() {
@@ -26,23 +27,31 @@ export default async function PricingPage() {
     // fallback
   }
 
-  const planStatus = await getUserPlanStatus(userId);
+  const [planStatus, transactions] = await Promise.all([
+    getUserPlanStatus(userId),
+    getUserPaymentTransactions(userId),
+  ]);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
       <div className="text-center max-w-2xl mx-auto space-y-3">
         <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
           Transparent Academic Plans
         </span>
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--foreground)]">
-          Straightforward Plans for Serious Aspirants
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-white">
+          Student-Friendly Pricing for Serious Aspirants
         </h1>
-        <p className="text-sm sm:text-base text-[var(--muted-foreground)] leading-relaxed">
-          No streaks, leaderboards, or artificial points. Authentic 80:20 PYQ + Model mock tests engineered for competitive preliminary examinations.
+        <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed">
+          Start free, upgrade to Pro at ₹59/month for deep subject &amp; mistake analytics, or unlock unrestricted preparation across all 22 exams with Elite at ₹99/month.
         </p>
       </div>
 
-      <PricingClient currentPlan={planStatus.plan} userEmail={userEmail} />
+      <PricingClient
+        currentPlan={planStatus.plan}
+        validUntil={planStatus.validUntil}
+        userEmail={userEmail}
+        transactions={transactions}
+      />
     </div>
   );
 }

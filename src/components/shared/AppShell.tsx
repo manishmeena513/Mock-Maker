@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
   Sliders,
@@ -11,9 +12,8 @@ import {
   Award,
   CreditCard,
   ShieldCheck,
-  CheckCircle2,
-  BookOpen,
-  BarChart3,
+  LogOut,
+  Loader2,
 } from "lucide-react";
 
 const WORKSPACE_PREFIXES = [
@@ -27,12 +27,42 @@ const WORKSPACE_PREFIXES = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const isWorkspaceRoute = WORKSPACE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
   if (!isWorkspaceRoute) {
     return <main className="flex-1 flex flex-col">{children}</main>;
   }
+
+  const handleSidebarLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      try {
+        const supabase = createClient();
+        await supabase.auth.signOut();
+      } catch {
+        // continue
+      }
+      await fetch("/api/auth/logout", { method: "POST", cache: "no-store" });
+    } catch {
+      // continue
+    } finally {
+      try {
+        const preservedTheme = window.localStorage.getItem("theme");
+        window.localStorage.clear();
+        if (preservedTheme) window.localStorage.setItem("theme", preservedTheme);
+        window.sessionStorage.clear();
+      } catch {
+        // ignore
+      }
+      setIsLoggingOut(false);
+      router.replace("/auth/login");
+      router.refresh();
+    }
+  };
 
   const sidebarGroups = [
     {
@@ -65,7 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ],
     },
     {
-      heading: "Examinations",
+      heading: "Examinations (22)",
       links: [
         {
           href: "/exam/upsc-cse",
@@ -81,9 +111,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         },
         {
           href: "/exam/ssc-cgl",
-          label: "SSC CGL Tier-I",
+          label: "SSC CGL / CHSL / MTS",
           icon: Award,
-          active: pathname === "/exam/ssc-cgl",
+          active: pathname === "/exam/ssc-cgl" || pathname === "/exam/ssc-chsl",
+        },
+        {
+          href: "/exam/ibps-po",
+          label: "IBPS / SBI / RBI Banking",
+          icon: Award,
+          active: pathname === "/exam/ibps-po" || pathname === "/exam/sbi-po",
+        },
+        {
+          href: "/exam/cds",
+          label: "CDS / NDA / CAPF / EPFO",
+          icon: Award,
+          active: pathname === "/exam/cds" || pathname === "/exam/nda",
+        },
+        {
+          href: "/exam/rrb-ntpc",
+          label: "RRB NTPC / CTET / NET",
+          icon: Award,
+          active: pathname === "/exam/rrb-ntpc" || pathname === "/exam/ctet",
         },
       ],
     },
@@ -145,12 +193,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="mx-1 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800/90 bg-slate-50/80 dark:bg-[#131c2e]/80 space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100">
               <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>80:20 PYQ Standard</span>
+              <span>Custom PYQ : Model Ratio</span>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-              Every generated mock strictly pairs 80% verified past papers with 20% reviewed model items.
+              Default 80:20 PYQ standard, with full user control from 100/0 to 0/100 across 22 exams.
             </p>
           </div>
+
+          <button
+            type="button"
+            onClick={handleSidebarLogout}
+            disabled={isLoggingOut}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer disabled:opacity-50"
+          >
+            {isLoggingOut ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <LogOut className="w-4 h-4" />
+            )}
+            <span>{isLoggingOut ? "Logging out..." : "Logout"}</span>
+          </button>
         </div>
       </aside>
 

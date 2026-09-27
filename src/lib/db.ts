@@ -1,4 +1,9 @@
-import { SEED_EXAMS, SEED_SUBJECTS, SEED_TOPICS, SEED_QUESTIONS } from "./data/seedData";
+import { SEED_EXAMS, SEED_QUESTIONS } from "./data/seedData";
+import {
+  ALL_CATALOG_EXAMS,
+  ALL_CATALOG_SUBJECTS,
+  ALL_CATALOG_TOPICS,
+} from "./data/examTaxonomy";
 import {
   Exam,
   Subject,
@@ -16,11 +21,16 @@ import {
   AIGenerationLog,
   PaymentWebhookEvent,
   PaymentProvider,
+  PaymentTransaction,
+  UserAnalyticsSummary,
 } from "@/types/database";
 import { createClient } from "./supabase/server";
 import { assertProductionDatabaseConfigured, isProductionRuntime } from "@/lib/config/env";
 
 interface GlobalMockMasterStore {
+  inMemoryExams: Exam[];
+  inMemorySubjects: Subject[];
+  inMemoryTopics: Topic[];
   inMemoryMockTests: Map<string, MockTest>;
   inMemoryMockQuestions: Map<string, MockQuestion[]>;
   inMemoryUserSeenQuestions: Map<string, Set<string>>;
@@ -34,6 +44,8 @@ interface GlobalMockMasterStore {
   >;
   inMemorySubscriptions: Map<string, Subscription>;
   inMemoryUserPlans: Map<string, { plan: UserPlanType; validUntil: string | null }>;
+  inMemoryPaymentTransactions: Map<string, PaymentTransaction>;
+  inMemorySystemSettings: Map<string, unknown>;
   inMemoryAILogs: AIGenerationLog[];
   inMemoryWebhookEvents: Set<string>;
 }
@@ -42,6 +54,9 @@ const g = globalThis as unknown as { __mockmaster_store?: GlobalMockMasterStore 
 
 if (!g.__mockmaster_store) {
   g.__mockmaster_store = {
+    inMemoryExams: [...ALL_CATALOG_EXAMS],
+    inMemorySubjects: [...ALL_CATALOG_SUBJECTS],
+    inMemoryTopics: [...ALL_CATALOG_TOPICS],
     inMemoryMockTests: new Map(),
     inMemoryMockQuestions: new Map(),
     inMemoryUserSeenQuestions: new Map(),
@@ -52,11 +67,20 @@ if (!g.__mockmaster_store) {
     inMemorySavedQuestionRecords: new Map(),
     inMemorySubscriptions: new Map(),
     inMemoryUserPlans: new Map(),
+    inMemoryPaymentTransactions: new Map(),
+    inMemorySystemSettings: new Map<string, unknown>([
+      ["default_pyq_ratio", 80],
+      ["ai_auto_approve", false],
+      ["maintenance_mode", false],
+    ]),
     inMemoryAILogs: [],
     inMemoryWebhookEvents: new Set(),
   };
 }
 
+let inMemoryExams = g.__mockmaster_store.inMemoryExams || [...ALL_CATALOG_EXAMS];
+let inMemorySubjects = g.__mockmaster_store.inMemorySubjects || [...ALL_CATALOG_SUBJECTS];
+let inMemoryTopics = g.__mockmaster_store.inMemoryTopics || [...ALL_CATALOG_TOPICS];
 const inMemoryMockTests = g.__mockmaster_store.inMemoryMockTests;
 const inMemoryMockQuestions = g.__mockmaster_store.inMemoryMockQuestions;
 const inMemoryUserSeenQuestions = g.__mockmaster_store.inMemoryUserSeenQuestions;
@@ -67,6 +91,10 @@ const inMemoryImportBatches = g.__mockmaster_store.inMemoryImportBatches;
 const inMemorySavedQuestionRecords = g.__mockmaster_store.inMemorySavedQuestionRecords;
 const inMemorySubscriptions = g.__mockmaster_store.inMemorySubscriptions;
 const inMemoryUserPlans = g.__mockmaster_store.inMemoryUserPlans;
+const inMemoryPaymentTransactions =
+  g.__mockmaster_store.inMemoryPaymentTransactions || new Map<string, PaymentTransaction>();
+const inMemorySystemSettings =
+  g.__mockmaster_store.inMemorySystemSettings || new Map<string, unknown>();
 const inMemoryAILogs = g.__mockmaster_store.inMemoryAILogs;
 const inMemoryWebhookEvents = g.__mockmaster_store.inMemoryWebhookEvents;
 
@@ -98,19 +126,49 @@ export async function getExams(): Promise<Exam[]> {
         .eq("is_active", true)
         .order("name");
       if (!error && data && data.length > 0) {
-        return data as Exam[];
+        // Merge DB exams with catalog exams so all 22 supported exams are available
+        const dbSlugs = new Set((data as Exam[]).map((e) => e.slug));
+        const merged = [
+          ...(data as Exam[]),
+          ...inMemoryExams.filter((e) => e.is_active && !dbSlugs.has(e.slug)),
+        ];
+        return merged;
       }
     } catch (err) {
-      console.warn("Falling back to seed exams:", err);
+      console.warn("Falling back to catalog exams:", err);
     }
   }
   checkProductionDatabaseGuard();
-  return SEED_EXAMS.filter((e) => e.is_active);
+  return inMemoryExams.filter((e) => e.is_active);
+}
+
+export async function getAllExamsForAdmin(): Promise<Exam[]> {
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase.from("exams").select("*").order("name");
+      if (!error && data && data.length > 0) {
+        const dbSlugs = new Set((data as Exam[]).map((e) => e.slug));
+        return [
+          ...(data as Exam[]),
+          ...inMemoryExams.filter((e) => !dbSlugs.has(e.slug)),
+        ];
+      }
+    } catch {
+      // fallback
+    }
+  }
+  return [...inMemoryExams];
 }
 
 export async function getExamBySlug(slug: string): Promise<Exam | null> {
   const exams = await getExams();
   return exams.find((e) => e.slug === slug) || null;
+}
+
+export async function getExamById(examId: string): Promise<Exam | null> {
+  const exams = await getAllExamsForAdmin();
+  return exams.find((e) => e.id === examId) || null;
 }
 
 export async function getSubjectsByExamId(examId: string): Promise<Subject[]> {
@@ -123,15 +181,37 @@ export async function getSubjectsByExamId(examId: string): Promise<Subject[]> {
         .eq("exam_id", examId)
         .order("order_index");
       if (!error && data && data.length > 0) {
-        return data as Subject[];
+        return (data as Subject[]).filter((s) => s.is_active !== false);
       }
     } catch (err) {
-      console.warn("Falling back to seed subjects:", err);
+      console.warn("Falling back to catalog subjects:", err);
     }
   }
-  return SEED_SUBJECTS.filter((s) => s.exam_id === examId).sort(
-    (a, b) => a.order_index - b.order_index
-  );
+  return inMemorySubjects
+    .filter((s) => s.exam_id === examId && s.is_active !== false)
+    .sort((a, b) => a.order_index - b.order_index);
+}
+
+export async function getAllSubjects(includeInactive = false): Promise<Subject[]> {
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase.from("subjects").select("*").order("order_index");
+      if (!error && data && data.length > 0) {
+        const dbIds = new Set((data as Subject[]).map((s) => s.id));
+        const merged = [
+          ...(data as Subject[]),
+          ...inMemorySubjects.filter((s) => !dbIds.has(s.id)),
+        ];
+        return includeInactive ? merged : merged.filter((s) => s.is_active !== false);
+      }
+    } catch {
+      // fallback
+    }
+  }
+  return includeInactive
+    ? [...inMemorySubjects]
+    : inMemorySubjects.filter((s) => s.is_active !== false);
 }
 
 export async function getTopicsBySubjectId(subjectId: string): Promise<Topic[]> {
@@ -144,15 +224,174 @@ export async function getTopicsBySubjectId(subjectId: string): Promise<Topic[]> 
         .eq("subject_id", subjectId)
         .order("order_index");
       if (!error && data && data.length > 0) {
-        return data as Topic[];
+        return (data as Topic[]).filter((t) => t.is_active !== false);
       }
     } catch (err) {
-      console.warn("Falling back to seed topics:", err);
+      console.warn("Falling back to catalog topics:", err);
     }
   }
-  return SEED_TOPICS.filter((t) => t.subject_id === subjectId).sort(
-    (a, b) => a.order_index - b.order_index
-  );
+  return inMemoryTopics
+    .filter((t) => t.subject_id === subjectId && t.is_active !== false)
+    .sort((a, b) => a.order_index - b.order_index);
+}
+
+export async function getAllTopics(includeInactive = false): Promise<Topic[]> {
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase.from("topics").select("*").order("order_index");
+      if (!error && data && data.length > 0) {
+        const dbIds = new Set((data as Topic[]).map((t) => t.id));
+        const merged = [
+          ...(data as Topic[]),
+          ...inMemoryTopics.filter((t) => !dbIds.has(t.id)),
+        ];
+        return includeInactive ? merged : merged.filter((t) => t.is_active !== false);
+      }
+    } catch {
+      // fallback
+    }
+  }
+  return includeInactive
+    ? [...inMemoryTopics]
+    : inMemoryTopics.filter((t) => t.is_active !== false);
+}
+
+// Admin Taxonomy CRUD
+export async function createOrUpdateExam(
+  input: Partial<Exam> & { name: string; slug: string }
+): Promise<Exam> {
+  const id = input.id || `exam-${input.slug}`;
+  const existingIdx = inMemoryExams.findIndex((e) => e.id === id || e.slug === input.slug);
+  const record: Exam = {
+    id,
+    name: input.name,
+    slug: input.slug,
+    category: input.category || "SSC",
+    conducting_body: input.conducting_body || "Official Commission",
+    description: input.description || `${input.name} competitive examination preparation.`,
+    icon_url: input.icon_url || "Award",
+    marking_scheme: input.marking_scheme || { correct: 2.0, wrong: -0.5, unattempted: 0 },
+    time_limit_minutes: input.time_limit_minutes || input.default_time_minutes || 60,
+    default_time_minutes: input.default_time_minutes || input.time_limit_minutes || 60,
+    default_questions: input.default_questions || 100,
+    is_active: input.is_active ?? true,
+    created_at: existingIdx !== -1 ? inMemoryExams[existingIdx].created_at : new Date().toISOString(),
+  };
+
+  if (existingIdx !== -1) {
+    inMemoryExams[existingIdx] = record;
+  } else {
+    inMemoryExams.push(record);
+  }
+  g.__mockmaster_store!.inMemoryExams = inMemoryExams;
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      await supabase.from("exams").upsert(record);
+    } catch {
+      // fallback
+    }
+  }
+  return record;
+}
+
+export async function toggleExamActive(examId: string, isActive: boolean): Promise<boolean> {
+  const exam = inMemoryExams.find((e) => e.id === examId);
+  if (exam) {
+    exam.is_active = isActive;
+  }
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      await supabase.from("exams").update({ is_active: isActive }).eq("id", examId);
+    } catch {
+      // fallback
+    }
+  }
+  return Boolean(exam);
+}
+
+export async function createOrUpdateSubject(
+  input: Partial<Subject> & { exam_id: string; name: string; slug: string }
+): Promise<Subject> {
+  const id = input.id || `sub-${input.exam_id}-${input.slug}`;
+  const existingIdx = inMemorySubjects.findIndex((s) => s.id === id);
+  const examSubjectsCount = inMemorySubjects.filter((s) => s.exam_id === input.exam_id).length;
+  const record: Subject = {
+    id,
+    exam_id: input.exam_id,
+    name: input.name,
+    slug: input.slug,
+    paper_name: input.paper_name || "Paper I",
+    order_index: input.order_index ?? examSubjectsCount + 1,
+    is_active: input.is_active ?? true,
+    created_at:
+      existingIdx !== -1 ? inMemorySubjects[existingIdx].created_at : new Date().toISOString(),
+  };
+
+  if (existingIdx !== -1) {
+    inMemorySubjects[existingIdx] = record;
+  } else {
+    inMemorySubjects.push(record);
+  }
+  g.__mockmaster_store!.inMemorySubjects = inMemorySubjects;
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      await supabase.from("subjects").upsert(record);
+    } catch {
+      // fallback
+    }
+  }
+  return record;
+}
+
+export async function createOrUpdateTopic(
+  input: Partial<Topic> & { subject_id: string; name: string; slug: string }
+): Promise<Topic> {
+  const id = input.id || `top-${input.subject_id}-${input.slug}`;
+  const existingIdx = inMemoryTopics.findIndex((t) => t.id === id);
+  const subTopicsCount = inMemoryTopics.filter((t) => t.subject_id === input.subject_id).length;
+  const record: Topic = {
+    id,
+    subject_id: input.subject_id,
+    name: input.name,
+    slug: input.slug,
+    order_index: input.order_index ?? subTopicsCount + 1,
+    is_active: input.is_active ?? true,
+    created_at:
+      existingIdx !== -1 ? inMemoryTopics[existingIdx].created_at : new Date().toISOString(),
+  };
+
+  if (existingIdx !== -1) {
+    inMemoryTopics[existingIdx] = record;
+  } else {
+    inMemoryTopics.push(record);
+  }
+  g.__mockmaster_store!.inMemoryTopics = inMemoryTopics;
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      await supabase.from("topics").upsert(record);
+    } catch {
+      // fallback
+    }
+  }
+  return record;
+}
+
+export async function reorderTopics(subjectId: string, orderedTopicIds: string[]): Promise<boolean> {
+  orderedTopicIds.forEach((topicId, idx) => {
+    const t = inMemoryTopics.find((item) => item.id === topicId && item.subject_id === subjectId);
+    if (t) {
+      t.order_index = idx + 1;
+    }
+  });
+  return true;
 }
 
 export async function getQuestionsPool({
@@ -194,12 +433,12 @@ export async function getQuestionsPool({
         pool = data as Question[];
       }
     } catch (err) {
-      console.warn("Falling back to seed questions pool:", err);
+      console.warn("Falling back to dynamic questions pool:", err);
     }
   }
 
   if (pool.length === 0) {
-    pool = SEED_QUESTIONS.filter((q) => {
+    pool = dynamicQuestionsBank.filter((q) => {
       if (q.exam_id !== examId) return false;
       if (q.verification_status !== "approved") return false;
       if (type && q.type !== type) return false;
@@ -689,7 +928,7 @@ export async function getUserMistakes(userId: string = "default-user"): Promise<
 
   for (const [testId, qList] of inMemoryMockQuestions.entries()) {
     const test = inMemoryMockTests.get(testId);
-    if (test && test.status === "completed") {
+    if (test && test.status === "completed" && (test.user_id === userId || userId === "default-user")) {
       qList.forEach((mq) => {
         if (mq.user_answer && !mq.is_correct && mq.question) {
           mistakes.push({
@@ -724,8 +963,10 @@ export async function createRetestDrill(
     throw new Error("No valid questions found for retest drill");
   }
 
-  const exam = SEED_EXAMS[0];
+  const exam = inMemoryExams.find((e) => e.id === questionsToTest[0].exam_id) || SEED_EXAMS[0];
   const drillId = `drill-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+  const pyqCount = questionsToTest.filter((q) => q.type === "PYQ").length;
+  const modelCount = questionsToTest.filter((q) => q.type === "MODEL").length;
 
   const drillTest: MockTest = {
     id: drillId,
@@ -735,8 +976,10 @@ export async function createRetestDrill(
     topic_ids: [],
     mode: "practice",
     total_questions: questionsToTest.length,
-    pyq_count: questionsToTest.filter((q) => q.type === "PYQ").length,
-    model_count: questionsToTest.filter((q) => q.type === "MODEL").length,
+    pyq_count: pyqCount,
+    model_count: modelCount,
+    pyq_ratio: questionsToTest.length > 0 ? Math.round((pyqCount / questionsToTest.length) * 100) : 80,
+    is_retest: true,
     time_limit_minutes: Math.max(10, Math.ceil(questionsToTest.length * 1.5)),
     marking_scheme: exam.marking_scheme,
     status: "in_progress",
@@ -771,7 +1014,7 @@ export async function createRetestDrill(
 }
 
 // ==========================================
-// Phase 4: Subscriptions, Monetization & Audit
+// Phase 4 & 5: Subscriptions, Monetization, Analytics & Audit
 // ==========================================
 
 export async function getUserPlan(userId: string = "default-user"): Promise<{ plan: UserPlanType; validUntil: string | null }> {
@@ -806,7 +1049,7 @@ export async function getUserPlan(userId: string = "default-user"): Promise<{ pl
 
       if (!userError && userData?.plan) {
         return {
-          plan: userData.plan as UserPlanType,
+          plan: String(userData.plan).toUpperCase() as UserPlanType,
           validUntil: null,
         };
       }
@@ -844,7 +1087,7 @@ export async function updateUserPlan(
       const supabase = await createClient();
       await supabase
         .from("users")
-        .update({ plan, updated_at: new Date().toISOString() })
+        .update({ plan: plan.toLowerCase(), updated_at: new Date().toISOString() })
         .eq("id", userId);
     } catch {
       // continue
@@ -891,7 +1134,7 @@ export async function createOrUpdateSubscription(
   const now = new Date().toISOString();
   const planVal = (subData as unknown as { plan?: UserPlanType; plan_type?: UserPlanType }).plan ||
     (subData as unknown as { plan?: UserPlanType; plan_type?: UserPlanType }).plan_type ||
-    "PREMIUM";
+    "PRO";
 
   const fullSub: Subscription = {
     id,
@@ -916,7 +1159,7 @@ export async function createOrUpdateSubscription(
       if (fullSub.status === "active" || fullSub.status === "trialing") {
         await supabase
           .from("users")
-          .update({ plan: fullSub.plan, updated_at: now })
+          .update({ plan: fullSub.plan.toLowerCase(), updated_at: now })
           .eq("id", fullSub.user_id);
       }
     } catch {
@@ -934,6 +1177,181 @@ export async function createOrUpdateSubscription(
   }
 
   return fullSub;
+}
+
+export async function getAllSubscriptionsForAdmin(): Promise<Subscription[]> {
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (!error && data) {
+        return data as Subscription[];
+      }
+    } catch {
+      // fallback
+    }
+  }
+  return Array.from(inMemorySubscriptions.values()).sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+}
+
+export async function recordPaymentTransaction(
+  tx: Omit<PaymentTransaction, "id" | "created_at" | "updated_at"> & { id?: string }
+): Promise<PaymentTransaction> {
+  const id = tx.id || `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const now = new Date().toISOString();
+  const fullTx: PaymentTransaction = {
+    id,
+    user_id: tx.user_id,
+    plan: tx.plan,
+    plan_code: tx.plan_code,
+    billing_cycle: tx.billing_cycle,
+    amount_paise: tx.amount_paise,
+    currency: tx.currency || "INR",
+    provider: tx.provider,
+    provider_order_id: tx.provider_order_id,
+    provider_payment_id: tx.provider_payment_id || null,
+    provider_signature: tx.provider_signature || null,
+    status: tx.status,
+    metadata: tx.metadata || {},
+    created_at: now,
+    updated_at: now,
+  };
+
+  inMemoryPaymentTransactions.set(id, fullTx);
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      await supabase.from("payment_transactions").upsert(fullTx);
+    } catch {
+      // fallback
+    }
+  }
+
+  return fullTx;
+}
+
+export async function updatePaymentTransactionStatus(
+  providerOrderId: string,
+  updates: Partial<PaymentTransaction>
+): Promise<PaymentTransaction | null> {
+  const now = new Date().toISOString();
+  let matched: PaymentTransaction | null = null;
+
+  for (const [id, tx] of inMemoryPaymentTransactions.entries()) {
+    if (tx.provider_order_id === providerOrderId) {
+      matched = {
+        ...tx,
+        ...updates,
+        updated_at: now,
+      };
+      inMemoryPaymentTransactions.set(id, matched);
+      break;
+    }
+  }
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data } = await supabase
+        .from("payment_transactions")
+        .update({ ...updates, updated_at: now })
+        .eq("provider_order_id", providerOrderId)
+        .select("*")
+        .maybeSingle();
+      if (data) {
+        matched = data as PaymentTransaction;
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  return matched;
+}
+
+export async function getUserPaymentTransactions(
+  userId: string = "default-user"
+): Promise<PaymentTransaction[]> {
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from("payment_transactions")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      if (!error && data && data.length > 0) {
+        return data as PaymentTransaction[];
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  const list: PaymentTransaction[] = [];
+  for (const tx of inMemoryPaymentTransactions.values()) {
+    if (tx.user_id === userId) {
+      list.push(tx);
+    }
+  }
+  return list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+}
+
+export async function getAllPaymentTransactionsForAdmin(
+  limit: number = 100
+): Promise<PaymentTransaction[]> {
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from("payment_transactions")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (!error && data && data.length > 0) {
+        return data as PaymentTransaction[];
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  return Array.from(inMemoryPaymentTransactions.values())
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, limit);
+}
+
+export async function getSystemSettings(): Promise<Record<string, unknown>> {
+  const obj: Record<string, unknown> = {
+    default_pyq_ratio: 80,
+    ai_auto_approve: false,
+    maintenance_mode: false,
+  };
+  for (const [k, v] of inMemorySystemSettings.entries()) {
+    obj[k] = v;
+  }
+  return obj;
+}
+
+export async function updateSystemSetting(key: string, value: unknown): Promise<void> {
+  inMemorySystemSettings.set(key, value);
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      await supabase
+        .from("system_settings")
+        .upsert({ key, value, updated_at: new Date().toISOString() });
+    } catch {
+      // fallback
+    }
+  }
 }
 
 export async function hasWebhookEventBeenProcessed(eventId: string): Promise<boolean> {
@@ -1060,8 +1478,67 @@ export async function getUserDailyMockCount(
   checkProductionDatabaseGuard();
   let count = 0;
   for (const test of inMemoryMockTests.values()) {
-    if (test.user_id === userId && test.created_at >= startOfDay && test.created_at <= endOfDay) {
+    if (test.user_id === userId && !test.is_retest && test.created_at >= startOfDay && test.created_at <= endOfDay) {
       count++;
+    }
+  }
+  return count;
+}
+
+export async function getUserDailyRetestCount(
+  userId: string = "default-user",
+  targetDate?: string
+): Promise<number> {
+  const target = targetDate ? new Date(targetDate) : new Date();
+  const startOfDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate(), 0, 0, 0, 0)).toISOString();
+  const endOfDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate(), 23, 59, 59, 999)).toISOString();
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { count, error } = await supabase
+        .from("mock_tests")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("is_retest", true)
+        .gte("created_at", startOfDay)
+        .lte("created_at", endOfDay);
+
+      if (!error && typeof count === "number") {
+        return count;
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  checkProductionDatabaseGuard();
+  let count = 0;
+  for (const test of inMemoryMockTests.values()) {
+    if (
+      test.user_id === userId &&
+      (test.is_retest || test.id.startsWith("drill-")) &&
+      test.created_at >= startOfDay &&
+      test.created_at <= endOfDay
+    ) {
+      count++;
+    }
+  }
+  return count;
+}
+
+export async function getUserDailyAIGenerationCount(
+  userId: string = "default-user",
+  targetDate?: string
+): Promise<number> {
+  const target = targetDate ? new Date(targetDate) : new Date();
+  const startOfDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate(), 0, 0, 0, 0)).toISOString();
+  const endOfDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate(), 23, 59, 59, 999)).toISOString();
+
+  let count = 0;
+  for (const log of inMemoryAILogs) {
+    if (log.user_id === userId && log.created_at >= startOfDay && log.created_at <= endOfDay) {
+      count += log.generated_count || 1;
     }
   }
   return count;
@@ -1094,5 +1571,344 @@ export async function getUserSavedQuestionCount(userId: string = "default-user")
   return count;
 }
 
+// ==========================================
+// Phase 5: Real User-Specific Analytics Engine
+// ==========================================
 
+export async function getUserAnalytics(
+  userId: string = "default-user"
+): Promise<UserAnalyticsSummary> {
+  const allExams = await getAllExamsForAdmin();
+  const allSubjects = await getAllSubjects(true);
+  const allTopics = await getAllTopics(true);
 
+  const examMap = new Map<string, Exam>(allExams.map((e) => [e.id, e]));
+  const subjectMap = new Map<string, Subject>(allSubjects.map((s) => [s.id, s]));
+  const topicMap = new Map<string, Topic>(allTopics.map((t) => [t.id, t]));
+
+  // Gather user's mock tests & questions
+  let userTests: MockTest[] = [];
+  const userQuestionsByTest = new Map<string, MockQuestion[]>();
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data: dbTests } = await supabase
+        .from("mock_tests")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true });
+
+      if (dbTests && dbTests.length > 0) {
+        userTests = dbTests as MockTest[];
+        const testIds = userTests.map((t) => t.id);
+        const { data: dbQuestions } = await supabase
+          .from("mock_questions")
+          .select("*, question:questions(*)")
+          .in("mock_test_id", testIds);
+        if (dbQuestions) {
+          for (const mq of dbQuestions as MockQuestion[]) {
+            const list = userQuestionsByTest.get(mq.mock_test_id) || [];
+            list.push(mq);
+            userQuestionsByTest.set(mq.mock_test_id, list);
+          }
+        }
+      }
+    } catch {
+      // fallback to inMemory
+    }
+  }
+
+  // Also merge in-memory tests for this user (or default-user in demo/dev)
+  for (const [id, test] of inMemoryMockTests.entries()) {
+    if (test.user_id === userId && !userTests.some((t) => t.id === id)) {
+      userTests.push(test);
+      const qList = inMemoryMockQuestions.get(id) || [];
+      userQuestionsByTest.set(id, qList);
+    }
+  }
+
+  // Sort chronologically
+  userTests.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+  const completedTests = userTests.filter((t) => t.status === "completed");
+  const hasData = completedTests.length > 0;
+
+  let totalQuestionsAttempted = 0;
+  let totalCorrect = 0;
+  let totalWrong = 0;
+  let totalUnattempted = 0;
+  let totalTimeSeconds = 0;
+
+  let pyqAttempted = 0;
+  let pyqCorrect = 0;
+  let modelAttempted = 0;
+  let modelCorrect = 0;
+
+  const diffStats = {
+    easy: { attempted: 0, correct: 0 },
+    moderate: { attempted: 0, correct: 0 },
+    hard: { attempted: 0, correct: 0 },
+  };
+
+  const subjectStats = new Map<
+    string,
+    {
+      subjectId: string;
+      subjectName: string;
+      examName: string;
+      attempted: number;
+      correct: number;
+      wrong: number;
+      unattempted: number;
+    }
+  >();
+
+  const topicStats = new Map<
+    string,
+    {
+      topicId: string;
+      topicName: string;
+      subjectName: string;
+      attempted: number;
+      correct: number;
+      wrong: number;
+    }
+  >();
+
+  const mistakeCategoryCounts: Record<string, number> = {
+    conceptual: 0,
+    factual: 0,
+    misread: 0,
+    calculation: 0,
+    guessing: 0,
+    time_pressure: 0,
+    other: 0,
+    silly_error: 0,
+    guessed: 0,
+    misread_question: 0,
+    memory_gap: 0,
+    elimination_failure: 0,
+  };
+
+  for (const test of completedTests) {
+    totalCorrect += test.total_correct || 0;
+    totalWrong += test.total_wrong || 0;
+    totalUnattempted += test.total_unattempted || 0;
+    totalQuestionsAttempted += (test.total_correct || 0) + (test.total_wrong || 0);
+
+    const mqs = userQuestionsByTest.get(test.id) || [];
+    for (const mq of mqs) {
+      totalTimeSeconds += mq.time_spent_seconds || 0;
+      const q =
+        mq.question || dynamicQuestionsBank.find((item) => item.id === mq.question_id);
+      if (!q) continue;
+
+      const sub = subjectMap.get(q.subject_id);
+      const top = topicMap.get(q.topic_id);
+      const ex = examMap.get(q.exam_id);
+      const subName = sub?.name || "General Studies";
+      const topName = top?.name || "Core Syllabus";
+      const exName = ex?.name || "Competitive Exam";
+
+      if (!subjectStats.has(q.subject_id)) {
+        subjectStats.set(q.subject_id, {
+          subjectId: q.subject_id,
+          subjectName: subName,
+          examName: exName,
+          attempted: 0,
+          correct: 0,
+          wrong: 0,
+          unattempted: 0,
+        });
+      }
+      const sEntry = subjectStats.get(q.subject_id)!;
+
+      if (!topicStats.has(q.topic_id)) {
+        topicStats.set(q.topic_id, {
+          topicId: q.topic_id,
+          topicName: topName,
+          subjectName: subName,
+          attempted: 0,
+          correct: 0,
+          wrong: 0,
+        });
+      }
+      const tEntry = topicStats.get(q.topic_id)!;
+
+      if (mq.user_answer) {
+        sEntry.attempted += 1;
+        tEntry.attempted += 1;
+
+        if (q.type === "PYQ") {
+          pyqAttempted += 1;
+          if (mq.is_correct) pyqCorrect += 1;
+        } else {
+          modelAttempted += 1;
+          if (mq.is_correct) modelCorrect += 1;
+        }
+
+        const dKey = q.difficulty || "moderate";
+        if (diffStats[dKey]) {
+          diffStats[dKey].attempted += 1;
+          if (mq.is_correct) diffStats[dKey].correct += 1;
+        }
+
+        if (mq.is_correct) {
+          sEntry.correct += 1;
+          tEntry.correct += 1;
+        } else {
+          sEntry.wrong += 1;
+          tEntry.wrong += 1;
+          const cat: MistakeCategory = mq.mistake_category || "conceptual";
+          mistakeCategoryCounts[cat] = (mistakeCategoryCounts[cat] || 0) + 1;
+        }
+      } else {
+        sEntry.unattempted += 1;
+      }
+    }
+  }
+
+  const rawScores = completedTests.map((t) => Number(t.raw_score ?? 0));
+  const averageScore =
+    completedTests.length > 0
+      ? Math.round((rawScores.reduce((a, b) => a + b, 0) / completedTests.length) * 100) / 100
+      : null;
+  const bestScore = completedTests.length > 0 ? Math.max(...rawScores) : null;
+  const accuracy =
+    totalQuestionsAttempted > 0
+      ? Math.round((totalCorrect / totalQuestionsAttempted) * 1000) / 10
+      : null;
+
+  const pyqAccuracy =
+    pyqAttempted > 0 ? Math.round((pyqCorrect / pyqAttempted) * 1000) / 10 : null;
+  const modelAccuracy =
+    modelAttempted > 0 ? Math.round((modelCorrect / modelAttempted) * 1000) / 10 : null;
+
+  const subjectBreakdown = Array.from(subjectStats.values())
+    .map((s) => ({
+      ...s,
+      accuracy: s.attempted > 0 ? Math.round((s.correct / s.attempted) * 1000) / 10 : 0,
+    }))
+    .sort((a, b) => b.attempted - a.attempted);
+
+  const topicBreakdown = Array.from(topicStats.values())
+    .map((t) => {
+      const acc = t.attempted > 0 ? Math.round((t.correct / t.attempted) * 1000) / 10 : 0;
+      return {
+        ...t,
+        accuracy: acc,
+        isWeak: t.attempted >= 1 && acc < 60,
+        isStrong: t.attempted >= 1 && acc >= 75,
+      };
+    })
+    .sort((a, b) => a.accuracy - b.accuracy);
+
+  const performanceTrend = completedTests.slice(-15).map((t) => {
+    const ex = examMap.get(t.exam_id);
+    const maxScore = Number((t.total_questions * (t.marking_scheme?.correct || 2)).toFixed(2));
+    return {
+      mockId: t.id,
+      examName: ex?.name || "Mock Test",
+      date: t.completed_at || t.created_at,
+      rawScore: Number(t.raw_score ?? 0),
+      maxScore,
+      accuracy: Number(t.accuracy ?? 0),
+      mode: t.mode,
+      pyqRatio:
+        typeof t.pyq_ratio === "number"
+          ? t.pyq_ratio
+          : t.total_questions > 0
+          ? Math.round((t.pyq_count / t.total_questions) * 100)
+          : 80,
+    };
+  });
+
+  const recentMocks = [...userTests]
+    .reverse()
+    .slice(0, 10)
+    .map((t) => {
+      const ex = examMap.get(t.exam_id);
+      const maxScore = Number((t.total_questions * (t.marking_scheme?.correct || 2)).toFixed(2));
+      return {
+        mockId: t.id,
+        examName: ex?.name || "Mock Test",
+        examSlug: ex?.slug || "upsc-cse",
+        mode: t.mode,
+        status: t.status,
+        totalQuestions: t.total_questions,
+        rawScore: t.raw_score,
+        maxScore,
+        accuracy: t.accuracy,
+        pyqCount: t.pyq_count,
+        modelCount: t.model_count,
+        pyqRatio:
+          typeof t.pyq_ratio === "number"
+            ? t.pyq_ratio
+            : t.total_questions > 0
+            ? Math.round((t.pyq_count / t.total_questions) * 100)
+            : 80,
+        completedAt: t.completed_at,
+        createdAt: t.created_at,
+      };
+    });
+
+  const savedQuestionsCount = await getUserSavedQuestionCount(userId);
+  const retestCount = userTests.filter((t) => t.is_retest || t.id.startsWith("drill-")).length;
+
+  return {
+    hasData,
+    totalMocksAttempted: completedTests.length,
+    totalQuestionsAttempted,
+    totalCorrect,
+    totalWrong,
+    totalUnattempted,
+    accuracy,
+    averageScore,
+    bestScore,
+    totalTimeMinutes: Math.max(
+      completedTests.length > 0 ? 1 : 0,
+      Math.round(totalTimeSeconds / 60)
+    ),
+    pyqAttempted,
+    pyqCorrect,
+    pyqAccuracy,
+    modelAttempted,
+    modelCorrect,
+    modelAccuracy,
+    difficultyBreakdown: {
+      easy: {
+        attempted: diffStats.easy.attempted,
+        correct: diffStats.easy.correct,
+        accuracy:
+          diffStats.easy.attempted > 0
+            ? Math.round((diffStats.easy.correct / diffStats.easy.attempted) * 1000) / 10
+            : null,
+      },
+      moderate: {
+        attempted: diffStats.moderate.attempted,
+        correct: diffStats.moderate.correct,
+        accuracy:
+          diffStats.moderate.attempted > 0
+            ? Math.round((diffStats.moderate.correct / diffStats.moderate.attempted) * 1000) / 10
+            : null,
+      },
+      hard: {
+        attempted: diffStats.hard.attempted,
+        correct: diffStats.hard.correct,
+        accuracy:
+          diffStats.hard.attempted > 0
+            ? Math.round((diffStats.hard.correct / diffStats.hard.attempted) * 1000) / 10
+            : null,
+      },
+    },
+    subjectBreakdown,
+    topicBreakdown,
+    mistakeCategoryCounts,
+    savedQuestionsCount,
+    mistakesCount: totalWrong,
+    retestCount,
+    performanceTrend,
+    recentMocks,
+  };
+}

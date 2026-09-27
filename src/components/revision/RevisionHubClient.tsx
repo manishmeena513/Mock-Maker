@@ -6,7 +6,11 @@ import { useRouter } from "next/navigation";
 import { Question, MistakeCategory } from "@/types/database";
 import { QuestionTypeBadge } from "@/components/shared/QuestionTypeBadge";
 import { ExplanationPanel } from "@/components/test/ExplanationPanel";
-import { SEED_EXAMS, SEED_SUBJECTS, SEED_TOPICS } from "@/lib/data/seedData";
+import {
+  ALL_CATALOG_EXAMS as SEED_EXAMS,
+  ALL_CATALOG_SUBJECTS as SEED_SUBJECTS,
+  ALL_CATALOG_TOPICS as SEED_TOPICS,
+} from "@/lib/data/examTaxonomy";
 import { toggleBookmarkAction } from "@/app/actions/bookmark";
 import { generateRetestDrillAction } from "@/app/actions/mock";
 import {

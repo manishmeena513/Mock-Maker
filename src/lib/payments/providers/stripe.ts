@@ -7,6 +7,7 @@ import {
   PaymentWebhookResult,
   WebhookVerificationInput,
 } from "../types";
+import { resolvePlanFromPlanId } from "./razorpay";
 
 export class StripeProvider implements PaymentProviderAdapter {
   public providerName = "stripe" as const;
@@ -20,9 +21,9 @@ export class StripeProvider implements PaymentProviderAdapter {
   }
 
   async createOrder(params: CreateOrderParams): Promise<PaymentOrder> {
-    const planKey = params.planId === "premium_annual" ? "annual" : "monthly";
-    const plan = PRICING_PLANS[planKey];
-    const amount = plan.amountPaise; // in paise
+    const resolved = resolvePlanFromPlanId(params.planId);
+    const plan = PRICING_PLANS[resolved.planKey];
+    const amount = resolved.amountPaise;
     const currency = "inr";
 
     const secretKey = this.getSecretKey();
@@ -35,6 +36,8 @@ export class StripeProvider implements PaymentProviderAdapter {
         body.append("client_reference_id", params.userId);
         body.append("metadata[userId]", params.userId);
         body.append("metadata[planId]", params.planId);
+        body.append("metadata[planCode]", resolved.planCode);
+        body.append("metadata[planType]", resolved.planType);
         body.append("line_items[0][price_data][currency]", currency);
         body.append("line_items[0][price_data][unit_amount]", amount.toString());
         body.append("line_items[0][price_data][product_data][name]", plan.name);
@@ -59,6 +62,8 @@ export class StripeProvider implements PaymentProviderAdapter {
             currency: currency.toUpperCase(),
             provider: "stripe",
             planId: params.planId,
+            planType: resolved.planType,
+            billingCycle: resolved.billingCycle,
             notes: {
               userId: params.userId,
               checkoutUrl: session.url,
@@ -78,6 +83,8 @@ export class StripeProvider implements PaymentProviderAdapter {
       currency: currency.toUpperCase(),
       provider: "stripe",
       planId: params.planId,
+      planType: resolved.planType,
+      billingCycle: resolved.billingCycle,
       notes: {
         userId: params.userId,
       },
@@ -159,10 +166,10 @@ export class StripeProvider implements PaymentProviderAdapter {
 
     const userId = metadata.userId || (dataObj?.client_reference_id as string) || "default-user";
     const planId = metadata.planId || "premium_monthly";
-    const isAnnual = planId === "premium_annual";
+    const resolved = resolvePlanFromPlanId(planId);
 
     const periodEndDate = new Date();
-    if (isAnnual) {
+    if (resolved.billingCycle === "yearly") {
       periodEndDate.setFullYear(periodEndDate.getFullYear() + 1);
     } else {
       periodEndDate.setDate(periodEndDate.getDate() + 30);
@@ -173,9 +180,12 @@ export class StripeProvider implements PaymentProviderAdapter {
       eventId,
       provider: "stripe",
       userId,
-      planType: "PREMIUM",
-      amountPaid: (dataObj?.amount_total as number) || (isAnnual ? 299900 : 49900),
+      planType: resolved.planType,
+      planCode: resolved.planCode,
+      billingCycle: resolved.billingCycle,
+      amountPaid: (dataObj?.amount_total as number) || resolved.amountPaise,
       currency: ((dataObj?.currency as string) || "inr").toUpperCase(),
+      providerOrderId: (dataObj?.id as string) || undefined,
       providerSubscriptionId: (dataObj?.id as string) || `sub_stripe_${Date.now()}`,
       providerCustomerId: (dataObj?.customer as string) || undefined,
       status: "active",

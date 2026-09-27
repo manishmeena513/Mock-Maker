@@ -1,16 +1,19 @@
 import React from "react";
-import { getExams } from "@/lib/db";
-import { SEED_SUBJECTS, SEED_TOPICS } from "@/lib/data/seedData";
+import { getAllExamsForAdmin, getAllSubjects, getAllTopics } from "@/lib/db";
 import { AdminExamsClient } from "@/components/admin/AdminExamsClient";
 
 export default async function AdminExamsPage() {
-  const exams = await getExams();
+  const [exams, subjects, topics] = await Promise.all([
+    getAllExamsForAdmin(),
+    getAllSubjects(true),
+    getAllTopics(true),
+  ]);
 
   return (
     <AdminExamsClient
       initialExams={exams}
-      subjects={SEED_SUBJECTS}
-      topics={SEED_TOPICS}
+      subjects={subjects}
+      topics={topics}
     />
   );
 }

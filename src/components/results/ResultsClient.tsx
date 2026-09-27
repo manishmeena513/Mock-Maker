@@ -13,7 +13,10 @@ import {
 import { QuestionTypeBadge } from "@/components/shared/QuestionTypeBadge";
 import { SaveButton } from "@/components/shared/SaveButton";
 import { ExplanationPanel } from "@/components/test/ExplanationPanel";
-import { SEED_SUBJECTS, SEED_TOPICS } from "@/lib/data/seedData";
+import {
+  ALL_CATALOG_SUBJECTS as SEED_SUBJECTS,
+  ALL_CATALOG_TOPICS as SEED_TOPICS,
+} from "@/lib/data/examTaxonomy";
 import { recordMistakeCategoryAction, generateRetestDrillAction } from "@/app/actions/mock";
 import {
   Target,

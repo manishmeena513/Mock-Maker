@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getExamBySlug, getSubjectsByExamId, getTopicsBySubjectId } from "@/lib/db";
-import { SEED_QUESTIONS } from "@/lib/data/seedData";
+import {
+  getExamBySlug,
+  getSubjectsByExamId,
+  getTopicsBySubjectId,
+  getAllQuestions,
+} from "@/lib/db";
 import {
   Award,
   ArrowRight,
@@ -28,10 +32,12 @@ export default async function ExamHubPage({ params }: ExamHubProps) {
     notFound();
   }
 
-  const subjects = await getSubjectsByExamId(exam.id);
+  const [subjects, examQuestions] = await Promise.all([
+    getSubjectsByExamId(exam.id),
+    getAllQuestions({ examId: exam.id, status: "approved" }),
+  ]);
 
-  // Compute question counts for this exam
-  const examQuestions = SEED_QUESTIONS.filter((q) => q.exam_id === exam.id);
+  // Compute real verified question counts for this exam
   const pyqCount = examQuestions.filter((q) => q.type === "PYQ").length;
   const modelCount = examQuestions.filter((q) => q.type === "MODEL").length;
 
@@ -73,7 +79,7 @@ export default async function ExamHubPage({ params }: ExamHubProps) {
               </span>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                 <Clock className="w-3.5 h-3.5 text-slate-400" />
-                <span>{exam.time_limit_minutes} mins standard duration</span>
+                <span>{exam.time_limit_minutes || exam.default_time_minutes || 60} mins standard duration</span>
               </span>
             </div>
           </div>

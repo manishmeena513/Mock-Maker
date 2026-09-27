@@ -1,12 +1,77 @@
 import crypto from "node:crypto";
 import { PRICING_PLANS } from "@/lib/plans/config";
+import { UserPlanType } from "@/types/database";
 import {
+  CheckoutPlanId,
   CreateOrderParams,
   PaymentOrder,
   PaymentProviderAdapter,
   PaymentWebhookResult,
+  VerifyCheckoutSignatureInput,
   WebhookVerificationInput,
 } from "../types";
+
+export function resolvePlanFromPlanId(planId: string): {
+  planKey: keyof typeof PRICING_PLANS;
+  planType: UserPlanType;
+  planCode: string;
+  billingCycle: "monthly" | "yearly";
+  amountPaise: number;
+} {
+  const normalized = planId.toLowerCase();
+  if (normalized === "pro_monthly") {
+    return {
+      planKey: "pro_monthly",
+      planType: "PRO",
+      planCode: "PRO_MONTHLY",
+      billingCycle: "monthly",
+      amountPaise: PRICING_PLANS.pro_monthly.amountPaise,
+    };
+  }
+  if (normalized === "pro_yearly") {
+    return {
+      planKey: "pro_yearly",
+      planType: "PRO",
+      planCode: "PRO_YEARLY",
+      billingCycle: "yearly",
+      amountPaise: PRICING_PLANS.pro_yearly.amountPaise,
+    };
+  }
+  if (normalized === "elite_monthly") {
+    return {
+      planKey: "elite_monthly",
+      planType: "ELITE",
+      planCode: "ELITE_MONTHLY",
+      billingCycle: "monthly",
+      amountPaise: PRICING_PLANS.elite_monthly.amountPaise,
+    };
+  }
+  if (normalized === "elite_yearly") {
+    return {
+      planKey: "elite_yearly",
+      planType: "ELITE",
+      planCode: "ELITE_YEARLY",
+      billingCycle: "yearly",
+      amountPaise: PRICING_PLANS.elite_yearly.amountPaise,
+    };
+  }
+  if (normalized === "premium_annual") {
+    return {
+      planKey: "annual",
+      planType: "PREMIUM",
+      planCode: "ELITE_YEARLY",
+      billingCycle: "yearly",
+      amountPaise: PRICING_PLANS.annual.amountPaise,
+    };
+  }
+  return {
+    planKey: "monthly",
+    planType: "PREMIUM",
+    planCode: "PRO_MONTHLY",
+    billingCycle: "monthly",
+    amountPaise: PRICING_PLANS.monthly.amountPaise,
+  };
+}
 
 export class RazorpayProvider implements PaymentProviderAdapter {
   public providerName = "razorpay" as const;
@@ -24,9 +89,8 @@ export class RazorpayProvider implements PaymentProviderAdapter {
   }
 
   async createOrder(params: CreateOrderParams): Promise<PaymentOrder> {
-    const planKey = params.planId === "premium_annual" ? "annual" : "monthly";
-    const plan = PRICING_PLANS[planKey];
-    const amount = plan.amountPaise;
+    const resolved = resolvePlanFromPlanId(params.planId);
+    const amount = resolved.amountPaise;
     const currency = "INR";
     const receipt = `rcpt_${params.userId.substring(0, 8)}_${Date.now()}`;
 
@@ -49,6 +113,9 @@ export class RazorpayProvider implements PaymentProviderAdapter {
             notes: {
               userId: params.userId,
               planId: params.planId,
+              planCode: resolved.planCode,
+              planType: resolved.planType,
+              billingCycle: resolved.billingCycle,
               userEmail: params.userEmail || "",
             },
           }),
@@ -62,6 +129,8 @@ export class RazorpayProvider implements PaymentProviderAdapter {
             currency: data.currency,
             provider: "razorpay",
             planId: params.planId,
+            planType: resolved.planType,
+            billingCycle: resolved.billingCycle,
             keyId,
             notes: data.notes,
           };
@@ -79,11 +148,62 @@ export class RazorpayProvider implements PaymentProviderAdapter {
       currency,
       provider: "razorpay",
       planId: params.planId,
+      planType: resolved.planType,
+      billingCycle: resolved.billingCycle,
       keyId: keyId || "rzp_test_mock_key",
       notes: {
         userId: params.userId,
         planId: params.planId,
+        planCode: resolved.planCode,
+        planType: resolved.planType,
+        billingCycle: resolved.billingCycle,
       },
+    };
+  }
+
+  verifyPaymentSignature(input: VerifyCheckoutSignatureInput): {
+    valid: boolean;
+    planType: UserPlanType;
+    planCode: string;
+    billingCycle: "monthly" | "yearly";
+    amountPaise: number;
+    currentPeriodEnd: string;
+  } {
+    const resolved = resolvePlanFromPlanId(input.planId as CheckoutPlanId);
+    const secret = this.getKeySecret() || this.getWebhookSecret();
+    const expected = crypto
+      .createHmac("sha256", secret)
+      .update(`${input.orderId}|${input.paymentId}`)
+      .digest("hex");
+
+    const isMockOrder =
+      input.orderId.startsWith("order_rzp_") &&
+      !this.getKeySecret() &&
+      input.signature === "mock_verified_signature";
+
+    let isValid = isMockOrder;
+    if (!isValid && input.signature) {
+      const expectedBuf = Buffer.from(expected, "utf8");
+      const actualBuf = Buffer.from(input.signature, "utf8");
+      isValid =
+        expectedBuf.length === actualBuf.length &&
+        crypto.timingSafeEqual(expectedBuf, actualBuf);
+    }
+
+    const periodEnd = new Date();
+    if (resolved.billingCycle === "yearly") {
+      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    } else {
+      periodEnd.setDate(periodEnd.getDate() + 30);
+    }
+
+    return {
+      valid: isValid,
+      planType: resolved.planType === "PREMIUM" ? "PRO" : resolved.planType,
+      planCode: resolved.planCode,
+      billingCycle: resolved.billingCycle,
+      amountPaise: resolved.amountPaise,
+      currentPeriodEnd: periodEnd.toISOString(),
     };
   }
 
@@ -142,10 +262,10 @@ export class RazorpayProvider implements PaymentProviderAdapter {
 
     const userId = notes.userId || (payload.userId as string) || "default-user";
     const planId = notes.planId || "premium_monthly";
-    const isAnnual = planId === "premium_annual";
+    const resolved = resolvePlanFromPlanId(planId);
 
     const periodEndDate = new Date();
-    if (isAnnual) {
+    if (resolved.billingCycle === "yearly") {
       periodEndDate.setFullYear(periodEndDate.getFullYear() + 1);
     } else {
       periodEndDate.setDate(periodEndDate.getDate() + 30);
@@ -156,9 +276,12 @@ export class RazorpayProvider implements PaymentProviderAdapter {
       eventId,
       provider: "razorpay",
       userId,
-      planType: "PREMIUM",
-      amountPaid: (paymentEntityInner.amount as number) || (isAnnual ? 299900 : 49900),
+      planType: resolved.planType,
+      planCode: resolved.planCode,
+      billingCycle: resolved.billingCycle,
+      amountPaid: (paymentEntityInner.amount as number) || resolved.amountPaise,
       currency: (paymentEntityInner.currency as string) || "INR",
+      providerOrderId: (paymentEntityInner.order_id as string) || undefined,
       providerSubscriptionId: (paymentEntityInner.id as string) || `rzp_pay_${Date.now()}`,
       status: "active",
       currentPeriodEnd: periodEndDate.toISOString(),
