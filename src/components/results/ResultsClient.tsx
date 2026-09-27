@@ -19,18 +19,13 @@ import {
 } from "@/lib/data/examTaxonomy";
 import { recordMistakeCategoryAction, generateRetestDrillAction } from "@/app/actions/mock";
 import {
-  Target,
-  CheckCircle2,
-  XCircle,
-  HelpCircle,
-  ShieldCheck,
-  Sparkles,
   RotateCcw,
   TrendingDown,
-  Clock,
   X,
-  BarChart3,
-  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  ArrowRight,
+  CheckCircle2,
 } from "lucide-react";
 
 interface ResultsClientProps {
@@ -41,8 +36,9 @@ interface ResultsClientProps {
 export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
   const router = useRouter();
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
+  const [expandedReviewId, setExpandedReviewId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "overview" | "subjects" | "topics" | "time" | "mistakes"
+    "overview" | "subjects" | "topics" | "mistakes" | "review"
   >("overview");
   const [mistakeFilter, setMistakeFilter] = useState<string>("all");
   const [questionList, setQuestionsList] = useState<MockQuestion[]>(questions);
@@ -78,7 +74,6 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
       q?.explanation?.concept ||
       "Core Syllabus Concept";
 
-    // Estimate realistic time if not explicitly logged
     const qTime = mq.time_spent_seconds || (mq.user_answer ? 38 + (idx % 17) : 12);
     totalTimeSpent += qTime;
 
@@ -167,7 +162,6 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
   const roundedScore = Math.round(rawScore * 100) / 100;
   const maxPossibleScore = totalQuestions * scheme.correct;
 
-  // Separate PYQ vs MODEL Score Contributions
   const pyqWrong = pyqAttempted - pyqCorrect;
   const pyqScoreContrib =
     Math.round((pyqCorrect * scheme.correct + pyqWrong * scheme.wrong) * 100) / 100;
@@ -176,14 +170,12 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
   const modelScoreContrib =
     Math.round((modelCorrect * scheme.correct + modelWrong * scheme.wrong) * 100) / 100;
 
-  // Finalize Subject Summaries
   const subjectList: SubjectPerformanceSummary[] = Object.values(subjectAgg).map((s) => ({
     ...s,
     accuracy: s.attempted > 0 ? Math.round((s.correct / s.attempted) * 100) : 0,
     score: Math.round(s.score * 100) / 100,
   }));
 
-  // Finalize Topic Summaries
   const topicList: TopicPerformanceSummary[] = Object.values(topicAgg).map((t) => {
     const acc = t.attempted > 0 ? Math.round((t.correct / t.attempted) * 100) : 0;
     let status: "Strong" | "Needs Revision" | "Weak" = "Needs Revision";
@@ -248,17 +240,18 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
     selectedQuestionIndex !== null ? questionList[selectedQuestionIndex] : null;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-5 border-b border-slate-200/90 dark:border-slate-800/90">
+    <div className="max-w-[1140px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+      {/* Editorial Report Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-[var(--border)]">
         <div>
-          <div className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
-            Official Evaluation Report
+          <div className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--accent)] mb-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+            <span>Evaluation Dossier • {mockTest.mode.toUpperCase()} Mode</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
-            Performance & Diagnostic Report
+          <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--foreground)]">
+            Performance &amp; Diagnostic Report
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-sm text-[var(--muted-foreground)] mt-1">
             Evaluated under official marking rules (+{scheme.correct} correct, {scheme.wrong} negative marking).
           </p>
         </div>
@@ -269,7 +262,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
               type="button"
               onClick={() => handleRetestMistakes()}
               disabled={isRetesting}
-              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-xs font-semibold bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white transition-colors shadow-2xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>
@@ -280,138 +273,119 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
 
           <Link
             href="/mock/configure"
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131c2e] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors"
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors"
           >
             <span>New Mock</span>
           </Link>
         </div>
       </div>
 
-      {/* TOP SUMMARY DASHBOARD */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Primary Score Card */}
-        <div className="lg:col-span-5 rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-6 flex flex-col justify-between shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Your Result
-            </span>
-            <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800">
-              {mockTest.mode.toUpperCase()} MODE
-            </span>
-          </div>
-
-          <div className="my-5">
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl sm:text-5xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">
+      {/* TOP INLINE SUMMARY STRIP: Score | Accuracy | Correct | Incorrect | Unattempted */}
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] overflow-hidden">
+        <div className="grid grid-cols-2 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border)]">
+          {/* Score */}
+          <div className="p-5 col-span-2 sm:col-span-1">
+            <div className="text-[11px] font-mono uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
+              Net Score
+            </div>
+            <div className="mt-2 flex items-baseline gap-1.5">
+              <span className="text-2xl sm:text-3xl font-mono font-semibold text-[var(--foreground)]">
                 {roundedScore}
               </span>
-              <span className="text-lg font-mono text-slate-400 dark:text-slate-500">
+              <span className="text-xs font-mono text-[var(--muted-foreground)]">
                 / {maxPossibleScore}
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-              Net score after deducting{" "}
-              <strong className="font-mono text-rose-600 dark:text-rose-400">
-                {Math.abs(wrongCount * scheme.wrong).toFixed(2)}
-              </strong>{" "}
-              negative marks
-            </p>
-          </div>
-
-          {/* Score Distribution Bar */}
-          <div className="space-y-1.5 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <div className="flex justify-between text-[11px] font-medium text-slate-500">
-              <span>Response Distribution</span>
-              <span className="font-mono">
-                {attemptedCount}/{totalQuestions} attempted
-              </span>
-            </div>
-            <div className="h-2.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden flex">
-              <div
-                style={{ width: `${(correctCount / Math.max(1, totalQuestions)) * 100}%` }}
-                className="bg-emerald-600 dark:bg-emerald-500 h-full"
-                title={`Correct: ${correctCount}`}
-              />
-              <div
-                style={{ width: `${(wrongCount / Math.max(1, totalQuestions)) * 100}%` }}
-                className="bg-rose-600 dark:bg-rose-500 h-full"
-                title={`Wrong: ${wrongCount}`}
-              />
+            <div className="mt-1 text-[11px] font-mono text-[var(--muted-foreground)]">
+              -{Math.abs(wrongCount * scheme.wrong).toFixed(2)} negative
             </div>
           </div>
-        </div>
 
-        {/* Accuracy & Counts Grid */}
-        <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-4">
           {/* Accuracy */}
-          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5 flex flex-col justify-between shadow-2xs">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          <div className="p-5">
+            <div className="text-[11px] font-mono uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
               Accuracy
             </div>
-            <div className="text-3xl font-bold font-mono text-blue-700 dark:text-blue-400 my-2">
+            <div className="mt-2 text-2xl sm:text-3xl font-mono font-semibold text-[var(--accent)]">
               {accuracy}%
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              On {attemptedCount} attempts
+            <div className="mt-1 text-[11px] text-[var(--muted-foreground)]">
+              {attemptedCount}/{totalQuestions} attempted
             </div>
           </div>
 
           {/* Correct */}
-          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5 flex flex-col justify-between shadow-2xs">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          <div className="p-5">
+            <div className="text-[11px] font-mono uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
               Correct
             </div>
-            <div className="text-3xl font-bold font-mono text-emerald-600 dark:text-emerald-400 my-2">
+            <div className="mt-2 text-2xl sm:text-3xl font-mono font-semibold text-[var(--sage)]">
               {correctCount}
             </div>
-            <div className="text-[11px] font-mono text-emerald-700 dark:text-emerald-400">
+            <div className="mt-1 text-[11px] font-mono text-[var(--sage)]">
               +{(correctCount * scheme.correct).toFixed(2)} marks
             </div>
           </div>
 
-          {/* Wrong */}
-          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5 flex flex-col justify-between shadow-2xs">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Wrong
+          {/* Incorrect */}
+          <div className="p-5">
+            <div className="text-[11px] font-mono uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
+              Incorrect
             </div>
-            <div className="text-3xl font-bold font-mono text-rose-600 dark:text-rose-400 my-2">
+            <div className="mt-2 text-2xl sm:text-3xl font-mono font-semibold text-rose-600 dark:text-rose-400">
               {wrongCount}
             </div>
-            <div className="text-[11px] font-mono text-rose-600 dark:text-rose-400">
+            <div className="mt-1 text-[11px] font-mono text-rose-600 dark:text-rose-400">
               {wrongCount > 0 ? `${(wrongCount * scheme.wrong).toFixed(2)} marks` : "0.00 penalty"}
             </div>
           </div>
 
           {/* Unattempted */}
-          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5 flex flex-col justify-between shadow-2xs">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          <div className="p-5">
+            <div className="text-[11px] font-mono uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
               Unattempted
             </div>
-            <div className="text-3xl font-bold font-mono text-slate-700 dark:text-slate-300 my-2">
+            <div className="mt-2 text-2xl sm:text-3xl font-mono font-semibold text-[var(--foreground)]">
               {unattemptedCount}
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400">0.00 penalty</div>
+            <div className="mt-1 text-[11px] text-[var(--muted-foreground)]">
+              Avg {avgTimePerAttempt}s / attempt
+            </div>
           </div>
+        </div>
+
+        {/* Thin Linear Distribution Bar */}
+        <div className="h-1.5 w-full bg-[var(--muted)] flex">
+          <div
+            style={{ width: `${(correctCount / Math.max(1, totalQuestions)) * 100}%` }}
+            className="bg-[var(--sage)] h-full"
+            title={`Correct: ${correctCount}`}
+          />
+          <div
+            style={{ width: `${(wrongCount / Math.max(1, totalQuestions)) * 100}%` }}
+            className="bg-rose-600 dark:bg-rose-500 h-full"
+            title={`Incorrect: ${wrongCount}`}
+          />
         </div>
       </div>
 
-      {/* Section Navigation Tabs */}
-      <div className="flex border-b border-slate-200 dark:border-slate-800 overflow-x-auto gap-1">
+      {/* Progressive Disclosure Tabs */}
+      <div className="flex border-b border-[var(--border)] overflow-x-auto gap-6">
         {[
-          { id: "overview", label: "Overall & PYQ vs Model" },
-          { id: "subjects", label: `Subject Performance (${subjectList.length})` },
-          { id: "topics", label: `Topic & Weak Areas (${topicList.length})` },
-          { id: "time", label: "Time Analysis" },
-          { id: "mistakes", label: `Mistake Review (${incorrectQuestions.length})` },
+          { id: "overview", label: "Overview & PYQ vs Model" },
+          { id: "subjects", label: `Subject Breakdown (${subjectList.length})` },
+          { id: "topics", label: `Topic Breakdown (${topicList.length})` },
+          { id: "mistakes", label: `Mistake Analysis (${incorrectQuestions.length})` },
+          { id: "review", label: `Question Review (${totalQuestions})` },
         ].map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id as typeof activeTab)}
-            className={`py-2.5 px-4 text-xs font-semibold border-b-2 transition-colors shrink-0 cursor-pointer ${
+            className={`py-3 text-xs font-medium border-b-2 transition-colors shrink-0 cursor-pointer ${
               activeTab === tab.id
-                ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400"
-                : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
+                ? "border-[var(--foreground)] text-[var(--foreground)] font-semibold"
+                : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
             {tab.label}
@@ -419,49 +393,55 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
         ))}
       </div>
 
-      {/* TAB 1: OVERALL & PYQ VS MODEL */}
+      {/* SECTION 1: OVERVIEW & PYQ VS MODEL SPLIT */}
       {activeTab === "overview" && (
-        <div className="space-y-6">
-          {/* PYQ vs Model Comparative Chart Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="space-y-6 animate-editorial">
+          {/* PYQ vs Model Comparative Split */}
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] divide-y md:divide-y-0 md:divide-x divide-[var(--border)] grid grid-cols-1 md:grid-cols-2">
             {/* Verified PYQ Pool */}
-            <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-6 space-y-4 shadow-2xs">
+            <div className="p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  <span className="w-2 h-2 rounded-full bg-[var(--sage)]" />
+                  <h3 className="text-sm font-semibold text-[var(--foreground)]">
                     Verified PYQ Pool (80% Weight)
                   </h3>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                <span className="font-mono text-xs font-semibold text-[var(--sage)]">
                   {pyqAccuracy}% Accuracy
                 </span>
               </div>
 
-              <div className="h-2.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div className="h-2 w-full rounded-full bg-[var(--muted)] overflow-hidden">
                 <div
-                  className="h-full bg-emerald-600 dark:bg-emerald-500 rounded-full transition-all duration-300"
+                  className="h-full bg-[var(--sage)] rounded-full transition-all duration-300"
                   style={{ width: `${pyqAccuracy}%` }}
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-2 pt-2 text-xs">
-                <div className="p-3 rounded-lg bg-[#f8f9fa] dark:bg-[#0f172a] border border-slate-200/70 dark:border-slate-800">
-                  <div className="text-[10px] uppercase font-semibold text-slate-400">Attempted</div>
-                  <div className="font-mono font-bold text-sm text-slate-900 dark:text-white mt-0.5">
+              <div className="grid grid-cols-3 gap-3 pt-2 text-xs">
+                <div className="p-3 rounded-md bg-[var(--background)] border border-[var(--border)]">
+                  <div className="text-[10px] font-mono uppercase text-[var(--muted-foreground)]">
+                    Attempted
+                  </div>
+                  <div className="font-mono font-semibold text-sm text-[var(--foreground)] mt-1">
                     {pyqAttempted}/{mockTest.pyq_count || pyqTotal}
                   </div>
                 </div>
-                <div className="p-3 rounded-lg bg-[#f8f9fa] dark:bg-[#0f172a] border border-slate-200/70 dark:border-slate-800">
-                  <div className="text-[10px] uppercase font-semibold text-slate-400">Right / Wrong</div>
-                  <div className="font-mono font-bold text-sm mt-0.5">
-                    <span className="text-emerald-600 dark:text-emerald-400">{pyqCorrect}</span> /{" "}
+                <div className="p-3 rounded-md bg-[var(--background)] border border-[var(--border)]">
+                  <div className="text-[10px] font-mono uppercase text-[var(--muted-foreground)]">
+                    Right / Wrong
+                  </div>
+                  <div className="font-mono font-semibold text-sm mt-1">
+                    <span className="text-[var(--sage)]">{pyqCorrect}</span> /{" "}
                     <span className="text-rose-600 dark:text-rose-400">{pyqWrong}</span>
                   </div>
                 </div>
-                <div className="p-3 rounded-lg bg-[#f8f9fa] dark:bg-[#0f172a] border border-slate-200/70 dark:border-slate-800">
-                  <div className="text-[10px] uppercase font-semibold text-slate-400">Net Marks</div>
-                  <div className="font-mono font-bold text-sm text-slate-900 dark:text-white mt-0.5">
+                <div className="p-3 rounded-md bg-[var(--background)] border border-[var(--border)]">
+                  <div className="text-[10px] font-mono uppercase text-[var(--muted-foreground)]">
+                    Net Marks
+                  </div>
+                  <div className="font-mono font-semibold text-sm text-[var(--foreground)] mt-1">
                     {pyqScoreContrib > 0 ? `+${pyqScoreContrib}` : pyqScoreContrib}
                   </div>
                 </div>
@@ -469,43 +449,49 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
             </div>
 
             {/* Model Question Pool */}
-            <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-6 space-y-4 shadow-2xs">
+            <div className="p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  <span className="w-2 h-2 rounded-full bg-[var(--plum)]" />
+                  <h3 className="text-sm font-semibold text-[var(--foreground)]">
                     Model Question Pool (20% Weight)
                   </h3>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                <span className="font-mono text-xs font-semibold text-[var(--plum)]">
                   {modelAccuracy}% Accuracy
                 </span>
               </div>
 
-              <div className="h-2.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div className="h-2 w-full rounded-full bg-[var(--muted)] overflow-hidden">
                 <div
-                  className="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full transition-all duration-300"
+                  className="h-full bg-[var(--plum)] rounded-full transition-all duration-300"
                   style={{ width: `${modelAccuracy}%` }}
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-2 pt-2 text-xs">
-                <div className="p-3 rounded-lg bg-[#f8f9fa] dark:bg-[#0f172a] border border-slate-200/70 dark:border-slate-800">
-                  <div className="text-[10px] uppercase font-semibold text-slate-400">Attempted</div>
-                  <div className="font-mono font-bold text-sm text-slate-900 dark:text-white mt-0.5">
+              <div className="grid grid-cols-3 gap-3 pt-2 text-xs">
+                <div className="p-3 rounded-md bg-[var(--background)] border border-[var(--border)]">
+                  <div className="text-[10px] font-mono uppercase text-[var(--muted-foreground)]">
+                    Attempted
+                  </div>
+                  <div className="font-mono font-semibold text-sm text-[var(--foreground)] mt-1">
                     {modelAttempted}/{mockTest.model_count || modelTotal}
                   </div>
                 </div>
-                <div className="p-3 rounded-lg bg-[#f8f9fa] dark:bg-[#0f172a] border border-slate-200/70 dark:border-slate-800">
-                  <div className="text-[10px] uppercase font-semibold text-slate-400">Right / Wrong</div>
-                  <div className="font-mono font-bold text-sm mt-0.5">
-                    <span className="text-indigo-600 dark:text-indigo-400">{modelCorrect}</span> /{" "}
+                <div className="p-3 rounded-md bg-[var(--background)] border border-[var(--border)]">
+                  <div className="text-[10px] font-mono uppercase text-[var(--muted-foreground)]">
+                    Right / Wrong
+                  </div>
+                  <div className="font-mono font-semibold text-sm mt-1">
+                    <span className="text-[var(--plum)]">{modelCorrect}</span> /{" "}
                     <span className="text-rose-600 dark:text-rose-400">{modelWrong}</span>
                   </div>
                 </div>
-                <div className="p-3 rounded-lg bg-[#f8f9fa] dark:bg-[#0f172a] border border-slate-200/70 dark:border-slate-800">
-                  <div className="text-[10px] uppercase font-semibold text-slate-400">Net Marks</div>
-                  <div className="font-mono font-bold text-sm text-slate-900 dark:text-white mt-0.5">
+                <div className="p-3 rounded-md bg-[var(--background)] border border-[var(--border)]">
+                  <div className="text-[10px] font-mono uppercase text-[var(--muted-foreground)]">
+                    Net Marks
+                  </div>
+                  <div className="font-mono font-semibold text-sm text-[var(--foreground)] mt-1">
                     {modelScoreContrib > 0 ? `+${modelScoreContrib}` : modelScoreContrib}
                   </div>
                 </div>
@@ -513,48 +499,49 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
             </div>
           </div>
 
-          {/* Weak Areas Alert Strip if any */}
+          {/* Recommended Revision Strip */}
           {weakTopics.length > 0 && (
-            <div className="rounded-xl border border-amber-200 dark:border-amber-900/70 bg-amber-50/60 dark:bg-amber-950/25 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-muted)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
-                  <TrendingDown className="w-4 h-4" />
-                  <span>Priority Weak Areas Detected ({weakTopics.length} Topics &lt; 50% Accuracy)</span>
+                <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.12em] text-[var(--accent)]">
+                  <TrendingDown className="w-3.5 h-3.5" />
+                  <span>Recommended Revision ({weakTopics.length} Priority Weak Topics)</span>
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-300">
+                <p className="text-xs text-[var(--foreground)]">
                   {weakTopics.map((t) => t.name).join(" • ")}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setActiveTab("topics")}
-                className="h-8 px-3.5 rounded-lg text-xs font-semibold bg-white dark:bg-[#131c2e] border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 shrink-0 cursor-pointer"
+                className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-md text-xs font-medium bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] shrink-0 cursor-pointer"
               >
-                Inspect Weak Topics
+                <span>Inspect Topics</span>
+                <ArrowRight className="w-3 h-3" />
               </button>
             </div>
           )}
 
           {/* Question-by-Question Solution Matrix */}
-          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-6 shadow-2xs space-y-4">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Question-by-Question Solution Matrix
+                <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                  Question Solution Matrix
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Select any question number to inspect options, your response, and the structured explanation.
+                <p className="text-xs text-[var(--muted-foreground)]">
+                  Select any question number to inspect options, your response, and structured reasoning.
                 </p>
               </div>
-              <div className="flex items-center gap-3 text-[11px] font-medium text-slate-500">
-                <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-xs bg-emerald-600" /> Correct
+              <div className="flex items-center gap-4 text-[11px] text-[var(--muted-foreground)]">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-xs bg-[var(--sage)]" /> Correct ({avgTimeCorrect}s avg)
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-xs bg-rose-600" /> Wrong
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-xs bg-rose-600" /> Incorrect ({avgTimeWrong}s avg)
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-xs bg-slate-200 dark:bg-slate-700" /> Unattempted
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-xs bg-[var(--border)]" /> Unattempted
                 </span>
               </div>
             </div>
@@ -562,11 +549,11 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
             <div className="grid grid-cols-5 sm:grid-cols-10 md:grid-cols-12 gap-2">
               {questionList.map((mq, idx) => {
                 let badgeClass =
-                  "bg-slate-50 dark:bg-[#0f172a] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800";
+                  "bg-[var(--background)] text-[var(--muted-foreground)] border-[var(--border)]";
 
                 if (mq.user_answer) {
                   if (mq.is_correct) {
-                    badgeClass = "bg-emerald-600 text-white border-emerald-700";
+                    badgeClass = "bg-[var(--sage)] text-white border-[var(--sage)]";
                   } else {
                     badgeClass = "bg-rose-600 text-white border-rose-700";
                   }
@@ -577,7 +564,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
                     key={mq.id}
                     type="button"
                     onClick={() => setSelectedQuestionIndex(idx)}
-                    className={`h-9 rounded-lg border font-mono text-xs font-semibold flex items-center justify-center transition-colors hover:opacity-90 cursor-pointer ${badgeClass}`}
+                    className={`h-9 rounded-md border font-mono text-xs font-medium flex items-center justify-center transition-opacity hover:opacity-90 cursor-pointer ${badgeClass}`}
                   >
                     {idx + 1}
                   </button>
@@ -588,40 +575,37 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
         </div>
       )}
 
-      {/* TAB 2: SUBJECT PERFORMANCE */}
+      {/* SECTION 2: SUBJECT BREAKDOWN */}
       {activeTab === "subjects" && (
-        <div className="space-y-6">
-          {/* Visual Subject Accuracy Chart */}
-          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-6 shadow-2xs space-y-4">
+        <div className="space-y-6 animate-editorial">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 space-y-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                Subject Accuracy Comparison
+              <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                Subject Accuracy &amp; Net Marks
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Visual accuracy distribution across tested subjects.
+              <p className="text-xs text-[var(--muted-foreground)]">
+                Performance distribution across tested subjects.
               </p>
             </div>
 
-            <div className="space-y-3.5 pt-2">
+            <div className="space-y-4 pt-2">
               {subjectList.map((sub) => (
                 <div key={sub.id} className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
-                      {sub.name}
-                    </span>
-                    <span className="font-mono font-bold text-slate-700 dark:text-slate-300">
-                      {sub.accuracy}% ({sub.correct}/{sub.attempted} correct • Net:{" "}
+                    <span className="font-medium text-[var(--foreground)]">{sub.name}</span>
+                    <span className="font-mono text-[var(--muted-foreground)]">
+                      <strong className="text-[var(--foreground)]">{sub.accuracy}%</strong> ({sub.correct}/{sub.attempted} correct • Net:{" "}
                       {sub.score > 0 ? `+${sub.score}` : sub.score})
                     </span>
                   </div>
-                  <div className="h-2.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div className="h-2 w-full rounded-full bg-[var(--muted)] overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${
                         sub.accuracy >= 70
-                          ? "bg-emerald-600 dark:bg-emerald-500"
+                          ? "bg-[var(--sage)]"
                           : sub.accuracy >= 50
-                          ? "bg-blue-600 dark:bg-blue-500"
-                          : "bg-rose-600 dark:bg-rose-500"
+                          ? "bg-[var(--accent)]"
+                          : "bg-rose-600"
                       }`}
                       style={{ width: `${Math.max(4, sub.accuracy)}%` }}
                     />
@@ -631,53 +615,40 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
             </div>
           </div>
 
-          {/* Subject Table */}
-          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] overflow-hidden shadow-2xs">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-[#f8f9fa] dark:bg-[#0f172a] text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                <thead className="bg-[var(--muted)]/60 text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)] border-b border-[var(--border)]">
                   <tr>
                     <th className="py-3.5 px-5">Subject</th>
                     <th className="py-3.5 px-4 text-center">Questions</th>
                     <th className="py-3.5 px-4 text-center">Attempted</th>
                     <th className="py-3.5 px-4 text-center">Correct</th>
-                    <th className="py-3.5 px-4 text-center">Wrong</th>
+                    <th className="py-3.5 px-4 text-center">Incorrect</th>
                     <th className="py-3.5 px-4 text-center">Accuracy</th>
                     <th className="py-3.5 px-5 text-right">Net Score</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody className="divide-y divide-[var(--border)]">
                   {subjectList.map((sub) => (
-                    <tr key={sub.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                      <td className="py-3.5 px-5 font-semibold text-slate-900 dark:text-white">
+                    <tr key={sub.id} className="hover:bg-[var(--muted)]/40 transition-colors">
+                      <td className="py-3.5 px-5 font-medium text-[var(--foreground)]">
                         {sub.name}
                       </td>
-                      <td className="py-3.5 px-4 text-center font-mono text-slate-600 dark:text-slate-400">
+                      <td className="py-3.5 px-4 text-center font-mono text-[var(--muted-foreground)]">
                         {sub.totalQuestions}
                       </td>
-                      <td className="py-3.5 px-4 text-center font-mono font-medium">
-                        {sub.attempted}
-                      </td>
-                      <td className="py-3.5 px-4 text-center font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                      <td className="py-3.5 px-4 text-center font-mono">{sub.attempted}</td>
+                      <td className="py-3.5 px-4 text-center font-mono text-[var(--sage)] font-semibold">
                         {sub.correct}
                       </td>
-                      <td className="py-3.5 px-4 text-center font-mono text-rose-600 dark:text-rose-400 font-bold">
+                      <td className="py-3.5 px-4 text-center font-mono text-rose-600 dark:text-rose-400 font-semibold">
                         {sub.wrong}
                       </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold ${
-                            sub.accuracy >= 70
-                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
-                              : sub.accuracy >= 50
-                              ? "bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
-                              : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"
-                          }`}
-                        >
-                          {sub.accuracy}%
-                        </span>
+                      <td className="py-3.5 px-4 text-center font-mono font-semibold">
+                        {sub.accuracy}%
                       </td>
-                      <td className="py-3.5 px-5 text-right font-mono font-bold text-slate-900 dark:text-white">
+                      <td className="py-3.5 px-5 text-right font-mono font-semibold text-[var(--foreground)]">
                         {sub.score > 0 ? `+${sub.score}` : sub.score}
                       </td>
                     </tr>
@@ -689,167 +660,91 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
         </div>
       )}
 
-      {/* TAB 3: TOPIC PERFORMANCE & WEAK AREAS */}
+      {/* SECTION 3: TOPIC BREAKDOWN */}
       {activeTab === "topics" && (
-        <div className="space-y-6">
-          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-6 shadow-2xs space-y-5">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] divide-y divide-[var(--border)] animate-editorial">
+          <div className="p-5 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              <h3 className="text-sm font-semibold text-[var(--foreground)]">
                 Topic Mastery Classification
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
                 Classified into Strong (&ge;75%), Needs Revision (50–74%), and Weak (&lt;50%).
               </p>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {topicList.map((top) => (
-                <div
-                  key={top.id}
-                  className="rounded-xl p-4 border border-slate-200/90 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] flex flex-col justify-between space-y-3"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">
-                        {top.subjectName}
-                      </span>
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase border ${
-                          top.status === "Strong"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800"
-                            : top.status === "Needs Revision"
-                            ? "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800"
-                            : "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800"
-                        }`}
-                      >
-                        {top.status}
-                      </span>
-                    </div>
+          {topicList.map((top) => (
+            <div
+              key={top.id}
+              className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[var(--muted)]/30 transition-colors"
+            >
+              <div className="space-y-1 min-w-0">
+                <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
+                  {top.subjectName}
+                </div>
+                <div className="text-sm font-medium text-[var(--foreground)] truncate">
+                  {top.name}
+                </div>
+              </div>
 
-                    <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white leading-snug">
-                      {top.name}
-                    </h4>
+              <div className="flex items-center gap-6 shrink-0">
+                <div className="text-right">
+                  <div className="text-xs font-mono font-semibold text-[var(--foreground)]">
+                    {top.accuracy}% ({top.correct}/{top.attempted})
                   </div>
-
-                  <div className="space-y-1.5 pt-2 border-t border-slate-200/70 dark:border-slate-800">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500">
-                        {top.correct}/{top.attempted} Correct
-                      </span>
-                      <span className="font-mono font-bold text-slate-900 dark:text-white">
-                        {top.accuracy}%
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${
-                          top.status === "Strong"
-                            ? "bg-emerald-600"
-                            : top.status === "Needs Revision"
-                            ? "bg-amber-500"
-                            : "bg-rose-600"
-                        }`}
-                        style={{ width: `${Math.max(5, top.accuracy)}%` }}
-                      />
-                    </div>
+                  <div className="w-28 h-1.5 rounded-full bg-[var(--muted)] overflow-hidden mt-1">
+                    <div
+                      className={`h-full rounded-full ${
+                        top.status === "Strong"
+                          ? "bg-[var(--sage)]"
+                          : top.status === "Needs Revision"
+                          ? "bg-[var(--accent)]"
+                          : "bg-rose-600"
+                      }`}
+                      style={{ width: `${Math.max(5, top.accuracy)}%` }}
+                    />
                   </div>
                 </div>
-              ))}
+
+                <span
+                  className={`text-[10px] font-mono uppercase tracking-wider px-2.5 py-1 rounded border ${
+                    top.status === "Strong"
+                      ? "bg-[var(--sage-muted)] text-[var(--sage)] border-[var(--sage)]/30"
+                      : top.status === "Needs Revision"
+                      ? "bg-[var(--accent-muted)] text-[var(--accent)] border-[var(--accent)]/30"
+                      : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30"
+                  }`}
+                >
+                  {top.status}
+                </span>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
       )}
 
-      {/* TAB 4: TIME ANALYSIS */}
-      {activeTab === "time" && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Avg Time / Attempt
-              </div>
-              <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white mt-1.5">
-                {avgTimePerAttempt}s
-              </div>
-              <p className="text-xs text-slate-500 mt-1">Target benchmark: 45s–60s</p>
-            </div>
-
-            <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                Avg Time on Correct
-              </div>
-              <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1.5">
-                {avgTimeCorrect}s
-              </div>
-              <p className="text-xs text-slate-500 mt-1">Across {correctCount} accurate responses</p>
-            </div>
-
-            <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
-                Avg Time on Incorrect
-              </div>
-              <div className="text-2xl font-bold font-mono text-rose-600 dark:text-rose-400 mt-1.5">
-                {avgTimeWrong}s
-              </div>
-              <p className="text-xs text-slate-500 mt-1">Across {wrongCount} wrong responses</p>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-6 space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Question Pacing Telemetry
-            </h3>
-            <div className="space-y-2.5">
-              {questionList.slice(0, 15).map((mq, idx) => {
-                const t = mq.time_spent_seconds || (mq.user_answer ? 38 + (idx % 17) : 12);
-                const pct = Math.min(100, Math.round((t / 90) * 100));
-                return (
-                  <div key={mq.id} className="flex items-center gap-3 text-xs">
-                    <span className="w-10 font-mono font-semibold text-slate-500">
-                      Q.{idx + 1}
-                    </span>
-                    <div className="flex-1 h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                      <div
-                        style={{ width: `${pct}%` }}
-                        className={`h-full rounded-full ${
-                          !mq.user_answer
-                            ? "bg-slate-400"
-                            : mq.is_correct
-                            ? "bg-emerald-600"
-                            : "bg-rose-600"
-                        }`}
-                      />
-                    </div>
-                    <span className="w-12 text-right font-mono text-slate-600 dark:text-slate-400">
-                      {t}s
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 5: MISTAKE ANALYSIS & 7-CATEGORY CLASSIFIER */}
+      {/* SECTION 4: MISTAKE ANALYSIS */}
       {activeTab === "mistakes" && (
-        <div className="space-y-5">
-          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-5 animate-editorial">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-                Classify & Review Mistakes
+              <h3 className="font-semibold text-sm text-[var(--foreground)]">
+                Classify &amp; Diagnose Mistakes
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
                 Tag the root cause of each error to build your personal revision profile.
               </p>
             </div>
 
             <div className="flex items-center gap-2">
-              <label className="text-xs font-semibold text-slate-500">Category:</label>
+              <label className="text-xs font-mono uppercase text-[var(--muted-foreground)]">
+                Filter:
+              </label>
               <select
                 value={mistakeFilter}
                 onChange={(e) => setMistakeFilter(e.target.value)}
-                className="h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-xs font-semibold"
+                className="h-9 px-3 rounded-md border border-[var(--border)] bg-[var(--background)] text-xs font-medium text-[var(--foreground)]"
               >
                 <option value="all">All Mistakes ({incorrectQuestions.length})</option>
                 <option value="conceptual">Conceptual</option>
@@ -864,27 +759,24 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
           </div>
 
           {filteredMistakes.length === 0 ? (
-            <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-12 text-center">
-              <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
-              <div className="font-bold text-sm text-slate-900 dark:text-white">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-12 text-center">
+              <CheckCircle2 className="w-8 h-8 text-[var(--sage)] mx-auto mb-3" />
+              <div className="font-semibold text-sm text-[var(--foreground)]">
                 No mistakes recorded in this filter
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-[var(--muted-foreground)] mt-1">
                 Zero incorrect responses matched this mistake category.
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] divide-y divide-[var(--border)]">
               {filteredMistakes.map((mq) => {
                 const currentCat = (mq.mistake_category || "conceptual") as MistakeCategory;
                 return (
-                  <div
-                    key={mq.id}
-                    className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-6 space-y-4 shadow-2xs"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-slate-100 dark:border-slate-800">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                  <div key={mq.id} className="p-6 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-[var(--muted)] text-[var(--foreground)]">
                           Q.{mq.order_index}
                         </span>
                         {mq.question && (
@@ -906,7 +798,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
                               e.target.value as MistakeCategory
                             )
                           }
-                          className="h-8 px-2.5 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 text-xs font-semibold"
+                          className="h-8 px-2.5 rounded-md border border-[var(--accent)]/40 bg-[var(--accent-muted)] text-[var(--accent)] text-xs font-medium"
                         >
                           <option value="conceptual">Conceptual Mistake</option>
                           <option value="factual">Factual Mistake</option>
@@ -919,7 +811,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
                       </div>
                     </div>
 
-                    <p className="text-sm sm:text-base text-slate-900 dark:text-white leading-relaxed font-normal">
+                    <p className="text-sm sm:text-base text-[var(--foreground)] leading-relaxed">
                       {mq.question?.question_text}
                     </p>
 
@@ -940,17 +832,90 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
         </div>
       )}
 
-      {/* Question Solution Modal */}
+      {/* SECTION 5: QUESTION REVIEW (COMPACT EXPANDABLE ROWS) */}
+      {activeTab === "review" && (
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] divide-y divide-[var(--border)] animate-editorial">
+          {questionList.map((mq, idx) => {
+            const q = mq.question;
+            if (!q) return null;
+            const isExpanded = expandedReviewId === mq.id;
+            const statusLabel = !mq.user_answer
+              ? "Skipped"
+              : mq.is_correct
+              ? "Correct"
+              : "Incorrect";
+
+            return (
+              <div key={mq.id} className="p-5 space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1.5 min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs font-semibold text-[var(--muted-foreground)]">
+                        Q.{idx + 1}
+                      </span>
+                      <QuestionTypeBadge type={q.type} sourceYear={q.source_year} />
+                      <span
+                        className={`text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded ${
+                          !mq.user_answer
+                            ? "bg-[var(--muted)] text-[var(--muted-foreground)]"
+                            : mq.is_correct
+                            ? "bg-[var(--sage-muted)] text-[var(--sage)]"
+                            : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                        }`}
+                      >
+                        {statusLabel}
+                      </span>
+                    </div>
+                    <p className="text-sm text-[var(--foreground)] leading-relaxed">
+                      {q.question_text}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <SaveButton questionId={q.id} />
+                    <button
+                      type="button"
+                      onClick={() => setExpandedReviewId(isExpanded ? null : mq.id)}
+                      className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-[var(--border)] bg-[var(--background)] text-xs font-medium text-[var(--foreground)] cursor-pointer"
+                    >
+                      <span>{isExpanded ? "Hide" : "Inspect"}</span>
+                      {isExpanded ? (
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="pt-3 border-t border-[var(--border)] space-y-3">
+                    <ExplanationPanel
+                      explanation={q.explanation}
+                      correctAnswer={q.correct_answer}
+                      userAnswer={mq.user_answer}
+                      type={q.type}
+                      sourceYear={q.source_year}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Question Solution Modal (from Matrix Click) */}
       {activeReviewQuestion && activeReviewQuestion.question && (
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4 overflow-y-auto"
         >
-          <div className="bg-white dark:bg-[#131c2e] border border-slate-200 dark:border-slate-800 rounded-xl max-w-2xl w-full p-6 shadow-xl my-8 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg max-w-2xl w-full p-6 shadow-xl my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
+              <div className="flex items-center gap-2.5">
+                <span className="font-mono font-semibold text-xs px-2 py-0.5 rounded bg-[var(--muted)] text-[var(--foreground)]">
                   Q.{(selectedQuestionIndex || 0) + 1}
                 </span>
                 <QuestionTypeBadge
@@ -962,7 +927,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
               <button
                 type="button"
                 onClick={() => setSelectedQuestionIndex(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
                 aria-label="Close modal"
               >
                 <X className="w-4 h-4" />
@@ -970,7 +935,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
             </div>
 
             <div className="py-4 space-y-4">
-              <p className="text-base text-slate-900 dark:text-white font-normal whitespace-pre-line leading-relaxed">
+              <p className="text-base text-[var(--foreground)] whitespace-pre-line leading-relaxed">
                 {activeReviewQuestion.question.question_text}
               </p>
 
@@ -989,30 +954,28 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
                   const isRight = activeReviewQuestion.question?.correct_answer === opt;
 
                   let rowClass =
-                    "border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-slate-700 dark:text-slate-300";
+                    "border-[var(--border)] bg-[var(--background)] text-[var(--foreground)]";
                   if (isRight) {
                     rowClass =
-                      "border-emerald-600 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-200 font-semibold";
+                      "border-[var(--sage)] bg-[var(--sage-muted)] text-[var(--foreground)] font-medium";
                   } else if (isChosen && !isRight) {
                     rowClass =
-                      "border-rose-600 bg-rose-50/60 dark:bg-rose-950/40 text-rose-950 dark:text-rose-200 font-semibold";
+                      "border-rose-500/50 bg-rose-500/10 text-[var(--foreground)] font-medium";
                   }
 
                   return (
                     <div
                       key={opt}
-                      className={`p-3 rounded-lg border text-xs sm:text-sm flex items-start justify-between gap-3 ${rowClass}`}
+                      className={`p-3 rounded-md border text-xs sm:text-sm flex items-start justify-between gap-3 ${rowClass}`}
                     >
                       <div className="flex items-start gap-2.5">
-                        <span className="font-mono font-bold">{opt}.</span>
+                        <span className="font-mono font-semibold">{opt}.</span>
                         <span>{optText}</span>
                       </div>
-                      <div className="text-[11px] font-bold shrink-0">
-                        {isRight && (
-                          <span className="text-emerald-700 dark:text-emerald-400">✓ Correct</span>
-                        )}
+                      <div className="text-[11px] font-mono font-semibold shrink-0">
+                        {isRight && <span className="text-[var(--sage)]">✓ Correct</span>}
                         {isChosen && !isRight && (
-                          <span className="text-rose-700 dark:text-rose-400">✕ Your Answer</span>
+                          <span className="text-rose-600 dark:text-rose-400">✕ Your Answer</span>
                         )}
                       </div>
                     </div>

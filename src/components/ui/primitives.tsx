@@ -3,10 +3,10 @@ import { cn } from "@/lib/utils";
 import { AlertCircle, Inbox, X } from "lucide-react";
 
 /* ============================================================================
- * BUTTON
+ * BUTTON — Editorial Tactile Controls
  * ========================================================================== */
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger" | "success";
+  variant?: "primary" | "accent" | "secondary" | "outline" | "ghost" | "danger" | "success";
   size?: "sm" | "md" | "lg" | "icon";
 }
 
@@ -14,31 +14,33 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", ...props }, ref) => {
     const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
       primary:
-        "bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white border border-transparent shadow-xs",
+        "bg-[var(--primary)] hover:opacity-90 text-[var(--primary-foreground)] border border-transparent",
+      accent:
+        "bg-[var(--accent)] hover:opacity-90 text-[var(--accent-foreground)] border border-transparent",
       secondary:
-        "bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-900 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700/80",
+        "bg-[var(--secondary)] hover:bg-[var(--border)]/60 text-[var(--foreground)] border border-[var(--border)]",
       outline:
-        "bg-white hover:bg-slate-50 dark:bg-[#131c2e] dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800",
+        "bg-[var(--card)] hover:bg-[var(--muted)]/60 text-[var(--foreground)] border border-[var(--border)]",
       ghost:
-        "bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/70 text-slate-600 dark:text-slate-300 border border-transparent",
+        "bg-transparent hover:bg-[var(--muted)]/70 text-[var(--muted-foreground)] hover:text-[var(--foreground)] border border-transparent",
       danger:
-        "bg-rose-600 hover:bg-rose-700 text-white border border-transparent shadow-xs",
+        "bg-[var(--destructive)] hover:opacity-90 text-white border border-transparent",
       success:
-        "bg-emerald-600 hover:bg-emerald-700 text-white border border-transparent shadow-xs",
+        "bg-[var(--sage)] hover:opacity-90 text-white border border-transparent",
     };
 
     const sizes: Record<NonNullable<ButtonProps["size"]>, string> = {
-      sm: "h-8 px-3 text-xs rounded-lg gap-1.5",
-      md: "h-10 px-4 text-sm rounded-lg gap-2",
-      lg: "h-11 px-6 text-sm rounded-xl gap-2.5",
-      icon: "h-9 w-9 rounded-lg justify-center",
+      sm: "h-8 px-3 text-xs rounded-md gap-1.5",
+      md: "h-9 px-4 text-xs rounded-md gap-2",
+      lg: "h-11 px-5 text-sm rounded-md gap-2.5",
+      icon: "h-8 w-8 rounded-md justify-center",
     };
 
     return (
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center font-semibold transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:pointer-events-none select-none",
+          "inline-flex items-center justify-center font-medium tracking-[-0.01em] transition-all duration-150 active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:pointer-events-none select-none",
           variants[variant],
           sizes[size],
           className
@@ -51,7 +53,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = "Button";
 
 /* ============================================================================
- * CARD
+ * CARD — Restrained Architectural Surface
  * ========================================================================== */
 export function Card({
   className,
@@ -61,7 +63,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] text-slate-900 dark:text-slate-100 shadow-2xs",
+        "rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]",
         className
       )}
       {...props}
@@ -79,7 +81,7 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        "px-6 py-5 border-b border-slate-100 dark:border-slate-800/80 flex flex-col gap-1",
+        "px-5 py-4 border-b border-[var(--border)] flex flex-col gap-1",
         className
       )}
       {...props}
@@ -96,7 +98,7 @@ export function CardTitle({
 }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn("text-base font-bold tracking-tight text-slate-900 dark:text-slate-100", className)}
+      className={cn("text-sm font-semibold tracking-tight text-[var(--foreground)]", className)}
       {...props}
     >
       {children}
@@ -110,7 +112,7 @@ export function CardDescription({
   ...props
 }: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
-    <p className={cn("text-xs text-slate-500 dark:text-slate-400", className)} {...props}>
+    <p className={cn("text-xs text-[var(--muted-foreground)]", className)} {...props}>
       {children}
     </p>
   );
@@ -122,14 +124,14 @@ export function CardContent({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("p-6", className)} {...props}>
+    <div className={cn("p-5", className)} {...props}>
       {children}
     </div>
   );
 }
 
 /* ============================================================================
- * BADGE
+ * BADGE — Editorial Status & Taxonomy Pill
  * ========================================================================== */
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: "default" | "primary" | "pyq" | "model" | "success" | "warning" | "danger" | "outline";
@@ -138,27 +140,27 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 export function Badge({ className, variant = "default", children, ...props }: BadgeProps) {
   const variants: Record<NonNullable<BadgeProps["variant"]>, string> = {
     default:
-      "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700",
+      "bg-[var(--muted)] text-[var(--foreground)] border-[var(--border)]",
     primary:
-      "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/80",
+      "bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent-border)]",
     pyq:
-      "bg-emerald-50/90 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/80",
+      "bg-[var(--sage-soft)] text-[var(--sage)] border-[var(--sage-border)]",
     model:
-      "bg-indigo-50/90 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/80",
+      "bg-[var(--plum-soft)] text-[var(--plum)] border-[var(--plum-border)]",
     success:
-      "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/80",
+      "bg-[var(--sage-soft)] text-[var(--sage)] border-[var(--sage-border)]",
     warning:
-      "bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/80",
+      "bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent-border)]",
     danger:
-      "bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/80",
+      "bg-rose-500/10 text-[var(--destructive)] border-rose-500/25",
     outline:
-      "bg-transparent text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700",
+      "bg-transparent text-[var(--muted-foreground)] border-[var(--border)]",
   };
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border tracking-tight",
+        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium border tracking-tight",
         variants[variant],
         className
       )}
@@ -179,7 +181,7 @@ export const Input = React.forwardRef<
   <input
     ref={ref}
     className={cn(
-      "w-full h-10 px-3.5 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 dark:focus:border-blue-500 transition-colors",
+      "w-full h-9 px-3 py-1.5 text-xs rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)] transition-colors",
       className
     )}
     {...props}
@@ -194,7 +196,7 @@ export const Select = React.forwardRef<
   <select
     ref={ref}
     className={cn(
-      "w-full h-10 px-3 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 dark:focus:border-blue-500 transition-colors",
+      "w-full h-9 px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] focus:outline-none focus:border-[var(--accent)] transition-colors",
       className
     )}
     {...props}
@@ -205,7 +207,7 @@ export const Select = React.forwardRef<
 Select.displayName = "Select";
 
 /* ============================================================================
- * PROGRESS
+ * PROGRESS — Precision Calibration Bar
  * ========================================================================== */
 export function Progress({
   value,
@@ -228,10 +230,10 @@ export function Progress({
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={label}
-      className={cn("w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden", className)}
+      className={cn("w-full h-1.5 rounded-full bg-[var(--muted)] overflow-hidden", className)}
     >
       <div
-        className={cn("h-full rounded-full bg-blue-600 transition-all duration-300", indicatorClassName)}
+        className={cn("h-full rounded-full bg-[var(--accent)] transition-all duration-300", indicatorClassName)}
         style={{ width: `${pct}%` }}
       />
     </div>
@@ -244,7 +246,7 @@ export function Progress({
 export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("animate-pulse rounded-lg bg-slate-200/70 dark:bg-slate-800/70", className)}
+      className={cn("animate-pulse rounded-md bg-[var(--muted)]", className)}
       {...props}
     />
   );
@@ -269,15 +271,15 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-10 text-center flex flex-col items-center justify-center max-w-full",
+        "rounded-lg border border-[var(--border)] bg-[var(--card)] p-8 text-center flex flex-col items-center justify-center max-w-full",
         className
       )}
     >
-      <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-center text-slate-500 dark:text-slate-400 mb-3.5">
-        {icon || <Inbox className="w-5 h-5" />}
+      <div className="w-9 h-9 rounded-md bg-[var(--muted)] border border-[var(--border)] flex items-center justify-center text-[var(--muted-foreground)] mb-3">
+        {icon || <Inbox className="w-4 h-4" />}
       </div>
-      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{title}</h3>
-      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1 leading-relaxed">
+      <h3 className="text-sm font-semibold text-[var(--foreground)]">{title}</h3>
+      <p className="text-xs text-[var(--muted-foreground)] max-w-sm mt-1 leading-relaxed">
         {description}
       </p>
       {action && <div className="mt-4">{action}</div>}
@@ -300,20 +302,20 @@ export function ErrorState({
     <div
       role="alert"
       className={cn(
-        "rounded-xl border border-rose-200 dark:border-rose-900/70 bg-rose-50/70 dark:bg-rose-950/30 p-4 flex items-start gap-3 text-rose-800 dark:text-rose-200",
+        "rounded-lg border border-rose-500/30 bg-rose-500/10 p-4 flex items-start gap-3 text-[var(--foreground)]",
         className
       )}
     >
-      <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+      <AlertCircle className="w-4 h-4 text-[var(--destructive)] shrink-0 mt-0.5" />
       <div className="flex-1 text-xs">
-        <div className="font-bold">{title}</div>
-        <div className="mt-0.5 text-rose-700 dark:text-rose-300 leading-relaxed">{message}</div>
+        <div className="font-semibold">{title}</div>
+        <div className="mt-0.5 text-[var(--muted-foreground)] leading-relaxed">{message}</div>
       </div>
       {onRetry && (
         <button
           type="button"
           onClick={onRetry}
-          className="px-2.5 py-1 rounded-md text-xs font-semibold bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 hover:bg-rose-50 transition"
+          className="px-2.5 py-1 rounded text-xs font-medium bg-[var(--card)] border border-[var(--border)] hover:bg-[var(--muted)] transition"
         >
           Retry
         </button>
@@ -346,28 +348,28 @@ export function Dialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby="dialog-title"
-      className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4 overflow-y-auto"
     >
       <div
         className={cn(
-          "bg-white dark:bg-[#131c2e] border border-slate-200 dark:border-slate-800 rounded-xl w-full p-6 shadow-xl my-8 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150",
+          "bg-[var(--card)] border border-[var(--border)] rounded-lg w-full p-6 shadow-xl my-8 max-h-[90vh] overflow-y-auto animate-editorial",
           maxWidth
         )}
       >
-        <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-start justify-between gap-4 pb-4 border-b border-[var(--border)]">
           <div>
-            <h3 id="dialog-title" className="text-base font-bold text-slate-900 dark:text-slate-100">
+            <h3 id="dialog-title" className="text-base font-semibold text-[var(--foreground)]">
               {title}
             </h3>
             {description && (
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>
+              <p className="text-xs text-[var(--muted-foreground)] mt-0.5">{description}</p>
             )}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            className="p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition"
           >
             <X className="w-4 h-4" />
           </button>

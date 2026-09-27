@@ -2,9 +2,9 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { BookOpenCheck, Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { Card } from "@/components/ui/primitives";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState("");
@@ -32,15 +32,12 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-[var(--background)]">
-      <Card className="max-w-md w-full p-8">
-        <div className="text-center mb-6">
-          <Link href="/" className="inline-flex items-center gap-2.5 font-bold text-lg text-[var(--foreground)]">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white">
-              <BookOpenCheck className="w-4 h-4" />
-            </div>
-            <span>MockMaster</span>
+      <div className="max-w-md w-full rounded-lg border border-[var(--border)] bg-[var(--card)] p-8">
+        <div className="mb-6">
+          <Link href="/" className="inline-flex items-center">
+            <BrandLogo size="md" />
           </Link>
-          <h1 className="text-xl font-bold tracking-tight text-[var(--foreground)] mt-4">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-[var(--foreground)] mt-5">
             Reset Password
           </h1>
           <p className="text-xs text-[var(--muted-foreground)] mt-1">
@@ -50,7 +47,7 @@ export default function ResetPasswordPage() {
 
         {submitted ? (
           <div className="text-center py-6 space-y-4">
-            <div className="w-11 h-11 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-[var(--sage-muted)] text-[var(--sage)] mx-auto flex items-center justify-center">
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <p className="text-sm font-medium text-[var(--foreground)]">
@@ -58,7 +55,7 @@ export default function ResetPasswordPage() {
             </p>
             <Link
               href="/auth/login"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--accent)] hover:underline"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Return to Sign In</span>
@@ -67,12 +64,12 @@ export default function ResetPasswordPage() {
         ) : (
           <form onSubmit={handleReset} className="space-y-4">
             {errorMsg && (
-              <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-xs font-medium">
+              <div className="p-3 rounded-md bg-rose-500/10 text-rose-700 dark:text-rose-300 text-xs font-medium">
                 {errorMsg}
               </div>
             )}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5">
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5">
                 Email Address
               </label>
               <div className="relative">
@@ -83,7 +80,7 @@ export default function ResetPasswordPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="aspirant@example.com"
-                  className="w-full h-10 pl-9 pr-3 text-sm rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] focus:outline-hidden focus:ring-2 focus:ring-blue-600"
+                  className="w-full h-10 pl-9 pr-3 text-sm rounded-md border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] focus:outline-hidden focus:border-[var(--accent)]"
                 />
               </div>
             </div>
@@ -91,7 +88,7 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-10 rounded-lg font-semibold text-sm bg-blue-600 text-white hover:bg-blue-700 transition shadow-xs cursor-pointer disabled:opacity-60"
+              className="w-full h-10 rounded-md font-medium text-xs uppercase tracking-wider bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition cursor-pointer disabled:opacity-60"
             >
               {loading ? "Sending recovery link..." : "Send Recovery Link"}
             </button>
@@ -99,7 +96,7 @@ export default function ResetPasswordPage() {
             <div className="pt-2 text-center">
               <Link
                 href="/auth/login"
-                className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                className="inline-flex items-center gap-1 text-xs font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Return to Sign In</span>
@@ -107,7 +104,7 @@ export default function ResetPasswordPage() {
             </div>
           </form>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

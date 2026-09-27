@@ -6,17 +6,7 @@ import {
   getTopicsBySubjectId,
   getAllQuestions,
 } from "@/lib/db";
-import {
-  Award,
-  ArrowRight,
-  ShieldCheck,
-  Clock,
-  Sparkles,
-  ChevronRight,
-  Search,
-  Sliders,
-  BookOpen,
-} from "lucide-react";
+import { ArrowRight, ChevronRight, Search, Sliders } from "lucide-react";
 
 interface ExamHubProps {
   params: Promise<{
@@ -37,195 +27,172 @@ export default async function ExamHubPage({ params }: ExamHubProps) {
     getAllQuestions({ examId: exam.id, status: "approved" }),
   ]);
 
-  // Compute real verified question counts for this exam
   const pyqCount = examQuestions.filter((q) => q.type === "PYQ").length;
   const modelCount = examQuestions.filter((q) => q.type === "MODEL").length;
+  const duration = exam.time_limit_minutes || exam.default_time_minutes || 60;
+
+  const subjectsWithTopics = await Promise.all(
+    subjects.map(async (sub) => {
+      const topics = await getTopicsBySubjectId(sub.id);
+      const subQuestions = examQuestions.filter((q) => q.subject_id === sub.id);
+      const subPyqs = subQuestions.filter((q) => q.type === "PYQ").length;
+      const subModels = subQuestions.filter((q) => q.type === "MODEL").length;
+      return { sub, topics, subPyqs, subModels };
+    })
+  );
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+    <div className="max-w-[1120px] mx-auto px-4 sm:px-6 py-10 space-y-10 animate-editorial">
       {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-        <Link href="/" className="hover:text-slate-900 dark:hover:text-white transition">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
+        <Link href="/#examinations" className="hover:text-[var(--foreground)] transition-colors">
           Examinations
         </Link>
-        <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-        <span className="font-semibold text-slate-900 dark:text-white">{exam.name}</span>
+        <ChevronRight className="w-3.5 h-3.5 opacity-50" />
+        <span className="font-medium text-[var(--foreground)]">{exam.name}</span>
       </nav>
 
-      {/* Exam Hero Header Card */}
-      <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-6 sm:p-8 shadow-2xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/80">
-              <Award className="w-3.5 h-3.5" />
-              <span>Official Examination Hub</span>
-            </div>
-
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-              {exam.name}
-            </h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-              {exam.description}
-            </p>
-
-            <div className="pt-2 flex flex-wrap items-center gap-3 text-xs font-medium text-slate-600 dark:text-slate-300">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>{pyqCount} Verified PYQs</span>
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50/90 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                <span>{modelCount} Reviewed Model Questions</span>
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-                <span>{exam.time_limit_minutes || exam.default_time_minutes || 60} mins standard duration</span>
-              </span>
-            </div>
+      {/* Editorial Header */}
+      <div className="pb-8 border-b border-[var(--border)] flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+        <div className="space-y-3 max-w-2xl">
+          <div className="text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--accent)]">
+            {exam.conducting_body || exam.category || "Official Examination Syllabus"}
           </div>
+          <h1 className="font-display text-3xl sm:text-4xl font-normal text-[var(--foreground)]">
+            {exam.name}
+          </h1>
+          <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
+            {exam.description}
+          </p>
+        </div>
 
-          <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
-            <Link
-              href={`/mock/configure?exam=${exam.slug}`}
-              className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg font-semibold text-xs bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white transition-colors shadow-2xs"
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Configure Full / Subject Mock</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-            <Link
-              href={`/search?exam=${exam.id}`}
-              className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg font-semibold text-xs border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors"
-            >
-              <Search className="w-3.5 h-3.5 text-slate-400" />
-              <span>Browse Question Bank</span>
-            </Link>
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <Link
+            href={`/search?exam=${exam.id}`}
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
+          >
+            <Search className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
+            <span>Browse Questions</span>
+          </Link>
+          <Link
+            href={`/mock/configure?exam=${exam.slug}`}
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>Practice {exam.name}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </div>
+
+      {/* Inline Examination Parameters (No Heavy Cards) */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-6 pb-8 border-b border-[var(--border)]">
+        <div>
+          <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
+            Correct Answer
+          </div>
+          <div className="text-xl font-mono font-semibold text-[var(--sage)] mt-1">
+            +{exam.marking_scheme.correct}
+          </div>
+        </div>
+        <div className="border-l border-[var(--border)] pl-5">
+          <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
+            Negative Marking
+          </div>
+          <div className="text-xl font-mono font-semibold text-[var(--destructive)] mt-1">
+            {exam.marking_scheme.wrong}
+          </div>
+        </div>
+        <div className="border-l border-[var(--border)] pl-5">
+          <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
+            Standard Duration
+          </div>
+          <div className="text-xl font-mono font-semibold text-[var(--foreground)] mt-1">
+            {duration}m
+          </div>
+        </div>
+        <div className="border-l border-[var(--border)] pl-5">
+          <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
+            Verified PYQs
+          </div>
+          <div className="text-xl font-mono font-semibold text-[var(--sage)] mt-1">
+            {pyqCount}
+          </div>
+        </div>
+        <div className="border-l border-[var(--border)] pl-5">
+          <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
+            Model Pool
+          </div>
+          <div className="text-xl font-mono font-semibold text-[var(--plum)] mt-1">
+            {modelCount}
           </div>
         </div>
       </div>
 
-      {/* Official Marking Scheme Parameters */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            Correct Response
-          </div>
-          <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1">
-            +{exam.marking_scheme.correct} Marks
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Full credit awarded per accurate answer
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            Negative Marking Penalty
-          </div>
-          <div className="text-2xl font-bold font-mono text-rose-600 dark:text-rose-400 mt-1">
-            {exam.marking_scheme.wrong} Marks
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Official commission deduction for wrong answers
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            Unattempted Question
-          </div>
-          <div className="text-2xl font-bold font-mono text-slate-700 dark:text-slate-200 mt-1">
-            0.0 Marks
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Zero deduction for skipped questions
-          </p>
-        </div>
-      </div>
-
-      {/* Syllabus & Subject Cards */}
+      {/* Syllabus Subjects & Topics Table */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-              Subject & Topic Taxonomy ({subjects.length} Subjects)
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Select a subject to launch a targeted mock or inspect verified questions by topic.
-            </p>
-          </div>
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-base font-semibold text-[var(--foreground)]">
+            Syllabus Structure ({subjectsWithTopics.length} Subjects)
+          </h2>
+          <span className="text-xs text-[var(--muted-foreground)]">
+            Select any subject to configure a focused practice session
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {await Promise.all(
-            subjects.map(async (subject) => {
-              const subjectTopics = await getTopicsBySubjectId(subject.id);
-              const subPyqs = examQuestions.filter(
-                (q) => q.subject_id === subject.id && q.type === "PYQ"
-              ).length;
-              const subModels = examQuestions.filter(
-                (q) => q.subject_id === subject.id && q.type === "MODEL"
-              ).length;
-
-              return (
-                <div
-                  key={subject.id}
-                  className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-colors shadow-2xs"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2 mb-3">
-                      <div>
-                        <h3 className="font-bold text-base text-slate-900 dark:text-white">
-                          {subject.name}
-                        </h3>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                          {subjectTopics.length} core syllabus topics
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
-                          {subPyqs} PYQ
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80">
-                          {subModels} Model
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-1.5 mt-3">
-                      {subjectTopics.map((top) => (
-                        <Link
-                          key={top.id}
-                          href={`/search?exam=${exam.id}&subject=${subject.id}&topic=${top.id}`}
-                          className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-950/50 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-                        >
-                          {top.name}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-3">
-                    <Link
-                      href={`/mock/configure?exam=${exam.slug}`}
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 dark:text-blue-400 hover:underline"
-                    >
-                      <span>Start Mock</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-
-                    <Link
-                      href={`/search?exam=${exam.id}&subject=${subject.id}`}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-                    >
-                      <BookOpen className="w-3.5 h-3.5" />
-                      <span>Practice Questions</span>
-                    </Link>
-                  </div>
+        <div className="border-t border-[var(--border)] divide-y divide-[var(--border)]">
+          {subjectsWithTopics.map(({ sub, topics, subPyqs, subModels }, idx) => (
+            <div
+              key={sub.id}
+              className="py-5 flex flex-col md:flex-row md:items-start justify-between gap-4"
+            >
+              <div className="space-y-2 max-w-2xl">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="font-mono text-xs text-[var(--muted-foreground)]">
+                    {String(idx + 1).padStart(2, "0")}
+                  </span>
+                  <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                    {sub.name}
+                  </h3>
+                  {(subPyqs > 0 || subModels > 0) && (
+                    <span className="text-[11px] font-mono text-[var(--muted-foreground)]">
+                      ({subPyqs} PYQ · {subModels} Model)
+                    </span>
+                  )}
                 </div>
-              );
-            })
-          )}
+
+                {topics.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 pl-6">
+                    {topics.map((topic) => (
+                      <Link
+                        key={topic.id}
+                        href={`/mock/configure?exam=${exam.slug}&subject=${sub.id}&topic=${topic.id}`}
+                        className="px-2 py-0.5 rounded text-[11px] border border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:border-[var(--accent)] transition-colors"
+                      >
+                        {topic.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 pl-6 md:pl-0 shrink-0">
+                <Link
+                  href={`/search?exam=${exam.id}&subject=${sub.id}`}
+                  className="h-8 px-3 rounded-md text-xs font-medium inline-flex items-center border border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+                >
+                  Questions
+                </Link>
+                <Link
+                  href={`/mock/configure?exam=${exam.slug}&subject=${sub.id}`}
+                  className="h-8 px-3 rounded-md text-xs font-medium inline-flex items-center gap-1.5 border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:border-[var(--accent)] transition-colors"
+                >
+                  <span>Practice Subject</span>
+                  <ArrowRight className="w-3 h-3 text-[var(--accent)]" />
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

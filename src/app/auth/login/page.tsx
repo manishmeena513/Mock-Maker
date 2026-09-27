@@ -3,9 +3,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookOpenCheck, Mail, Lock, AlertCircle } from "lucide-react";
+import { Mail, Lock, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { Card } from "@/components/ui/primitives";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -58,15 +58,12 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-[var(--background)]">
-      <Card className="max-w-md w-full p-8">
-        <div className="text-center mb-7">
-          <Link href="/" className="inline-flex items-center gap-2.5 font-bold text-lg text-[var(--foreground)]">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white">
-              <BookOpenCheck className="w-4 h-4" />
-            </div>
-            <span>MockMaster</span>
+      <div className="max-w-md w-full rounded-lg border border-[var(--border)] bg-[var(--card)] p-8">
+        <div className="mb-7">
+          <Link href="/" className="inline-flex items-center">
+            <BrandLogo size="md" />
           </Link>
-          <h1 className="text-xl font-bold tracking-tight text-[var(--foreground)] mt-4">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-[var(--foreground)] mt-5">
             Sign in to your workspace
           </h1>
           <p className="text-xs text-[var(--muted-foreground)] mt-1">
@@ -75,7 +72,7 @@ export default function LoginPage() {
         </div>
 
         {errorMsg && (
-          <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-xs font-medium border border-red-200 dark:border-red-800/70 flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-md bg-rose-500/10 text-rose-700 dark:text-rose-300 text-xs font-medium border border-rose-500/30 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMsg}</span>
           </div>
@@ -83,7 +80,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleEmailLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5">
+            <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5">
               Email Address
             </label>
             <div className="relative">
@@ -94,19 +91,19 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="aspirant@example.com"
-                className="w-full h-10 pl-9 pr-3 text-sm rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] focus:outline-hidden focus:ring-2 focus:ring-blue-600"
+                className="w-full h-10 pl-9 pr-3 text-sm rounded-md border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] focus:outline-hidden focus:border-[var(--accent)]"
               />
             </div>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
                 Password
               </label>
               <Link
                 href="/auth/reset-password"
-                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                className="text-xs font-medium text-[var(--accent)] hover:underline"
               >
                 Forgot password?
               </Link>
@@ -119,7 +116,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full h-10 pl-9 pr-3 text-sm rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] focus:outline-hidden focus:ring-2 focus:ring-blue-600"
+                className="w-full h-10 pl-9 pr-3 text-sm rounded-md border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] focus:outline-hidden focus:border-[var(--accent)]"
               />
             </div>
           </div>
@@ -127,7 +124,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-10 rounded-lg font-semibold text-sm bg-blue-600 text-white hover:bg-blue-700 transition shadow-xs cursor-pointer disabled:opacity-60"
+            className="w-full h-10 rounded-md font-medium text-xs uppercase tracking-wider bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition cursor-pointer disabled:opacity-60"
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
@@ -135,14 +132,14 @@ export default function LoginPage() {
 
         <div className="my-6 flex items-center gap-3">
           <div className="flex-1 h-px bg-[var(--border)]" />
-          <span className="text-[11px] font-semibold text-[var(--muted-foreground)] uppercase">or</span>
+          <span className="text-[11px] font-mono text-[var(--muted-foreground)] uppercase">or</span>
           <div className="flex-1 h-px bg-[var(--border)]" />
         </div>
 
         <button
           type="button"
           onClick={handleGoogleLogin}
-          className="w-full h-10 rounded-lg border border-[var(--border)] hover:bg-[var(--muted)] text-[var(--foreground)] font-semibold text-sm transition flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full h-10 rounded-md border border-[var(--border)] hover:bg-[var(--muted)] text-[var(--foreground)] font-medium text-xs transition flex items-center justify-center gap-2 cursor-pointer"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path
@@ -167,11 +164,11 @@ export default function LoginPage() {
 
         <p className="mt-6 text-center text-xs text-[var(--muted-foreground)]">
           Don&apos;t have an account?{" "}
-          <Link href="/auth/signup" className="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+          <Link href="/auth/signup" className="font-medium text-[var(--accent)] hover:underline">
             Create free account
           </Link>
         </p>
-      </Card>
+      </div>
     </div>
   );
 }

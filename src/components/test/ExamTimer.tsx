@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Clock, AlertTriangle } from "lucide-react";
+import { Clock } from "lucide-react";
 
 interface ExamTimerProps {
   initialMinutes: number;
@@ -49,9 +49,7 @@ export function ExamTimer({ initialMinutes, startedAt, onTimeUp, className = "" 
   const minutes = Math.floor((secondsRemaining % 3600) / 60);
   const seconds = secondsRemaining % 60;
 
-  const isLowTime = secondsRemaining <= 300; // < 5 mins
-  const isWarningTime = secondsRemaining <= 600 && !isLowTime; // < 10 mins
-
+  const isLowTime = secondsRemaining <= 300;
   const format = (num: number) => String(num).padStart(2, "0");
   const timeString = `${hours > 0 ? `${format(hours)}:` : ""}${format(minutes)}:${format(seconds)}`;
 
@@ -60,19 +58,13 @@ export function ExamTimer({ initialMinutes, startedAt, onTimeUp, className = "" 
       role="timer"
       aria-live="polite"
       aria-label={`Time remaining: ${timeString}`}
-      className={`inline-flex items-center gap-2 h-9 px-3 rounded-lg border font-mono text-xs sm:text-sm font-bold tracking-tight transition-colors ${
+      className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border font-mono text-xs font-medium tabular-nums transition-colors ${
         isLowTime
-          ? "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800"
-          : isWarningTime
-          ? "bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800"
-          : "bg-slate-100/90 text-slate-800 border-slate-200 dark:bg-[#131c2e] dark:text-slate-100 dark:border-slate-800"
+          ? "bg-rose-500/10 text-[var(--destructive)] border-rose-500/30"
+          : "bg-[var(--card)] text-[var(--foreground)] border-[var(--border)]"
       } ${className}`}
     >
-      {isLowTime ? (
-        <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" aria-hidden="true" />
-      ) : (
-        <Clock className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" aria-hidden="true" />
-      )}
+      <Clock className="w-3.5 h-3.5 text-[var(--muted-foreground)]" aria-hidden="true" />
       <span>{timeString}</span>
     </div>
   );

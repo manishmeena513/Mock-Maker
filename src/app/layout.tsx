@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/shared/Navbar";
@@ -16,16 +16,28 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const editorialSerif = Newsreader({
+  variable: "--font-editorial",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
+});
+
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mockmaster.in";
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "MockMaster — 80% Verified PYQs + 20% Reviewed Model Questions",
+    default: "MockMaster — Serious preparation. Measurable progress.",
     template: "%s | MockMaster",
   },
   description:
-    "Generate and attempt authentic exam-grade mock tests combining genuine previous-year questions with syllabus-aligned model questions, instant explanations, and performance analysis.",
+    "Practice with verified previous-year questions, calibrate your PYQ/Model ratio, analyze performance across 22 competitive examinations, and identify exactly where to improve.",
+  icons: {
+    icon: "/brand/favicon.svg",
+    shortcut: "/brand/favicon.svg",
+    apple: "/brand/logo-mark.svg",
+  },
   keywords: [
     "UPSC CSE mock test",
     "UPPSC PCS mock test",
@@ -35,22 +47,22 @@ export const metadata: Metadata = {
     "negative marking practice",
     "topic wise pyqs",
   ],
-  authors: [{ name: "MockMaster Team" }],
-  creator: "MockMaster",
+  authors: [{ name: "Manish Meena" }],
+  creator: "Manish Meena",
   openGraph: {
     type: "website",
     locale: "en_IN",
     url: appUrl,
-    title: "MockMaster — Authentic Exam Preparation Platform",
+    title: "MockMaster — Serious preparation. Measurable progress.",
     description:
-      "Strict 80:20 authentic ratio: 80% genuine verified PYQs + 20% syllabus-aligned model questions. Zero artificial gamification.",
+      "Verified PYQs + calibrated Model questions across 22 competitive examinations with real commission marking and diagnostic analytics.",
     siteName: "MockMaster",
   },
   twitter: {
     card: "summary_large_image",
-    title: "MockMaster — Authentic Exam Mock Tests",
+    title: "MockMaster — Serious preparation. Measurable progress.",
     description:
-      "Strict 80% verified PYQs + 20% syllabus-aligned model questions for UPSC, UPPSC, and SSC CGL.",
+      "Practice with verified PYQs, analyze your performance, and identify exactly where you need to improve.",
   },
 };
 
@@ -63,9 +75,9 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${editorialSerif.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#f8f9fa] dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 transition-colors duration-150">
+      <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)] selection:bg-[var(--accent-soft)] selection:text-[var(--foreground)] transition-colors duration-150">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <Navbar />
           <AppShell>{children}</AppShell>

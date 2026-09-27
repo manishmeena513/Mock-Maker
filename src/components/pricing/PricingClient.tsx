@@ -7,13 +7,10 @@ import {
   AlertCircle,
   ArrowRight,
   Loader2,
-  Sparkles,
-  Crown,
   Receipt,
   CheckCircle2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Badge, Card } from "@/components/ui/primitives";
 import { PaymentTransaction } from "@/types/database";
 
 interface PricingClientProps {
@@ -89,7 +86,6 @@ export function PricingClient({
 
       const order = data.order;
 
-      // If live Razorpay SDK is loaded and a real key is configured, open Razorpay modal
       if (
         typeof window !== "undefined" &&
         window.Razorpay &&
@@ -104,7 +100,7 @@ export function PricingClient({
           description: `${tier} Plan (${billingCycle === "yearly" ? "Annual" : "Monthly"})`,
           order_id: order.orderId,
           prefill: { email: userEmail || undefined },
-          theme: { color: "#1d4ed8" },
+          theme: { color: "#a66e1e" },
           handler: async (response) => {
             const verifyRes = await fetch("/api/payments/verify", {
               method: "POST",
@@ -166,33 +162,33 @@ export function PricingClient({
   return (
     <div className="space-y-12">
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm flex items-center gap-2.5">
-          <AlertCircle className="w-5 h-5 shrink-0" />
+        <div className="p-4 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-sm flex items-center gap-2.5">
+          <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {successMsg && (
-        <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-sm flex items-center gap-2.5">
-          <CheckCircle2 className="w-5 h-5 shrink-0" />
+        <div className="p-4 rounded-md bg-[var(--sage-muted)] border border-[var(--sage)]/30 text-[var(--sage)] text-sm flex items-center gap-2.5">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {/* Billing Interval Toggle */}
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div
           role="group"
           aria-label="Billing Cycle Toggle"
-          className="inline-flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+          className="inline-flex items-center p-1 rounded-md bg-[var(--muted)] border border-[var(--border)] self-start"
         >
           <button
             type="button"
             onClick={() => setBillingCycle("monthly")}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+            className={`px-4 py-1.5 rounded text-xs font-medium transition cursor-pointer ${
               billingCycle === "monthly"
-                ? "bg-white dark:bg-[#131c2e] text-slate-900 dark:text-white shadow-xs"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                ? "bg-[var(--card)] text-[var(--foreground)] shadow-2xs"
+                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
             Monthly Billing
@@ -200,21 +196,22 @@ export function PricingClient({
           <button
             type="button"
             onClick={() => setBillingCycle("yearly")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-1.5 rounded text-xs font-medium transition cursor-pointer ${
               billingCycle === "yearly"
-                ? "bg-white dark:bg-[#131c2e] text-slate-900 dark:text-white shadow-xs"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                ? "bg-[var(--card)] text-[var(--foreground)] shadow-2xs"
+                : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
             <span>Yearly Pass</span>
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-600 text-white">
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono uppercase bg-[var(--accent-muted)] text-[var(--accent)]">
               Save up to ₹189/yr
             </span>
           </button>
         </div>
+
         {validUntil && normalizedCurrent !== "FREE" && (
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Active <strong className="text-slate-800 dark:text-slate-200">{normalizedCurrent}</strong> subscription valid until{" "}
+          <p className="text-xs font-mono text-[var(--muted-foreground)]">
+            Active <strong className="text-[var(--foreground)]">{normalizedCurrent}</strong> subscription valid until{" "}
             {new Date(validUntil).toLocaleDateString("en-IN", {
               day: "numeric",
               month: "short",
@@ -224,49 +221,53 @@ export function PricingClient({
         )}
       </div>
 
-      {/* 3-Tier Plan Cards */}
+      {/* Editorial 3-Tier Plan Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
         {/* 1. FREE PLAN */}
-        <Card className="p-6 sm:p-7 flex flex-col justify-between bg-white dark:bg-[#131c2e] border-slate-200 dark:border-slate-800">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 sm:p-7 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between gap-2">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Free</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Essential daily practice &amp; PYQ verification
+                <h3 className="font-display text-xl font-semibold text-[var(--foreground)]">
+                  Free
+                </h3>
+                <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                  Daily practice &amp; PYQ verification
                 </p>
               </div>
-              <Badge variant="default">STARTER</Badge>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-[var(--muted)] text-[var(--muted-foreground)]">
+                Starter
+              </span>
             </div>
 
-            <div className="mt-6 flex items-baseline gap-1.5 pb-6 border-b border-slate-200 dark:border-slate-800">
-              <span className="text-4xl font-bold text-slate-900 dark:text-white tabular-nums">
+            <div className="mt-6 flex items-baseline gap-1.5 pb-6 border-b border-[var(--border)]">
+              <span className="font-display text-4xl font-semibold text-[var(--foreground)] tabular-nums">
                 ₹0
               </span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="text-xs font-mono text-[var(--muted-foreground)]">
                 / {billingCycle === "yearly" ? "year" : "month"}
               </span>
             </div>
 
-            <ul className="mt-6 space-y-3 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+            <ul className="mt-6 space-y-3 text-xs sm:text-sm text-[var(--foreground)]">
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--sage)] shrink-0" />
                 <span><strong>3 Mock Tests</strong> per day</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--sage)] shrink-0" />
                 <span>Up to <strong>20 Saved Questions</strong> in Revision Hub</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--sage)] shrink-0" />
                 <span><strong>2 Retest Drills</strong> per day</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--sage)] shrink-0" />
                 <span>Core Competitive Examinations</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--sage)] shrink-0" />
                 <span>Standard score &amp; accuracy summary</span>
               </li>
             </ul>
@@ -275,66 +276,62 @@ export function PricingClient({
           <div className="mt-8 pt-4">
             <button
               disabled
-              className="w-full h-11 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed"
+              className="w-full h-10 rounded-md text-xs font-medium bg-[var(--muted)] text-[var(--muted-foreground)] cursor-not-allowed"
             >
               {normalizedCurrent === "FREE" ? "Current Active Plan" : "Included Free Tier"}
             </button>
           </div>
-        </Card>
+        </div>
 
         {/* 2. PRO PLAN */}
-        <Card className="p-6 sm:p-7 border-2 border-blue-600 dark:border-blue-500 bg-white dark:bg-[#131c2e] flex flex-col justify-between relative shadow-md">
-          <div className="absolute -top-3 right-5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-600 text-white shadow-xs">
-            Most Popular
-          </div>
+        <div className="rounded-lg border border-[var(--border-strong)] bg-[var(--card)] p-6 sm:p-7 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between gap-2">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <span>Pro</span>
-                  <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <h3 className="font-display text-xl font-semibold text-[var(--foreground)]">
+                  Pro
                 </h3>
-                <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
-                  Deep subject, topic &amp; mistake analytics
+                <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                  Subject, topic &amp; mistake analytics
                 </p>
               </div>
-              {billingCycle === "yearly" && (
-                <Badge variant="success">Save ₹109/yr</Badge>
-              )}
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-[var(--muted)] text-[var(--foreground)]">
+                ₹59/month | ₹599/year
+              </span>
             </div>
 
-            <div className="mt-6 flex items-baseline gap-1.5 pb-6 border-b border-slate-200 dark:border-slate-800">
-              <span className="text-4xl font-bold text-slate-900 dark:text-white tabular-nums">
+            <div className="mt-6 flex items-baseline gap-1.5 pb-6 border-b border-[var(--border)]">
+              <span className="font-display text-4xl font-semibold text-[var(--foreground)] tabular-nums">
                 ₹{billingCycle === "yearly" ? "599" : "59"}
               </span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                / {billingCycle === "yearly" ? "year (₹49.9/mo)" : "month"}
+              <span className="text-xs font-mono text-[var(--muted-foreground)]">
+                / {billingCycle === "yearly" ? "year" : "month"}
               </span>
             </div>
 
-            <ul className="mt-6 space-y-3 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+            <ul className="mt-6 space-y-3 text-xs sm:text-sm text-[var(--foreground)]">
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--sage)] shrink-0" />
                 <span><strong>20 Mock Tests</strong> per day</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--sage)] shrink-0" />
                 <span>Up to <strong>300 Saved Questions</strong></span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--sage)] shrink-0" />
                 <span><strong>15 Retest Drills</strong> per day</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--sage)] shrink-0" />
                 <span><strong>Custom PYQ / Model Ratios</strong> (100/0 to 0/100)</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--sage)] shrink-0" />
                 <span><strong>Subject, Topic &amp; 7-Category Mistake</strong> Analytics</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--sage)] shrink-0" />
                 <span><strong>PYQ vs Model</strong> Diagnostic Comparison</span>
               </li>
             </ul>
@@ -349,86 +346,82 @@ export function PricingClient({
                 normalizedCurrent === "ELITE" ||
                 Boolean(loadingPlan)
               }
-              className="w-full h-11 rounded-xl text-xs sm:text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white transition shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full h-10 rounded-md text-xs font-medium border border-[var(--foreground)] bg-transparent hover:bg-[var(--muted)] text-[var(--foreground)] transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loadingPlan?.startsWith("pro_") ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   <span>Processing Pro...</span>
                 </>
               ) : normalizedCurrent === "PRO" ? (
                 <>
-                  <ShieldCheck className="w-4 h-4" />
+                  <ShieldCheck className="w-3.5 h-3.5" />
                   <span>Current Active Plan</span>
                 </>
               ) : normalizedCurrent === "ELITE" ? (
                 <span>Included in Elite</span>
               ) : (
                 <>
-                  <span>Upgrade to Pro — ₹{billingCycle === "yearly" ? "599/yr" : "59/mo"}</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>Select Pro — ₹{billingCycle === "yearly" ? "599/yr" : "59/mo"}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </>
               )}
             </button>
-            <p className="text-center text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-              Instant activation • UPI, Cards &amp; NetBanking
-            </p>
           </div>
-        </Card>
+        </div>
 
-        {/* 3. ELITE PLAN */}
-        <Card className="p-6 sm:p-7 border border-amber-500/70 dark:border-amber-500/60 bg-white dark:bg-[#131c2e] flex flex-col justify-between relative">
-          <div className="absolute -top-3 right-5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-600 text-white shadow-xs">
-            Unlimited Access
+        {/* 3. ELITE PLAN (Highlighted with subtle warm gold accent border) */}
+        <div className="rounded-lg border-2 border-[var(--accent)] bg-[var(--card)] p-6 sm:p-7 flex flex-col justify-between relative">
+          <div className="absolute -top-3 right-5 px-2.5 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-[var(--accent)] text-white">
+            Recommended • Unlimited
           </div>
           <div>
             <div className="flex items-center justify-between gap-2">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <span>Elite</span>
-                  <Crown className="w-4 h-4 text-amber-500" />
+                <h3 className="font-display text-xl font-semibold text-[var(--foreground)]">
+                  Elite
                 </h3>
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                  Unrestricted mocks, all 22 exams &amp; full history
+                <p className="text-xs text-[var(--accent)] mt-0.5">
+                  Unrestricted mocks, all 22 exams &amp; full archive
                 </p>
               </div>
-              {billingCycle === "yearly" && (
-                <Badge variant="warning">Save ₹189/yr</Badge>
-              )}
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-[var(--accent-muted)] text-[var(--accent)]">
+                ₹99/month | ₹999/year
+              </span>
             </div>
 
-            <div className="mt-6 flex items-baseline gap-1.5 pb-6 border-b border-slate-200 dark:border-slate-800">
-              <span className="text-4xl font-bold text-slate-900 dark:text-white tabular-nums">
+            <div className="mt-6 flex items-baseline gap-1.5 pb-6 border-b border-[var(--border)]">
+              <span className="font-display text-4xl font-semibold text-[var(--foreground)] tabular-nums">
                 ₹{billingCycle === "yearly" ? "999" : "99"}
               </span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                / {billingCycle === "yearly" ? "year (₹83.2/mo)" : "month"}
+              <span className="text-xs font-mono text-[var(--muted-foreground)]">
+                / {billingCycle === "yearly" ? "year" : "month"}
               </span>
             </div>
 
-            <ul className="mt-6 space-y-3 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+            <ul className="mt-6 space-y-3 text-xs sm:text-sm text-[var(--foreground)]">
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--accent)] shrink-0" />
                 <span><strong>Unlimited Mock Tests</strong> (No daily cap)</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--accent)] shrink-0" />
                 <span><strong>Unlimited Saved Questions</strong> &amp; Bookmarks</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--accent)] shrink-0" />
                 <span><strong>Unlimited Retest Drills</strong> from Mistake Pool</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--accent)] shrink-0" />
                 <span><strong>All 22 Competitive Exams</strong> Unlocked</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--accent)] shrink-0" />
                 <span><strong>Complete Analytics History</strong> &amp; Difficulty Telemetry</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <Check className="w-4 h-4 text-[var(--accent)] shrink-0" />
                 <span>Priority AI Question Generation &amp; New Exam Releases</span>
               </li>
             </ul>
@@ -439,137 +432,136 @@ export function PricingClient({
               type="button"
               onClick={() => handleSubscribe("ELITE")}
               disabled={normalizedCurrent === "ELITE" || Boolean(loadingPlan)}
-              className="w-full h-11 rounded-xl text-xs sm:text-sm font-semibold bg-slate-900 hover:bg-slate-800 dark:bg-amber-600 dark:hover:bg-amber-500 text-white transition shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full h-10 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loadingPlan?.startsWith("elite_") ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   <span>Processing Elite...</span>
                 </>
               ) : normalizedCurrent === "ELITE" ? (
                 <>
-                  <ShieldCheck className="w-4 h-4" />
+                  <ShieldCheck className="w-3.5 h-3.5" />
                   <span>Current Active Plan</span>
                 </>
               ) : (
                 <>
                   <span>Upgrade to Elite — ₹{billingCycle === "yearly" ? "999/yr" : "99/mo"}</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </>
               )}
             </button>
-            <p className="text-center text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-              Instant activation • UPI, Cards &amp; NetBanking
-            </p>
           </div>
-        </Card>
+        </div>
       </div>
 
-      {/* 3-Tier Feature Comparison Matrix */}
-      <Card className="p-6 sm:p-8 bg-white dark:bg-[#131c2e] border-slate-200 dark:border-slate-800">
-        <h3 className="text-base font-bold text-slate-900 dark:text-white mb-5">
-          Complete Plan Specification Comparison
-        </h3>
+      {/* Editorial Comparison Table */}
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] overflow-hidden">
+        <div className="p-5 border-b border-[var(--border)]">
+          <h3 className="text-sm font-semibold text-[var(--foreground)]">
+            Plan Specification Matrix
+          </h3>
+        </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
+          <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                <th className="py-3 px-4">Feature / Entitlement</th>
-                <th className="py-3 px-4">Free (₹0)</th>
-                <th className="py-3 px-4 text-blue-600 dark:text-blue-400">Pro (₹59/mo)</th>
-                <th className="py-3 px-4 text-amber-600 dark:text-amber-400">Elite (₹99/mo)</th>
+              <tr className="border-b border-[var(--border)] bg-[var(--muted)]/50 text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
+                <th className="py-3.5 px-5">Entitlement</th>
+                <th className="py-3.5 px-4">Free (₹0)</th>
+                <th className="py-3.5 px-4 text-[var(--foreground)]">Pro (₹59/mo)</th>
+                <th className="py-3.5 px-5 text-[var(--accent)]">Elite (₹99/mo)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+            <tbody className="divide-y divide-[var(--border)] text-[var(--muted-foreground)]">
               <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-white">Daily Mock Tests</td>
-                <td className="py-3.5 px-4">3 / day</td>
-                <td className="py-3.5 px-4 font-semibold text-blue-600 dark:text-blue-400">20 / day</td>
-                <td className="py-3.5 px-4 font-semibold text-amber-600 dark:text-amber-400">Unlimited</td>
+                <td className="py-3.5 px-5 font-medium text-[var(--foreground)]">Daily Mock Tests</td>
+                <td className="py-3.5 px-4 font-mono">3 / day</td>
+                <td className="py-3.5 px-4 font-mono text-[var(--foreground)]">20 / day</td>
+                <td className="py-3.5 px-5 font-mono font-semibold text-[var(--accent)]">Unlimited</td>
               </tr>
               <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-white">Saved Questions Quota</td>
-                <td className="py-3.5 px-4">20 questions</td>
-                <td className="py-3.5 px-4 font-semibold text-blue-600 dark:text-blue-400">300 questions</td>
-                <td className="py-3.5 px-4 font-semibold text-amber-600 dark:text-amber-400">Unlimited</td>
+                <td className="py-3.5 px-5 font-medium text-[var(--foreground)]">Saved Questions Quota</td>
+                <td className="py-3.5 px-4 font-mono">20 questions</td>
+                <td className="py-3.5 px-4 font-mono text-[var(--foreground)]">300 questions</td>
+                <td className="py-3.5 px-5 font-mono font-semibold text-[var(--accent)]">Unlimited</td>
               </tr>
               <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-white">Daily Retest Drills</td>
-                <td className="py-3.5 px-4">2 / day</td>
-                <td className="py-3.5 px-4 font-semibold text-blue-600 dark:text-blue-400">15 / day</td>
-                <td className="py-3.5 px-4 font-semibold text-amber-600 dark:text-amber-400">Unlimited</td>
+                <td className="py-3.5 px-5 font-medium text-[var(--foreground)]">Daily Retest Drills</td>
+                <td className="py-3.5 px-4 font-mono">2 / day</td>
+                <td className="py-3.5 px-4 font-mono text-[var(--foreground)]">15 / day</td>
+                <td className="py-3.5 px-5 font-mono font-semibold text-[var(--accent)]">Unlimited</td>
               </tr>
               <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-white">Custom PYQ / Model Ratio</td>
-                <td className="py-3.5 px-4">80/20 Default</td>
-                <td className="py-3.5 px-4 font-semibold text-blue-600 dark:text-blue-400">100/0 to 0/100</td>
-                <td className="py-3.5 px-4 font-semibold text-amber-600 dark:text-amber-400">100/0 to 0/100</td>
+                <td className="py-3.5 px-5 font-medium text-[var(--foreground)]">Custom PYQ / Model Ratio</td>
+                <td className="py-3.5 px-4 font-mono">80/20 Default</td>
+                <td className="py-3.5 px-4 font-mono text-[var(--foreground)]">100/0 to 0/100</td>
+                <td className="py-3.5 px-5 font-mono font-semibold text-[var(--accent)]">100/0 to 0/100</td>
               </tr>
               <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-white">Subject &amp; Topic Analytics</td>
-                <td className="py-3.5 px-4">Basic Overview</td>
-                <td className="py-3.5 px-4 font-semibold text-emerald-600 dark:text-emerald-400">Included</td>
-                <td className="py-3.5 px-4 font-semibold text-emerald-600 dark:text-emerald-400">Included + Full History</td>
+                <td className="py-3.5 px-5 font-medium text-[var(--foreground)]">Subject &amp; Topic Analytics</td>
+                <td className="py-3.5 px-4">Overview</td>
+                <td className="py-3.5 px-4 text-[var(--sage)] font-medium">Included</td>
+                <td className="py-3.5 px-5 text-[var(--sage)] font-medium">Included + Full History</td>
               </tr>
               <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-white">7-Category Mistake Review</td>
+                <td className="py-3.5 px-5 font-medium text-[var(--foreground)]">7-Category Mistake Review</td>
                 <td className="py-3.5 px-4">Summary</td>
-                <td className="py-3.5 px-4 font-semibold text-emerald-600 dark:text-emerald-400">Full Diagnostic</td>
-                <td className="py-3.5 px-4 font-semibold text-emerald-600 dark:text-emerald-400">Full Diagnostic</td>
+                <td className="py-3.5 px-4 text-[var(--sage)] font-medium">Full Diagnostic</td>
+                <td className="py-3.5 px-5 text-[var(--sage)] font-medium">Full Diagnostic</td>
               </tr>
               <tr>
-                <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-white">Examinations Access</td>
+                <td className="py-3.5 px-5 font-medium text-[var(--foreground)]">Examinations Access</td>
                 <td className="py-3.5 px-4">Core Exams</td>
-                <td className="py-3.5 px-4 font-semibold text-blue-600 dark:text-blue-400">All Active Exams</td>
-                <td className="py-3.5 px-4 font-semibold text-amber-600 dark:text-amber-400">All 22 Exams + Priority</td>
+                <td className="py-3.5 px-4 text-[var(--foreground)]">All Active Exams</td>
+                <td className="py-3.5 px-5 font-semibold text-[var(--accent)]">All 22 Exams + Priority</td>
               </tr>
             </tbody>
           </table>
         </div>
-      </Card>
+      </div>
 
       {/* User Payment History (if any) */}
       {transactions.length > 0 && (
-        <Card className="p-6 bg-white dark:bg-[#131c2e] border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-2 mb-4">
-            <Receipt className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Your Payment &amp; Billing History
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] overflow-hidden">
+          <div className="p-5 border-b border-[var(--border)] flex items-center gap-2">
+            <Receipt className="w-4 h-4 text-[var(--accent)]" />
+            <h3 className="text-sm font-semibold text-[var(--foreground)]">
+              Payment &amp; Billing History
             </h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
-                  <th className="py-2.5 px-3">Date</th>
-                  <th className="py-2.5 px-3">Plan</th>
-                  <th className="py-2.5 px-3">Amount</th>
-                  <th className="py-2.5 px-3">Order ID</th>
-                  <th className="py-2.5 px-3">Status</th>
+                <tr className="border-b border-[var(--border)] text-[var(--muted-foreground)] font-mono uppercase">
+                  <th className="py-3 px-5">Date</th>
+                  <th className="py-3 px-4">Plan</th>
+                  <th className="py-3 px-4">Amount</th>
+                  <th className="py-3 px-4">Order ID</th>
+                  <th className="py-3 px-5">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              <tbody className="divide-y divide-[var(--border)]">
                 {transactions.map((tx) => (
                   <tr key={tx.id}>
-                    <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300">
+                    <td className="py-3 px-5 text-[var(--muted-foreground)]">
                       {new Date(tx.created_at).toLocaleDateString("en-IN")}
                     </td>
-                    <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-white">
+                    <td className="py-3 px-4 font-medium text-[var(--foreground)]">
                       {tx.plan_code}
                     </td>
-                    <td className="py-2.5 px-3 font-mono text-slate-900 dark:text-white">
+                    <td className="py-3 px-4 font-mono text-[var(--foreground)]">
                       ₹{(tx.amount_paise / 100).toFixed(0)}
                     </td>
-                    <td className="py-2.5 px-3 font-mono text-slate-500">
+                    <td className="py-3 px-4 font-mono text-[var(--muted-foreground)]">
                       {tx.provider_order_id}
                     </td>
-                    <td className="py-2.5 px-3">
+                    <td className="py-3 px-5">
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase ${
                           tx.status === "captured"
-                            ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
-                            : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                            ? "bg-[var(--sage-muted)] text-[var(--sage)]"
+                            : "bg-[var(--muted)] text-[var(--muted-foreground)]"
                         }`}
                       >
                         {tx.status}
@@ -580,7 +572,7 @@ export function PricingClient({
               </tbody>
             </table>
           </div>
-        </Card>
+        </div>
       )}
     </div>
   );

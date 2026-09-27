@@ -41,15 +41,16 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   ]);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-      <div className="pb-5 border-b border-slate-200/90 dark:border-slate-800/90">
-        <div className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
-          Verified Question Repository
+    <div className="max-w-[1140px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+      <div className="pb-6 border-b border-[var(--border)]">
+        <div className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--accent)] mb-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+          <span>Verified Question Archive</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+        <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--foreground)]">
           Question Explorer
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+        <p className="text-sm text-[var(--muted-foreground)] mt-1">
           Filter and study verified past commission papers (PYQs) and moderated model questions with structured explanations across 22 examinations.
         </p>
       </div>

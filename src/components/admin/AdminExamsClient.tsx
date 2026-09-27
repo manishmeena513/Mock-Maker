@@ -200,15 +200,15 @@ export function AdminExamsClient({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-[var(--border)]">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+          <span className="text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--accent)]">
             Syllabus &amp; Rules Engine ({exams.length} Exams)
           </span>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+          <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--foreground)] mt-1">
             Examinations, Subjects &amp; Topics CRUD
           </h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          <p className="text-sm text-[var(--muted-foreground)] mt-1">
             Create, edit, activate, or deactivate competitive exams, official subjects, and syllabus topics.
           </p>
         </div>
@@ -216,15 +216,15 @@ export function AdminExamsClient({
         <button
           type="button"
           onClick={() => setShowCreateExam((prev) => !prev)}
-          className="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition cursor-pointer"
+          className="inline-flex items-center gap-2 h-9 px-4 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition cursor-pointer"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           <span>{showCreateExam ? "Close Form" : "Add New Examination"}</span>
         </button>
       </div>
 
       {feedbackMsg && (
-        <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center justify-between">
+        <div className="p-3.5 rounded-md bg-[var(--sage-muted)] border border-[var(--sage)]/30 text-[var(--sage)] text-xs font-medium flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4" />
             <span>{feedbackMsg}</span>
@@ -241,13 +241,13 @@ export function AdminExamsClient({
 
       {/* Create New Exam Form */}
       {showCreateExam && (
-        <Card className="p-6 bg-white dark:bg-[#131c2e] border-2 border-blue-600 dark:border-blue-500">
-          <h2 className="text-base font-bold text-slate-900 dark:text-white mb-4">
+        <Card className="p-6 bg-[var(--card)] border border-[var(--accent)]">
+          <h2 className="text-base font-semibold text-[var(--foreground)] mb-4">
             Create New Competitive Examination
           </h2>
           <form onSubmit={handleCreateExam} className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
             <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-medium text-[var(--muted-foreground)] mb-1">
                 Exam Name *
               </label>
               <input
@@ -255,12 +255,12 @@ export function AdminExamsClient({
                 required
                 value={newExamName}
                 onChange={(e) => setNewExamName(e.target.value)}
-                placeholder="e.g.BPSC Combined Prelims"
-                className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a]"
+                placeholder="e.g. BPSC Combined Prelims"
+                className="w-full h-9 px-3 rounded-md border border-[var(--border)] bg-[var(--background)]"
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-medium text-[var(--muted-foreground)] mb-1">
                 Slug (optional)
               </label>
               <input
@@ -268,17 +268,17 @@ export function AdminExamsClient({
                 value={newExamSlug}
                 onChange={(e) => setNewExamSlug(e.target.value)}
                 placeholder="e.g. bpsc-prelims"
-                className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a]"
+                className="w-full h-9 px-3 rounded-md border border-[var(--border)] bg-[var(--background)]"
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-medium text-[var(--muted-foreground)] mb-1">
                 Category
               </label>
               <select
                 value={newExamCategory}
                 onChange={(e) => setNewExamCategory(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a]"
+                className="w-full h-9 px-3 rounded-md border border-[var(--border)] bg-[var(--background)]"
               >
                 <option value="Civil Services">Civil Services</option>
                 <option value="SSC">SSC</option>
@@ -289,18 +289,18 @@ export function AdminExamsClient({
               </select>
             </div>
             <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-medium text-[var(--muted-foreground)] mb-1">
                 Conducting Body
               </label>
               <input
                 type="text"
                 value={newExamBody}
                 onChange={(e) => setNewExamBody(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a]"
+                className="w-full h-9 px-3 rounded-md border border-[var(--border)] bg-[var(--background)]"
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-medium text-[var(--muted-foreground)] mb-1">
                 Marks (Correct / Wrong)
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -309,30 +309,30 @@ export function AdminExamsClient({
                   step="0.01"
                   value={newExamCorrect}
                   onChange={(e) => setNewExamCorrect(parseFloat(e.target.value))}
-                  className="h-9 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a]"
+                  className="h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)]"
                 />
                 <input
                   type="number"
                   step="0.01"
                   value={newExamWrong}
                   onChange={(e) => setNewExamWrong(parseFloat(e.target.value))}
-                  className="h-9 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a]"
+                  className="h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)]"
                 />
               </div>
             </div>
             <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-medium text-[var(--muted-foreground)] mb-1">
                 Duration (Minutes)
               </label>
               <input
                 type="number"
                 value={newExamDuration}
                 onChange={(e) => setNewExamDuration(parseInt(e.target.value, 10))}
-                className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a]"
+                className="w-full h-9 px-3 rounded-md border border-[var(--border)] bg-[var(--background)]"
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-medium text-[var(--muted-foreground)] mb-1">
                 Description
               </label>
               <input
@@ -340,14 +340,14 @@ export function AdminExamsClient({
                 value={newExamDesc}
                 onChange={(e) => setNewExamDesc(e.target.value)}
                 placeholder="Official syllabus description..."
-                className="w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a]"
+                className="w-full h-9 px-3 rounded-md border border-[var(--border)] bg-[var(--background)]"
               />
             </div>
             <div className="flex items-end">
               <button
                 type="submit"
                 disabled={isPending}
-                className="w-full h-9 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
+                className="w-full h-9 rounded-md font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 cursor-pointer"
               >
                 Create Examination
               </button>
@@ -372,10 +372,10 @@ export function AdminExamsClient({
               key={cat}
               type="button"
               onClick={() => setCategoryFilter(cat)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
                 categoryFilter === cat
-                  ? "bg-blue-600 text-white"
-                  : "bg-white dark:bg-[#131c2e] border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400"
+                  ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
+                  : "bg-[var(--card)] border border-[var(--border)] text-[var(--muted-foreground)]"
               }`}
             >
               {cat}
@@ -384,13 +384,13 @@ export function AdminExamsClient({
         </div>
 
         <div className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-[var(--muted-foreground)] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search 22 exams..."
-            className="w-full h-9 pl-8 pr-3 rounded-lg text-xs border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131c2e]"
+            className="w-full h-9 pl-8 pr-3 rounded-md text-xs border border-[var(--border)] bg-[var(--card)]"
           />
         </div>
       </div>
@@ -402,12 +402,11 @@ export function AdminExamsClient({
           const examSubjects = subjects.filter((s) => s.exam_id === exam.id);
 
           return (
-            <Card key={exam.id} className="p-6 bg-white dark:bg-[#131c2e] space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+            <Card key={exam.id} className="p-6 bg-[var(--card)] space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border)]">
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <Award className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                    <h2 className="text-lg font-semibold text-[var(--foreground)]">
                       {exam.name}
                     </h2>
                     <Badge variant={exam.is_active ? "pyq" : "default"}>
@@ -415,7 +414,7 @@ export function AdminExamsClient({
                     </Badge>
                     {exam.category && <Badge variant="default">{exam.category}</Badge>}
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-[var(--muted-foreground)]">
                     {exam.description}
                   </p>
                 </div>
@@ -424,7 +423,7 @@ export function AdminExamsClient({
                   <button
                     type="button"
                     onClick={() => handleToggleActive(exam)}
-                    className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-xs font-medium border border-[var(--border)] hover:bg-[var(--muted)] cursor-pointer"
                   >
                     <Power className="w-3.5 h-3.5" />
                     <span>{exam.is_active ? "Deactivate" : "Activate"}</span>
@@ -434,7 +433,7 @@ export function AdminExamsClient({
                     <button
                       type="button"
                       onClick={() => startEdit(exam)}
-                      className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                      className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-medium border border-[var(--border)] hover:bg-[var(--muted)] cursor-pointer"
                     >
                       <Edit className="w-3.5 h-3.5" />
                       <span>Edit Marking Rules</span>
@@ -444,14 +443,14 @@ export function AdminExamsClient({
                       <button
                         type="button"
                         onClick={() => setEditingExamId(null)}
-                        className="h-9 px-3 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 cursor-pointer"
+                        className="h-9 px-3 rounded-md text-xs font-medium border border-[var(--border)] cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         type="button"
                         onClick={() => handleSaveExam(exam)}
-                        className="h-9 px-4 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
+                        className="h-9 px-4 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 cursor-pointer"
                       >
                         Save Rules
                       </button>
@@ -462,8 +461,8 @@ export function AdminExamsClient({
 
               {/* Marking Scheme Parameters */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-[#0f172a]">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                <div className="p-4 rounded-md border border-[var(--border)] bg-[var(--background)]">
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
                     Correct Answer Marks
                   </div>
                   {isEditing ? (
@@ -472,17 +471,17 @@ export function AdminExamsClient({
                       step="0.01"
                       value={editCorrect}
                       onChange={(e) => setEditCorrect(parseFloat(e.target.value))}
-                      className="mt-1.5 w-full h-9 px-2.5 text-sm font-bold rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131c2e]"
+                      className="mt-1.5 w-full h-9 px-2.5 text-sm font-mono font-semibold rounded-md border border-[var(--border)] bg-[var(--card)]"
                     />
                   ) : (
-                    <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums mt-1">
+                    <div className="text-2xl font-mono font-semibold text-[var(--sage)] tabular-nums mt-1">
                       +{exam.marking_scheme.correct}
                     </div>
                   )}
                 </div>
 
-                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-[#0f172a]">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                <div className="p-4 rounded-md border border-[var(--border)] bg-[var(--background)]">
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
                     Negative Marking Penalty
                   </div>
                   {isEditing ? (
@@ -491,17 +490,17 @@ export function AdminExamsClient({
                       step="0.01"
                       value={editWrong}
                       onChange={(e) => setEditWrong(parseFloat(e.target.value))}
-                      className="mt-1.5 w-full h-9 px-2.5 text-sm font-bold rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131c2e]"
+                      className="mt-1.5 w-full h-9 px-2.5 text-sm font-mono font-semibold rounded-md border border-[var(--border)] bg-[var(--card)]"
                     />
                   ) : (
-                    <div className="text-2xl font-bold text-red-600 dark:text-red-400 tabular-nums mt-1">
+                    <div className="text-2xl font-mono font-semibold text-rose-600 dark:text-rose-400 tabular-nums mt-1">
                       {exam.marking_scheme.wrong}
                     </div>
                   )}
                 </div>
 
-                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-[#0f172a]">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                <div className="p-4 rounded-md border border-[var(--border)] bg-[var(--background)]">
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
                     Standard Duration
                   </div>
                   {isEditing ? (
@@ -509,10 +508,10 @@ export function AdminExamsClient({
                       type="number"
                       value={editDuration}
                       onChange={(e) => setEditDuration(parseInt(e.target.value, 10))}
-                      className="mt-1.5 w-full h-9 px-2.5 text-sm font-bold rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131c2e]"
+                      className="mt-1.5 w-full h-9 px-2.5 text-sm font-mono font-semibold rounded-md border border-[var(--border)] bg-[var(--card)]"
                     />
                   ) : (
-                    <div className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums mt-1">
+                    <div className="text-2xl font-mono font-semibold text-[var(--foreground)] tabular-nums mt-1">
                       {exam.time_limit_minutes || exam.default_time_minutes || 60} min
                     </div>
                   )}
@@ -522,7 +521,7 @@ export function AdminExamsClient({
               {/* Subjects & Topics CRUD */}
               <div className="space-y-3 pt-1">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-xs uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <h3 className="font-mono text-xs uppercase tracking-wider text-[var(--muted-foreground)] flex items-center gap-1.5">
                     <Layers className="w-3.5 h-3.5" />
                     <span>Configured Subjects ({examSubjects.length})</span>
                   </h3>
@@ -533,7 +532,7 @@ export function AdminExamsClient({
                         addingSubjectForExam === exam.id ? null : exam.id
                       )
                     }
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-[var(--accent)] hover:underline cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add Subject</span>
@@ -541,18 +540,18 @@ export function AdminExamsClient({
                 </div>
 
                 {addingSubjectForExam === exam.id && (
-                  <div className="flex items-center gap-2 p-3 rounded-xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center gap-2 p-3 rounded-md bg-[var(--accent-muted)] border border-[var(--accent)]/30">
                     <input
                       type="text"
                       value={newSubjectName}
                       onChange={(e) => setNewSubjectName(e.target.value)}
                       placeholder="New subject name (e.g. Science & Tech)..."
-                      className="flex-1 h-8 px-3 rounded-lg text-xs border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a]"
+                      className="flex-1 h-8 px-3 rounded text-xs border border-[var(--border)] bg-[var(--card)]"
                     />
                     <button
                       type="button"
                       onClick={() => handleCreateSubject(exam.id)}
-                      className="h-8 px-3 rounded-lg text-xs font-semibold bg-blue-600 text-white cursor-pointer"
+                      className="h-8 px-3 rounded text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] cursor-pointer"
                     >
                       Save Subject
                     </button>
@@ -566,9 +565,9 @@ export function AdminExamsClient({
                     return (
                       <div
                         key={sub.id}
-                        className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-[#0f172a] space-y-2.5"
+                        className="p-4 rounded-md border border-[var(--border)] bg-[var(--background)] space-y-2.5"
                       >
-                        <div className="font-semibold text-xs text-slate-900 dark:text-white flex items-center justify-between">
+                        <div className="font-medium text-xs text-[var(--foreground)] flex items-center justify-between">
                           <span>{sub.name}</span>
                           <button
                             type="button"
@@ -577,7 +576,7 @@ export function AdminExamsClient({
                                 addingTopicForSubject === sub.id ? null : sub.id
                               )
                             }
-                            className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                            className="text-[11px] font-medium text-[var(--accent)] hover:underline cursor-pointer"
                           >
                             + Add Topic
                           </button>
@@ -590,12 +589,12 @@ export function AdminExamsClient({
                               value={newTopicName}
                               onChange={(e) => setNewTopicName(e.target.value)}
                               placeholder="New topic name..."
-                              className="flex-1 h-7 px-2.5 rounded text-xs border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131c2e]"
+                              className="flex-1 h-7 px-2.5 rounded text-xs border border-[var(--border)] bg-[var(--card)]"
                             />
                             <button
                               type="button"
                               onClick={() => handleCreateTopic(sub.id)}
-                              className="h-7 px-2.5 rounded text-[11px] font-semibold bg-blue-600 text-white cursor-pointer"
+                              className="h-7 px-2.5 rounded text-[11px] font-medium bg-[var(--primary)] text-[var(--primary-foreground)] cursor-pointer"
                             >
                               Add
                             </button>
@@ -604,14 +603,14 @@ export function AdminExamsClient({
 
                         <div className="flex flex-wrap gap-1.5">
                           {subTopics.length === 0 ? (
-                            <span className="text-[11px] text-slate-400">
+                            <span className="text-[11px] text-[var(--muted-foreground)]">
                               Core syllabus topics configured
                             </span>
                           ) : (
                             subTopics.map((top) => (
                               <span
                                 key={top.id}
-                                className="px-2 py-0.5 rounded-md text-[11px] bg-white dark:bg-[#131c2e] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300"
+                                className="px-2 py-0.5 rounded text-[11px] bg-[var(--card)] border border-[var(--border)] text-[var(--muted-foreground)]"
                               >
                                 {top.name}
                               </span>

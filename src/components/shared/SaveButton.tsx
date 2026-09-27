@@ -26,8 +26,7 @@ export function SaveButton({
       try {
         const res = await toggleBookmarkAction(questionId, "important");
         setSaved(res.saved);
-      } catch (err) {
-        console.error("Failed to toggle bookmark:", err);
+      } catch {
         setSaved(saved);
       }
     });
@@ -39,17 +38,15 @@ export function SaveButton({
       onClick={handleToggle}
       disabled={isPending}
       aria-pressed={saved}
-      className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+      className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded text-xs font-medium border transition-colors cursor-pointer ${
         saved
-          ? "bg-amber-50/90 text-amber-800 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800"
-          : "bg-white dark:bg-[#0f172a] text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+          ? "bg-[var(--accent-soft)] text-[var(--foreground)] border-[var(--accent)]"
+          : "bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] border-[var(--border)]"
       } ${className}`}
       title={saved ? "Remove from Saved Questions" : "Save to Revision Library"}
     >
       <Bookmark
-        className={`w-3.5 h-3.5 ${
-          saved ? "fill-amber-500 text-amber-600 dark:text-amber-400" : "text-slate-400"
-        }`}
+        className={`w-3 h-3 ${saved ? "fill-[var(--accent)] text-[var(--accent)]" : ""}`}
       />
       <span>{saved ? "Saved" : "Save"}</span>
     </button>

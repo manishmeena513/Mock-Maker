@@ -177,21 +177,21 @@ export function AdminQuestionsClient({
       {/* Page Header & Tab Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-[var(--border)]">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+          <span className="text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--accent)]">
             Repository Controller
           </span>
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)] mt-1">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-[var(--foreground)] mt-1">
             Question Bank &amp; Bulk Import
           </h1>
         </div>
 
-        <div className="inline-flex items-center p-1 rounded-xl bg-[var(--muted)] border border-[var(--border)]">
+        <div className="inline-flex items-center p-1 rounded-md bg-[var(--muted)] border border-[var(--border)]">
           <button
             type="button"
             onClick={() => setActiveTab("list")}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded text-xs font-medium transition cursor-pointer ${
               activeTab === "list"
-                ? "bg-[var(--card)] text-[var(--foreground)] shadow-xs"
+                ? "bg-[var(--card)] text-[var(--foreground)] shadow-2xs"
                 : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
@@ -202,9 +202,9 @@ export function AdminQuestionsClient({
           <button
             type="button"
             onClick={() => setActiveTab("import")}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded text-xs font-medium transition cursor-pointer ${
               activeTab === "import"
-                ? "bg-[var(--card)] text-[var(--foreground)] shadow-xs"
+                ? "bg-[var(--card)] text-[var(--foreground)] shadow-2xs"
                 : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
@@ -220,13 +220,13 @@ export function AdminQuestionsClient({
           {/* Filter Bar */}
           <Card className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
                 Examination
               </label>
               <select
                 value={selectedExamId}
                 onChange={(e) => setSelectedExamId(e.target.value)}
-                className="w-full h-9 px-2.5 text-xs rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] font-medium"
+                className="w-full h-9 px-2.5 text-xs rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] font-medium"
               >
                 <option value="all">All Examinations</option>
                 {exams.map((ex) => (
@@ -238,13 +238,13 @@ export function AdminQuestionsClient({
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
                 Verification Status
               </label>
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full h-9 px-2.5 text-xs rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] font-medium"
+                className="w-full h-9 px-2.5 text-xs rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] font-medium"
               >
                 <option value="all">All Statuses</option>
                 <option value="approved">Approved (Live)</option>
@@ -254,13 +254,13 @@ export function AdminQuestionsClient({
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
                 Source Type
               </label>
               <select
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full h-9 px-2.5 text-xs rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] font-medium"
+                className="w-full h-9 px-2.5 text-xs rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] font-medium"
               >
                 <option value="all">All Types</option>
                 <option value="PYQ">Verified PYQ</option>
@@ -269,7 +269,7 @@ export function AdminQuestionsClient({
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
                 Import Batch ID
               </label>
               <input
@@ -277,12 +277,12 @@ export function AdminQuestionsClient({
                 value={batchFilter}
                 onChange={(e) => setBatchFilter(e.target.value)}
                 placeholder="Filter by batch ID..."
-                className="w-full h-9 px-2.5 text-xs rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] font-mono"
+                className="w-full h-9 px-2.5 text-xs rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] font-mono"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
                 Keyword Search
               </label>
               <input
@@ -290,7 +290,7 @@ export function AdminQuestionsClient({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search stem or concept..."
-                className="w-full h-9 px-2.5 text-xs rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]"
+                className="w-full h-9 px-2.5 text-xs rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]"
               />
             </div>
           </Card>
@@ -305,7 +305,7 @@ export function AdminQuestionsClient({
                 <button
                   type="button"
                   onClick={() => setBatchFilter("")}
-                  className="text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer"
+                  className="text-[var(--accent)] font-medium hover:underline cursor-pointer"
                 >
                   Clear Batch Filter
                 </button>
@@ -335,7 +335,7 @@ export function AdminQuestionsClient({
                           {q.question_text}
                         </div>
                         <div className="text-[11px] text-[var(--muted-foreground)] mt-1">
-                          Key: <strong className="text-emerald-600 dark:text-emerald-400">{q.correct_answer}</strong> • Difficulty:{" "}
+                          Key: <strong className="text-[var(--sage)]">{q.correct_answer}</strong> • Difficulty:{" "}
                           <span className="capitalize">{q.difficulty}</span>
                         </div>
                       </td>
@@ -373,7 +373,7 @@ export function AdminQuestionsClient({
                             <button
                               type="button"
                               onClick={() => handleStatusChange(q.id, "approved")}
-                              className="px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/70 font-semibold text-[11px] transition cursor-pointer"
+                              className="px-2.5 py-1 rounded bg-[var(--sage-muted)] text-[var(--sage)] border border-[var(--sage)]/30 font-medium text-[11px] transition cursor-pointer"
                             >
                               Approve
                             </button>
@@ -384,7 +384,7 @@ export function AdminQuestionsClient({
                                 <button
                                   type="button"
                                   onClick={() => handleStatusChange(q.id, "rejected")}
-                                  className="px-2.5 py-1 rounded-md bg-red-600 text-white font-semibold text-[11px] transition cursor-pointer"
+                                  className="px-2.5 py-1 rounded bg-rose-600 text-white font-medium text-[11px] transition cursor-pointer"
                                 >
                                   Confirm Reject
                                 </button>
@@ -392,7 +392,7 @@ export function AdminQuestionsClient({
                                 <button
                                   type="button"
                                   onClick={() => setConfirmRejectId(q.id)}
-                                  className="px-2.5 py-1 rounded-md bg-red-50 dark:bg-red-950/50 hover:bg-red-100 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/70 font-semibold text-[11px] transition cursor-pointer"
+                                  className="px-2.5 py-1 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30 font-medium text-[11px] transition cursor-pointer"
                                 >
                                   Reject
                                 </button>
@@ -416,7 +416,7 @@ export function AdminQuestionsClient({
           <Card className="p-6 sm:p-8 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h2 className="text-lg font-bold text-[var(--foreground)]">
+                <h2 className="text-lg font-semibold text-[var(--foreground)]">
                   ZIP &amp; CSV Bulk Question Importer
                 </h2>
                 <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
@@ -427,8 +427,8 @@ export function AdminQuestionsClient({
             </div>
 
             {/* 7-Stage Upload Progress Pipeline */}
-            <div className="p-4 rounded-xl bg-[var(--muted)]/50 border border-[var(--border)]">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] mb-3">
+            <div className="p-4 rounded-md bg-[var(--muted)]/50 border border-[var(--border)]">
+              <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)] mb-3">
                 Ingestion Pipeline Status
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
@@ -438,15 +438,15 @@ export function AdminQuestionsClient({
                   return (
                     <div
                       key={stage}
-                      className={`p-2.5 rounded-lg border text-xs font-medium flex items-center gap-2 transition ${
+                      className={`p-2.5 rounded border text-xs font-medium flex items-center gap-2 transition ${
                         isCompleted
-                          ? "border-emerald-300 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300"
+                          ? "border-[var(--sage)]/40 bg-[var(--sage-muted)] text-[var(--sage)]"
                           : isCurrent
-                          ? "border-blue-500 bg-blue-50/80 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-semibold"
+                          ? "border-[var(--accent)] bg-[var(--accent-muted)] text-[var(--accent)] font-semibold"
                           : "border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)]"
                       }`}
                     >
-                      <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 bg-current/10">
+                      <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-mono font-bold shrink-0 bg-current/10">
                         {isCompleted ? <Check className="w-3 h-3" /> : idx + 1}
                       </span>
                       <span className="truncate">{stage}</span>
@@ -457,14 +457,14 @@ export function AdminQuestionsClient({
             </div>
 
             {importSuccessMsg && (
-              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold flex items-center gap-2.5">
+              <div className="p-4 rounded-md bg-[var(--sage-muted)] text-[var(--sage)] border border-[var(--sage)]/30 text-xs font-medium flex items-center gap-2.5">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>{importSuccessMsg}</span>
               </div>
             )}
 
             {importError && (
-              <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800 text-xs font-semibold flex items-center gap-2.5">
+              <div className="p-4 rounded-md bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/30 text-xs font-medium flex items-center gap-2.5">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{importError}</span>
               </div>
@@ -478,13 +478,13 @@ export function AdminQuestionsClient({
               }}
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center space-y-4 transition ${
+              className={`border-2 border-dashed rounded-lg p-8 sm:p-10 text-center space-y-4 transition ${
                 isDragging
-                  ? "border-blue-600 bg-blue-50/40 dark:bg-blue-950/20"
-                  : "border-[var(--border)] hover:border-slate-400 dark:hover:border-slate-700 bg-[var(--muted)]/20"
+                  ? "border-[var(--accent)] bg-[var(--accent-muted)]"
+                  : "border-[var(--border)] bg-[var(--muted)]/20"
               }`}
             >
-              <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 mx-auto flex items-center justify-center">
+              <div className="w-12 h-12 rounded-md bg-[var(--accent-muted)] text-[var(--accent)] mx-auto flex items-center justify-center">
                 {importType === "ZIP" ? (
                   <FileArchive className="w-6 h-6" />
                 ) : (
@@ -511,7 +511,7 @@ export function AdminQuestionsClient({
                 />
                 <label
                   htmlFor="bulk-import-file"
-                  className="inline-flex items-center gap-2 h-10 px-5 rounded-xl font-semibold text-xs bg-blue-600 text-white hover:bg-blue-700 cursor-pointer transition shadow-xs"
+                  className="inline-flex items-center gap-2 h-10 px-5 rounded-md font-medium text-xs bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 cursor-pointer transition"
                 >
                   <UploadCloud className="w-4 h-4" />
                   <span>Select Archive from Disk</span>
@@ -519,8 +519,8 @@ export function AdminQuestionsClient({
               </div>
 
               {importFile && (
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs font-medium text-[var(--foreground)]">
-                  <span className="font-mono text-blue-600 dark:text-blue-400 font-semibold">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-[var(--card)] border border-[var(--border)] text-xs font-medium text-[var(--foreground)]">
+                  <span className="font-mono text-[var(--accent)] font-semibold">
                     {importFile.name}
                   </span>
                   <span className="text-[var(--muted-foreground)] tabular-nums">

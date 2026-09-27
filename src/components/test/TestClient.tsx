@@ -7,6 +7,7 @@ import { MockTest, MockQuestion } from "@/types/database";
 import { QuestionTypeBadge } from "@/components/shared/QuestionTypeBadge";
 import { SaveButton } from "@/components/shared/SaveButton";
 import { ModeToggle } from "@/components/shared/ModeToggle";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 import { QuestionPalette } from "./QuestionPalette";
 import { ExamTimer } from "./ExamTimer";
 import { ExplanationPanel } from "./ExplanationPanel";
@@ -17,11 +18,8 @@ import {
   Bookmark,
   CheckCircle,
   AlertTriangle,
-  Menu,
+  LayoutGrid,
   X,
-  Send,
-  Award,
-  Check,
 } from "lucide-react";
 
 interface TestClientProps {
@@ -36,11 +34,10 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
   const [isSubmittingTest, startSubmitTransition] = useTransition();
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
   const [showSubmitModal, setShowSubmitModal] = useState<boolean>(false);
-  const [mobilePaletteOpen, setMobilePaletteOpen] = useState<boolean>(false);
+  const [paletteOpen, setPaletteOpen] = useState<boolean>(false);
 
   const storageKey = `mockmaster_answers_${mockTest.id}`;
 
-  // Restore answers from localStorage on reload (Reliability & Crash Protection)
   useEffect(() => {
     try {
       const saved = localStorage.getItem(storageKey);
@@ -61,8 +58,8 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
           })
         );
       }
-    } catch (err) {
-      console.warn("Could not read from local storage:", err);
+    } catch {
+      // ignore local storage read errors
     }
   }, [storageKey]);
 
@@ -72,7 +69,6 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
   const isPracticeMode = mockTest.mode === "practice";
   const hasAnsweredCurrent = Boolean(currentMockQuestion?.user_answer);
 
-  // Handle Option Click
   const handleSelectOption = async (option: "A" | "B" | "C" | "D") => {
     if (isPracticeMode && hasAnsweredCurrent) {
       return;
@@ -111,7 +107,6 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
     }
   };
 
-  // Toggle Mark for Review
   const handleToggleReview = async () => {
     const newStatus = !currentMockQuestion.is_marked_for_review;
     setQuestions((prev) =>
@@ -130,7 +125,6 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
     }
   };
 
-  // Finish / Submit Mock Test
   const handleFinalizeMock = () => {
     if (hasSubmitted || isSubmittingTest) return;
     setHasSubmitted(true);
@@ -144,8 +138,7 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
           // ignore
         }
         router.push(`/results/${mockTest.id}`);
-      } catch (err) {
-        console.error("Error finalizing mock test:", err);
+      } catch {
         router.push(`/results/${mockTest.id}`);
       }
     });
@@ -165,53 +158,38 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
 
   if (!q) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-8 text-center text-sm text-slate-500">
+      <div className="min-h-screen flex items-center justify-center p-8 text-center text-xs text-[var(--muted-foreground)]">
         Question data could not be loaded.
       </div>
     );
   }
 
+  const answeredCount = questions.filter((item) => item.user_answer).length;
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8f9fa] dark:bg-[#0b0f17]">
-      {/* Distraction-Free Examination Top Bar */}
-      <header className="sticky top-0 z-30 h-16 bg-white dark:bg-[#131c2e] border-b border-slate-200/90 dark:border-slate-800/90">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 h-full flex items-center justify-between gap-3">
-          {/* Left: Brand + Mode Badge */}
+    <div className="min-h-screen flex flex-col bg-[var(--background)] text-[var(--foreground)]">
+      {/* Section 11: Minimal Top Examination Bar */}
+      <header className="sticky top-0 z-30 h-14 bg-[var(--background)]/95 backdrop-blur-md border-b border-[var(--border)]">
+        <div className="max-w-[1320px] mx-auto px-4 sm:px-6 h-full flex items-center justify-between gap-3">
+          {/* Left: Brand Mark + Mode */}
           <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 font-bold text-sm text-slate-900 dark:text-white"
-              title="Exit to Dashboard"
-            >
-              <div className="w-7 h-7 rounded-md bg-blue-700 dark:bg-blue-600 flex items-center justify-center text-white">
-                <Award className="w-4 h-4" />
-              </div>
-              <span className="hidden sm:inline">MockMaster</span>
+            <Link href="/dashboard" title="Exit to Dashboard" className="focus:outline-none">
+              <BrandLogo variant="mark" size="sm" />
             </Link>
-
-            <span className="text-slate-300 dark:text-slate-700" aria-hidden="true">
-              |
-            </span>
-
-            <span
-              className={`px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold uppercase tracking-wider border ${
-                isPracticeMode
-                  ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
-                  : "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700"
-              }`}
-            >
-              {isPracticeMode ? "PRACTICE MODE" : "EXAM MODE"}
+            <span className="text-[11px] font-mono uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
+              {isPracticeMode ? "Practice Mode" : "Exam Mode"}
             </span>
           </div>
 
-          {/* Center: Question Progress Counter */}
-          <div className="font-mono text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-            Question <span className="text-blue-700 dark:text-blue-400">{currentIndex + 1}</span> /{" "}
-            {questions.length}
+          {/* Center: Question Counter */}
+          <div className="font-mono text-xs sm:text-sm font-medium text-[var(--foreground)] tabular-nums">
+            <span className="text-[var(--muted-foreground)]">Question </span>
+            <span className="font-semibold text-[var(--accent)]">{currentIndex + 1}</span>
+            <span className="text-[var(--muted-foreground)]"> / {questions.length}</span>
           </div>
 
-          {/* Right: Timer, Theme Toggle & Submit */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Right: Timer, Collapsible Palette Trigger & Submit */}
+          <div className="flex items-center gap-2">
             <ExamTimer
               initialMinutes={mockTest.time_limit_minutes}
               startedAt={mockTest.started_at}
@@ -224,344 +202,293 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
 
             <button
               type="button"
-              onClick={() => setShowSubmitModal(true)}
-              disabled={hasSubmitted || isSubmittingTest}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500 disabled:opacity-50 text-white transition-colors shadow-2xs cursor-pointer"
+              onClick={() => setPaletteOpen((prev) => !prev)}
+              aria-expanded={paletteOpen}
+              aria-label="Toggle question palette"
+              className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
+                paletteOpen
+                  ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--foreground)]"
+                  : "border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+              }`}
             >
-              <Send className="w-3.5 h-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">
-                {hasSubmitted ? "Submitting..." : "Submit Test"}
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline font-mono text-[11px]">
+                {answeredCount}/{questions.length}
               </span>
-              <span className="sm:hidden">Submit</span>
             </button>
 
-            {/* Mobile Palette Trigger */}
             <button
               type="button"
-              onClick={() => setMobilePaletteOpen(!mobilePaletteOpen)}
-              className="lg:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300"
-              aria-label="Open question palette"
+              onClick={() => setShowSubmitModal(true)}
+              disabled={hasSubmitted || isSubmittingTest}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
             >
-              {mobilePaletteOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              <span>{hasSubmitted ? "Submitting..." : "Submit"}</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Ratio Adjustment Notice */}
+      {/* Ratio Notice (if applicable) */}
       {mockTest.ratio_warning && (
-        <div className="bg-amber-50/90 dark:bg-amber-950/50 border-b border-amber-200 dark:border-amber-900/80 px-4 py-2 text-xs font-medium text-amber-900 dark:text-amber-300 text-center">
+        <div className="bg-[var(--accent-soft)] border-b border-[var(--accent-border)] px-4 py-1.5 text-[11px] text-[var(--foreground)] text-center">
           {mockTest.ratio_warning}
         </div>
       )}
 
-      {/* Main Two-Column Examination Workspace */}
-      <div className="flex-1 max-w-[1440px] mx-auto w-full px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Question & Answer Canvas (8 cols on lg, 9 cols on xl) */}
-        <div className="lg:col-span-8 xl:col-span-9 space-y-6">
-          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5 sm:p-8 shadow-2xs">
-            {/* Question Metadata Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-5 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-xs font-bold px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
-                  Q.{currentIndex + 1}
-                </span>
-                <QuestionTypeBadge
-                  type={q.type}
-                  sourceYear={q.source_year}
-                  examName={q.type === "PYQ" ? q.source_paper || "Official Paper" : undefined}
-                />
-                <span className="px-2.5 py-0.5 rounded-md text-[11px] font-semibold capitalize bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700">
-                  {q.difficulty}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <SaveButton questionId={q.id} />
-
-                <button
-                  type="button"
-                  onClick={handleToggleReview}
-                  aria-pressed={currentMockQuestion.is_marked_for_review}
-                  className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
-                    currentMockQuestion.is_marked_for_review
-                      ? "bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700"
-                      : "bg-white dark:bg-[#0f172a] text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <Bookmark
-                    className={`w-3.5 h-3.5 ${
-                      currentMockQuestion.is_marked_for_review
-                        ? "fill-amber-500 text-amber-600 dark:text-amber-400"
-                        : "text-slate-400"
-                    }`}
-                    aria-hidden="true"
-                  />
-                  <span>
-                    {currentMockQuestion.is_marked_for_review
-                      ? "Marked for Review"
-                      : "Mark for Review"}
-                  </span>
-                </button>
-              </div>
+      {/* Main Question-First Workspace */}
+      <div className="flex-1 max-w-[1320px] mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 flex flex-col lg:flex-row gap-8 items-start justify-center">
+        {/* Question Reading Canvas */}
+        <div className="w-full max-w-3xl mx-auto space-y-8">
+          {/* Metadata Strip */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[var(--border)]">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-mono text-xs font-semibold text-[var(--muted-foreground)]">
+                #{String(currentIndex + 1).padStart(2, "0")}
+              </span>
+              <QuestionTypeBadge
+                type={q.type}
+                sourceYear={q.source_year}
+                examName={q.type === "PYQ" ? q.source_paper || "Official Paper" : undefined}
+              />
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-[var(--muted)] text-[var(--muted-foreground)]">
+                {q.difficulty}
+              </span>
             </div>
 
-            {/* Question Prose */}
-            <div className="py-6">
-              <div className="question-prose font-normal text-slate-900 dark:text-slate-100 whitespace-pre-line">
-                {q.question_text}
-              </div>
+            <div className="flex items-center gap-2">
+              <SaveButton questionId={q.id} />
+              <span className="text-[11px] font-mono text-[var(--muted-foreground)] hidden sm:inline">
+                +{mockTest.marking_scheme.correct} / {mockTest.marking_scheme.wrong}
+              </span>
             </div>
+          </div>
 
-            {/* Options List */}
-            <div role="radiogroup" aria-label="Answer options" className="space-y-3 pt-1">
-              {(["A", "B", "C", "D"] as const).map((optKey) => {
-                const optText =
-                  optKey === "A"
-                    ? q.option_a
-                    : optKey === "B"
-                    ? q.option_b
-                    : optKey === "C"
-                    ? q.option_c
-                    : q.option_d;
+          {/* Question Text */}
+          <div className="py-2">
+            <div className="question-prose text-[var(--foreground)] whitespace-pre-line">
+              {q.question_text}
+            </div>
+          </div>
 
-                const isSelected = currentMockQuestion.user_answer === optKey;
-                const isCorrectOption = q.correct_answer === optKey;
+          {/* Options List — Instant Tactile Selection */}
+          <div role="radiogroup" aria-label="Answer options" className="space-y-2.5">
+            {(["A", "B", "C", "D"] as const).map((optKey) => {
+              const optText =
+                optKey === "A"
+                  ? q.option_a
+                  : optKey === "B"
+                  ? q.option_b
+                  : optKey === "C"
+                  ? q.option_c
+                  : q.option_d;
 
-                let cardStyle =
-                  "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-[#0f172a] text-slate-800 dark:text-slate-200";
-                let badgeStyle =
-                  "border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300";
+              const isSelected = currentMockQuestion.user_answer === optKey;
+              const isCorrectOption = q.correct_answer === optKey;
 
-                if (isPracticeMode && hasAnsweredCurrent) {
-                  if (isCorrectOption) {
-                    cardStyle =
-                      "border-emerald-600 dark:border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-100 font-medium";
-                    badgeStyle = "bg-emerald-600 border-emerald-600 text-white";
-                  } else if (isSelected && !isCorrectOption) {
-                    cardStyle =
-                      "border-rose-600 dark:border-rose-500 bg-rose-50/50 dark:bg-rose-950/30 text-rose-950 dark:text-rose-100 font-medium";
-                    badgeStyle = "bg-rose-600 border-rose-600 text-white";
-                  }
-                } else if (isSelected) {
-                  cardStyle =
-                    "border-blue-600 dark:border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 text-slate-900 dark:text-white font-medium ring-1 ring-blue-600/30";
-                  badgeStyle = "bg-blue-700 dark:bg-blue-600 border-blue-700 dark:border-blue-500 text-white";
+              let rowStyle =
+                "border-[var(--border)] bg-[var(--card)] hover:border-[var(--muted-foreground)]/50 text-[var(--foreground)]";
+              let keyStyle =
+                "border-[var(--border)] bg-[var(--muted)] text-[var(--muted-foreground)]";
+
+              if (isPracticeMode && hasAnsweredCurrent) {
+                if (isCorrectOption) {
+                  rowStyle =
+                    "border-[var(--sage)] bg-[var(--sage-soft)] text-[var(--foreground)] font-medium";
+                  keyStyle = "border-[var(--sage)] bg-[var(--sage)] text-white";
+                } else if (isSelected && !isCorrectOption) {
+                  rowStyle =
+                    "border-[var(--destructive)] bg-rose-500/10 text-[var(--foreground)] font-medium";
+                  keyStyle = "border-[var(--destructive)] bg-[var(--destructive)] text-white";
                 }
+              } else if (isSelected) {
+                rowStyle =
+                  "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--foreground)] font-medium";
+                keyStyle = "border-[var(--accent)] bg-[var(--accent)] text-white";
+              }
 
-                return (
-                  <button
-                    key={optKey}
-                    type="button"
-                    role="radio"
-                    aria-checked={isSelected}
-                    onClick={() => handleSelectOption(optKey)}
-                    className={`w-full min-h-[54px] p-4 rounded-xl border text-left flex items-start gap-3.5 transition-colors cursor-pointer ${cardStyle}`}
+              return (
+                <button
+                  key={optKey}
+                  type="button"
+                  role="radio"
+                  aria-checked={isSelected}
+                  onClick={() => handleSelectOption(optKey)}
+                  className={`w-full p-4 rounded-md border text-left flex items-start gap-3.5 transition-colors duration-100 cursor-pointer ${rowStyle}`}
+                >
+                  <span
+                    className={`w-6 h-6 rounded border font-mono text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5 transition-colors ${keyStyle}`}
                   >
-                    <span
-                      className={`w-7 h-7 rounded-lg border font-mono text-xs font-bold flex items-center justify-center shrink-0 mt-0.5 transition-colors ${badgeStyle}`}
-                    >
-                      {optKey}
+                    {optKey}
+                  </span>
+                  <span className="text-sm sm:text-[15px] leading-relaxed flex-1">
+                    {optText}
+                  </span>
+                  {isPracticeMode && hasAnsweredCurrent && isCorrectOption && (
+                    <span className="text-xs font-mono font-semibold text-[var(--sage)] shrink-0 self-center">
+                      Correct
                     </span>
-                    <span className="text-sm sm:text-[15px] leading-relaxed flex-1 pt-0.5">
-                      {optText}
+                  )}
+                  {isPracticeMode && hasAnsweredCurrent && isSelected && !isCorrectOption && (
+                    <span className="text-xs font-mono font-semibold text-[var(--destructive)] shrink-0 self-center">
+                      Incorrect
                     </span>
-                    {isPracticeMode && hasAnsweredCurrent && isCorrectOption && (
-                      <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 shrink-0 self-center">
-                        ✓ Correct
-                      </span>
-                    )}
-                    {isPracticeMode && hasAnsweredCurrent && isSelected && !isCorrectOption && (
-                      <span className="text-xs font-bold text-rose-700 dark:text-rose-400 shrink-0 self-center">
-                        ✕ Your Choice
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Practice Mode Immediate Explanation */}
+          {isPracticeMode && hasAnsweredCurrent && (
+            <div className="pt-4">
+              <ExplanationPanel
+                explanation={q.explanation}
+                correctAnswer={q.correct_answer}
+                userAnswer={currentMockQuestion.user_answer}
+                type={q.type}
+                sourceYear={q.source_year}
+              />
             </div>
+          )}
 
-            {/* Practice Mode Immediate Structured Explanation */}
-            {isPracticeMode && hasAnsweredCurrent && (
-              <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-                <ExplanationPanel
-                  explanation={q.explanation}
-                  correctAnswer={q.correct_answer}
-                  userAnswer={currentMockQuestion.user_answer}
-                  type={q.type}
-                  sourceYear={q.source_year}
-                />
-              </div>
-            )}
+          {/* Bottom Controls: Previous | Mark for review | Next */}
+          <div className="flex items-center justify-between gap-3 pt-6 border-t border-[var(--border)]">
+            <button
+              type="button"
+              onClick={handlePrev}
+              disabled={currentIndex === 0}
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Previous</span>
+            </button>
 
-            {/* Bottom Question Navigation Bar */}
-            <div className="flex items-center justify-between gap-3 pt-6 mt-6 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={handleToggleReview}
+              aria-pressed={currentMockQuestion.is_marked_for_review}
+              className={`inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
+                currentMockQuestion.is_marked_for_review
+                  ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--foreground)]"
+                  : "border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              <Bookmark
+                className={`w-3.5 h-3.5 ${
+                  currentMockQuestion.is_marked_for_review ? "fill-[var(--accent)] text-[var(--accent)]" : ""
+                }`}
+              />
+              <span>
+                {currentMockQuestion.is_marked_for_review ? "Marked for review" : "Mark for review"}
+              </span>
+            </button>
+
+            {currentIndex < questions.length - 1 ? (
               <button
                 type="button"
-                onClick={handlePrev}
-                disabled={currentIndex === 0}
-                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                onClick={handleNext}
+                className="inline-flex items-center gap-1.5 h-9 px-5 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity cursor-pointer"
               >
-                <ChevronLeft className="w-4 h-4" />
-                <span>Previous</span>
+                <span>Next</span>
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
-
-              <div className="flex items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={handleToggleReview}
-                  className="hidden sm:inline-flex items-center gap-1.5 h-10 px-4 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
-                >
-                  <Bookmark className="w-3.5 h-3.5" />
-                  <span>
-                    {currentMockQuestion.is_marked_for_review ? "Unmark Review" : "Mark for Review"}
-                  </span>
-                </button>
-
-                {currentIndex < questions.length - 1 ? (
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="inline-flex items-center gap-1.5 h-10 px-5 rounded-lg text-xs font-semibold bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white transition-colors shadow-2xs cursor-pointer"
-                  >
-                    <span>Next</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowSubmitModal(true)}
-                    disabled={hasSubmitted || isSubmittingTest}
-                    className="inline-flex items-center gap-1.5 h-10 px-5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white transition-colors shadow-2xs cursor-pointer"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    <span>Finish & Submit</span>
-                  </button>
-                )}
-              </div>
-            </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowSubmitModal(true)}
+                disabled={hasSubmitted || isSubmittingTest}
+                className="inline-flex items-center gap-1.5 h-9 px-5 rounded-md text-xs font-medium bg-[var(--sage)] text-white hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
+              >
+                <CheckCircle className="w-3.5 h-3.5" />
+                <span>Finish &amp; Submit</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Right Sidebar: Question Palette & Marking Summary */}
-        <aside className="hidden lg:block lg:col-span-4 xl:col-span-3 sticky top-22 space-y-4">
-          <QuestionPalette
-            questions={questions}
-            currentIndex={currentIndex}
-            mode={mockTest.mode}
-            onSelectIndex={(idx) => setCurrentIndex(idx)}
-          />
-
-          <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-4 space-y-2.5 text-xs">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Official Marking Rules
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-500 dark:text-slate-400">Correct Answer</span>
-              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                +{mockTest.marking_scheme.correct}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-500 dark:text-slate-400">Negative Marking</span>
-              <span className="font-mono font-bold text-rose-600 dark:text-rose-400">
-                {mockTest.marking_scheme.wrong}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-500 dark:text-slate-400">Unattempted</span>
-              <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
-                0.0
-              </span>
-            </div>
-          </div>
-        </aside>
-      </div>
-
-      {/* Mobile Question Palette Drawer */}
-      {mobilePaletteOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden bg-slate-950/60 backdrop-blur-[2px] flex justify-end">
-          <div className="w-80 max-w-[85vw] bg-white dark:bg-[#131c2e] h-full p-4 flex flex-col shadow-xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-              <span className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white">
+        {/* Collapsible Side Palette (Only rendered when toggled open) */}
+        {paletteOpen && (
+          <aside className="w-full lg:w-72 shrink-0 lg:sticky lg:top-20 animate-editorial">
+            <div className="flex items-center justify-between mb-2 lg:hidden">
+              <span className="text-xs font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
                 Question Palette
               </span>
               <button
                 type="button"
-                onClick={() => setMobilePaletteOpen(false)}
-                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                aria-label="Close question palette"
+                onClick={() => setPaletteOpen(false)}
+                className="p-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto pt-3">
-              <QuestionPalette
-                questions={questions}
-                currentIndex={currentIndex}
-                mode={mockTest.mode}
-                onSelectIndex={(idx) => {
-                  setCurrentIndex(idx);
-                  setMobilePaletteOpen(false);
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+            <QuestionPalette
+              questions={questions}
+              currentIndex={currentIndex}
+              mode={mockTest.mode}
+              onSelectIndex={(idx) => {
+                setCurrentIndex(idx);
+              }}
+            />
+          </aside>
+        )}
+      </div>
 
-      {/* Submit Test Confirmation Dialog */}
+      {/* Submit Confirmation Modal */}
       {showSubmitModal && (
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="submit-modal-title"
-          className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4"
         >
-          <div className="bg-white dark:bg-[#131c2e] border border-slate-200 dark:border-slate-800 rounded-xl max-w-md w-full p-6 shadow-xl space-y-5">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg max-w-md w-full p-6 shadow-xl space-y-5 animate-editorial">
             <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+              <div className="w-8 h-8 rounded-md bg-[var(--accent-soft)] border border-[var(--accent-border)] flex items-center justify-center text-[var(--accent)] shrink-0">
                 <AlertTriangle className="w-4 h-4" />
               </div>
               <div>
-                <h3
-                  id="submit-modal-title"
-                  className="font-bold text-base text-slate-900 dark:text-white"
-                >
-                  Finalize and Submit Mock Test?
+                <h3 id="submit-modal-title" className="font-semibold text-base text-[var(--foreground)]">
+                  Submit examination paper?
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                  Please verify your attempt summary before generating final scores and diagnostics.
+                <p className="text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
+                  Review your attempt summary before locking your responses and computing net commission marks.
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5 p-3.5 rounded-lg bg-[#f8f9fa] dark:bg-[#0f172a] border border-slate-200/80 dark:border-slate-800 text-center">
+            <div className="grid grid-cols-3 gap-2 p-3.5 rounded-md bg-[var(--background)] border border-[var(--border)] text-center">
               <div>
-                <div className="text-lg font-mono font-bold text-blue-700 dark:text-blue-400">
-                  {questions.filter((item) => item.user_answer).length}
+                <div className="text-lg font-mono font-semibold text-[var(--foreground)]">
+                  {answeredCount}
                 </div>
-                <div className="text-[10px] font-semibold uppercase text-slate-500">Answered</div>
+                <div className="text-[10px] font-mono uppercase text-[var(--muted-foreground)]">
+                  Answered
+                </div>
+              </div>
+              <div className="border-x border-[var(--border)]">
+                <div className="text-lg font-mono font-semibold text-[var(--muted-foreground)]">
+                  {questions.length - answeredCount}
+                </div>
+                <div className="text-[10px] font-mono uppercase text-[var(--muted-foreground)]">
+                  Unanswered
+                </div>
               </div>
               <div>
-                <div className="text-lg font-mono font-bold text-slate-700 dark:text-slate-300">
-                  {questions.filter((item) => !item.user_answer).length}
-                </div>
-                <div className="text-[10px] font-semibold uppercase text-slate-500">Unanswered</div>
-              </div>
-              <div>
-                <div className="text-lg font-mono font-bold text-amber-600 dark:text-amber-400">
+                <div className="text-lg font-mono font-semibold text-[var(--accent)]">
                   {questions.filter((item) => item.is_marked_for_review).length}
                 </div>
-                <div className="text-[10px] font-semibold uppercase text-slate-500">For Review</div>
+                <div className="text-[10px] font-mono uppercase text-[var(--muted-foreground)]">
+                  Review
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-2">
+            <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => setShowSubmitModal(false)}
-                className="h-9 px-4 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                className="h-9 px-4 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors cursor-pointer"
               >
                 Return to Paper
               </button>
@@ -569,7 +496,7 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
                 type="button"
                 disabled={hasSubmitted || isSubmittingTest}
                 onClick={handleFinalizeMock}
-                className="h-9 px-5 rounded-lg text-xs font-semibold bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500 disabled:opacity-50 text-white transition-colors shadow-2xs cursor-pointer"
+                className="h-9 px-5 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
               >
                 {hasSubmitted || isSubmittingTest ? "Scoring..." : "Confirm & Submit"}
               </button>

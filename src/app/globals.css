@@ -2,61 +2,79 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
-  :root {
+  :root,
+  .light {
     color-scheme: light;
-    /* Light Mode — Warm/Neutral Editorial & Academic Palette */
-    --background: #f8f9fa;
-    --foreground: #0f172a;
-    --surface: #f1f5f9;
+    /* Light Mode — Warm Off-White / Editorial Ivory & Deep Charcoal */
+    --background: #f7f5f0;
+    --foreground: #141413;
+    --surface: #efece6;
     --card: #ffffff;
-    --card-foreground: #0f172a;
+    --card-foreground: #141413;
     --elevated: #ffffff;
-    --primary: #1d4ed8;
-    --primary-hover: #1e40af;
-    --primary-foreground: #ffffff;
-    --secondary: #f1f5f9;
-    --secondary-foreground: #1e293b;
-    --muted: #f1f5f9;
-    --muted-foreground: #64748b;
-    --accent: #eff6ff;
-    --accent-foreground: #1e3a8a;
-    --destructive: #dc2626;
+    --primary: #141413;
+    --primary-hover: #292826;
+    --primary-foreground: #f7f5f0;
+    --secondary: #efece6;
+    --secondary-foreground: #141413;
+    --muted: #efece6;
+    --muted-foreground: #615e57;
+    --accent: #a66e1e;
+    --accent-foreground: #ffffff;
+    --accent-soft: #f6efe2;
+    --accent-border: #e5d2b0;
+    --plum: #5b3e69;
+    --plum-soft: #f3eef6;
+    --plum-border: #d9cce0;
+    --sage: #236b4e;
+    --sage-soft: #ebf3ef;
+    --sage-border: #bfd9ce;
+    --destructive: #b9382c;
     --destructive-foreground: #ffffff;
-    --border: #e2e8f0;
-    --border-subtle: #f1f5f9;
-    --input: #cbd5e1;
-    --ring: #2563eb;
-    --radius: 0.625rem;
-    --success: #059669;
-    --warning: #d97706;
+    --border: #e4e0d8;
+    --border-subtle: #edeae2;
+    --input: #d8d3c8;
+    --ring: #a66e1e;
+    --radius: 0.375rem;
+    --success: #236b4e;
+    --warning: #a66e1e;
   }
 
   .dark {
     color-scheme: dark;
-    /* Dark Mode — Intentional Deep Charcoal/Navy Academic Theme (Never Pure #000000) */
-    --background: #0b0f17;
-    --foreground: #f8fafc;
-    --surface: #111827;
-    --card: #131c2e;
-    --card-foreground: #f8fafc;
-    --elevated: #1e293b;
-    --primary: #3b82f6;
-    --primary-hover: #2563eb;
-    --primary-foreground: #ffffff;
-    --secondary: #1e293b;
-    --secondary-foreground: #f1f5f9;
-    --muted: #161f30;
-    --muted-foreground: #94a3b8;
-    --accent: #172554;
-    --accent-foreground: #dbeafe;
-    --destructive: #ef4444;
+    /* Dark Mode — Near-Black Charcoal, Deep Graphite & Muted Gold / Controlled Violet */
+    --background: #0d0d0c;
+    --foreground: #f2efe9;
+    --surface: #141412;
+    --card: #161614;
+    --card-foreground: #f2efe9;
+    --elevated: #1e1e1b;
+    --primary: #f2efe9;
+    --primary-hover: #e2ddd3;
+    --primary-foreground: #141413;
+    --secondary: #1c1c19;
+    --secondary-foreground: #f2efe9;
+    --muted: #1b1b18;
+    --muted-foreground: #949087;
+    --accent: #d49b43;
+    --accent-foreground: #141413;
+    --accent-soft: rgba(212, 155, 67, 0.12);
+    --accent-border: rgba(212, 155, 67, 0.28);
+    --plum: #b594c7;
+    --plum-soft: rgba(181, 148, 199, 0.12);
+    --plum-border: rgba(181, 148, 199, 0.28);
+    --sage: #52ad86;
+    --sage-soft: rgba(82, 173, 134, 0.12);
+    --sage-border: rgba(82, 173, 134, 0.28);
+    --destructive: #e0584b;
     --destructive-foreground: #ffffff;
-    --border: #1e293b;
-    --border-subtle: #162032;
-    --input: #334155;
-    --ring: #3b82f6;
-    --success: #10b981;
-    --warning: #f59e0b;
+    --border: #262522;
+    --border-subtle: #1d1c19;
+    --input: #2e2d29;
+    --ring: #d49b43;
+    --radius: 0.375rem;
+    --success: #52ad86;
+    --warning: #d49b43;
   }
 }
 
@@ -82,6 +100,7 @@
   --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  --font-display: var(--font-editorial), Georgia, Cambria, "Times New Roman", serif;
 }
 
 body {
@@ -93,7 +112,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Academic Question Readability Standard */
+.font-display {
+  font-family: var(--font-editorial), Georgia, Cambria, "Times New Roman", serif;
+  letter-spacing: -0.025em;
+}
+
+/* Editorial Question Readability Standard */
 .question-prose {
   font-size: 1.0625rem;
   line-height: 1.75;
@@ -103,8 +127,24 @@ body {
 
 /* Subtle Focus Ring for Accessibility */
 *:focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 1.5px solid var(--ring);
   outline-offset: 2px;
+}
+
+/* Subtle Editorial Entrance & Micro-Transitions */
+@keyframes editorial-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-editorial {
+  animation: editorial-fade-up 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* Refined Scrollbars */
@@ -116,11 +156,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #d0cbc0;
   border-radius: 9999px;
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #2e2d29;
 }
 
 @media (prefers-reduced-motion: reduce) {

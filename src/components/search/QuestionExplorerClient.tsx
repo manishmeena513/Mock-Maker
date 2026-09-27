@@ -9,7 +9,6 @@ import { ExplanationPanel } from "@/components/test/ExplanationPanel";
 import {
   Search,
   Filter,
-  BookOpen,
   ChevronDown,
   ChevronUp,
   ChevronLeft,
@@ -50,7 +49,6 @@ export function QuestionExplorerClient({
 
   const [expandedQuestionId, setExpandedQuestionId] = useState<string | null>(null);
 
-  // Local filter state initialized from server props
   const [searchQuery, setSearchQuery] = useState(currentFilters.q || "");
   const [selectedExam, setSelectedExam] = useState(currentFilters.exam || "all");
   const [selectedSubject, setSelectedSubject] = useState(currentFilters.subject || "all");
@@ -112,31 +110,30 @@ export function QuestionExplorerClient({
 
   return (
     <div className="space-y-6">
-      {/* Search & 6-Column Refined Filter Bar */}
-      <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5 shadow-2xs space-y-4">
-        {/* Search Input */}
+      {/* Search & 6-Column Editorial Filter Bar */}
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 space-y-4">
         <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+          <Search className="w-4 h-4 text-[var(--muted-foreground)] absolute left-3.5 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search questions by concept, constitutional article, keyword..."
-            className="w-full h-11 pl-10 pr-24 rounded-lg border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600"
+            className="w-full h-10 pl-10 pr-24 rounded-md border border-[var(--border)] bg-[var(--background)] text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]"
           />
           <button
             type="submit"
-            className="absolute right-1.5 h-8 px-3.5 rounded-md text-xs font-semibold bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white transition-colors cursor-pointer"
+            className="absolute right-1.5 h-7 px-3.5 rounded text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity cursor-pointer"
           >
             Search
           </button>
         </form>
 
-        {/* Refined Filter Bar: Exam | Subject | Topic | Type | Difficulty | Year */}
+        {/* Filter Bar: Exam | Subject | Topic | Type | Difficulty | Year */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-1">
           {/* 1. Exam */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
               Exam
             </label>
             <select
@@ -148,7 +145,7 @@ export function QuestionExplorerClient({
                 setSelectedTopic("all");
                 applyFilters({ exam: val, subject: null, topic: null });
               }}
-              className="w-full h-9 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-xs font-medium text-slate-800 dark:text-slate-200"
+              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-xs font-medium text-[var(--foreground)]"
             >
               <option value="all">All Exams</option>
               {exams.map((exam) => (
@@ -161,7 +158,7 @@ export function QuestionExplorerClient({
 
           {/* 2. Subject */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
               Subject
             </label>
             <select
@@ -172,7 +169,7 @@ export function QuestionExplorerClient({
                 setSelectedTopic("all");
                 applyFilters({ subject: val, topic: null });
               }}
-              className="w-full h-9 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-xs font-medium text-slate-800 dark:text-slate-200"
+              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-xs font-medium text-[var(--foreground)]"
             >
               <option value="all">All Subjects</option>
               {availableSubjects.map((sub) => (
@@ -185,7 +182,7 @@ export function QuestionExplorerClient({
 
           {/* 3. Topic */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
               Topic
             </label>
             <select
@@ -195,7 +192,7 @@ export function QuestionExplorerClient({
                 setSelectedTopic(val);
                 applyFilters({ topic: val });
               }}
-              className="w-full h-9 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-xs font-medium text-slate-800 dark:text-slate-200"
+              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-xs font-medium text-[var(--foreground)]"
             >
               <option value="all">All Topics</option>
               {availableTopics.map((top) => (
@@ -208,7 +205,7 @@ export function QuestionExplorerClient({
 
           {/* 4. Type */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
               Type
             </label>
             <select
@@ -218,7 +215,7 @@ export function QuestionExplorerClient({
                 setSelectedType(val);
                 applyFilters({ type: val });
               }}
-              className="w-full h-9 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-xs font-medium text-slate-800 dark:text-slate-200"
+              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-xs font-medium text-[var(--foreground)]"
             >
               <option value="all">All Types</option>
               <option value="PYQ">Verified PYQ</option>
@@ -228,7 +225,7 @@ export function QuestionExplorerClient({
 
           {/* 5. Difficulty */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
               Difficulty
             </label>
             <select
@@ -238,7 +235,7 @@ export function QuestionExplorerClient({
                 setSelectedDifficulty(val);
                 applyFilters({ difficulty: val });
               }}
-              className="w-full h-9 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-xs font-medium text-slate-800 dark:text-slate-200"
+              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-xs font-medium text-[var(--foreground)]"
             >
               <option value="all">All Levels</option>
               <option value="easy">Easy</option>
@@ -249,7 +246,7 @@ export function QuestionExplorerClient({
 
           {/* 6. Year */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
               Year (PYQ)
             </label>
             <select
@@ -259,7 +256,7 @@ export function QuestionExplorerClient({
                 setSelectedYear(val);
                 applyFilters({ year: val });
               }}
-              className="w-full h-9 px-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-xs font-medium text-slate-800 dark:text-slate-200"
+              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-xs font-medium text-[var(--foreground)]"
             >
               <option value="all">All Years</option>
               {years.map((yr) => (
@@ -272,21 +269,24 @@ export function QuestionExplorerClient({
         </div>
 
         {/* Active Filter Status & Reset Strip */}
-        <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
+        <div className="pt-3 border-t border-[var(--border)] flex items-center justify-between text-xs text-[var(--muted-foreground)]">
           <div>
-            Showing <strong className="font-mono text-slate-900 dark:text-white">{initialQuestions.length}</strong> of{" "}
-            <strong className="font-mono text-slate-900 dark:text-white">{pagination.totalItems}</strong> verified questions
+            Showing{" "}
+            <strong className="font-mono text-[var(--foreground)]">
+              {initialQuestions.length}
+            </strong>{" "}
+            of{" "}
+            <strong className="font-mono text-[var(--foreground)]">{pagination.totalItems}</strong>{" "}
+            verified questions
             {isPending && (
-              <span className="ml-2 text-blue-600 dark:text-blue-400 font-semibold">
-                Updating...
-              </span>
+              <span className="ml-2 text-[var(--accent)] font-medium">Updating...</span>
             )}
           </div>
 
           <button
             type="button"
             onClick={handleResetFilters}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors cursor-pointer"
           >
             <RotateCcw className="w-3 h-3" />
             <span>Reset Filters</span>
@@ -296,26 +296,26 @@ export function QuestionExplorerClient({
 
       {/* Results List */}
       {initialQuestions.length === 0 ? (
-        <div className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-12 text-center space-y-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 mx-auto flex items-center justify-center text-slate-400">
-            <Filter className="w-5 h-5" />
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-12 text-center space-y-3">
+          <div className="w-10 h-10 rounded-md bg-[var(--muted)] mx-auto flex items-center justify-center text-[var(--muted-foreground)]">
+            <Filter className="w-4 h-4" />
           </div>
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+          <h3 className="text-sm font-semibold text-[var(--foreground)]">
             No questions matched your filters
           </h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          <p className="text-xs text-[var(--muted-foreground)] max-w-sm mx-auto">
             Try clearing your search query or broadening the selected examination, subject, or year filters.
           </p>
           <button
             type="button"
             onClick={handleResetFilters}
-            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-xs font-semibold bg-blue-700 text-white cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] cursor-pointer"
           >
             Reset All Filters
           </button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] divide-y divide-[var(--border)]">
           {initialQuestions.map((q) => {
             const isExpanded = expandedQuestionId === q.id;
             const examName = resolveExamName(q.exam_id);
@@ -323,56 +323,47 @@ export function QuestionExplorerClient({
             const topicName = resolveTopicName(q.topic_id, q.explanation?.concept);
 
             return (
-              <div
-                key={q.id}
-                className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5 sm:p-6 shadow-2xs space-y-4"
-              >
+              <div key={q.id} className="p-5 sm:p-6 space-y-3">
                 {/* Metadata Header */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pb-3.5 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
                     <QuestionTypeBadge
                       type={q.type}
                       examName={examName}
                       sourceYear={q.type === "PYQ" ? q.source_year : null}
                     />
-                    <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                      {subjectName}
+                    <span className="text-[var(--muted-foreground)]">
+                      {subjectName} • {topicName}
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                      {topicName}
-                    </span>
-                    <span className="px-2 py-0.5 rounded text-[11px] font-semibold capitalize bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-[var(--muted)] text-[var(--muted-foreground)]">
                       {q.difficulty === "moderate" ? "Medium" : q.difficulty}
                     </span>
                   </div>
 
-                  <SaveButton questionId={q.id} />
+                  <div className="flex items-center gap-2">
+                    <SaveButton questionId={q.id} />
+                    <button
+                      type="button"
+                      onClick={() => setExpandedQuestionId(isExpanded ? null : q.id)}
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors cursor-pointer"
+                    >
+                      <span>{isExpanded ? "Hide Solution" : "Options & Solution"}</span>
+                      {isExpanded ? (
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Question Text */}
-                <p className="text-sm sm:text-base font-normal text-slate-900 dark:text-white leading-relaxed">
+                <p className="text-sm sm:text-base text-[var(--foreground)] leading-relaxed">
                   {q.question_text}
                 </p>
 
-                {/* Expand Options & Solution */}
-                <div className="pt-1 flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setExpandedQuestionId(isExpanded ? null : q.id)}
-                    className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
-                  >
-                    <BookOpen className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                    <span>{isExpanded ? "Hide Solution" : "View Options & Explanation"}</span>
-                    {isExpanded ? (
-                      <ChevronUp className="w-3.5 h-3.5" />
-                    ) : (
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                </div>
-
                 {isExpanded && (
-                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
+                  <div className="pt-4 border-t border-[var(--border)] space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                       {(["A", "B", "C", "D"] as const).map((opt) => {
                         const optText =
@@ -388,13 +379,13 @@ export function QuestionExplorerClient({
                         return (
                           <div
                             key={opt}
-                            className={`p-3 rounded-lg border flex items-start gap-2.5 ${
+                            className={`p-3 rounded-md border flex items-start gap-2.5 ${
                               isCorrect
-                                ? "bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-600 font-semibold text-emerald-950 dark:text-emerald-200"
-                                : "border-slate-200 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#0f172a] text-slate-700 dark:text-slate-300"
+                                ? "bg-[var(--sage-muted)] border-[var(--sage)] font-medium text-[var(--foreground)]"
+                                : "border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)]"
                             }`}
                           >
-                            <span className="font-mono font-bold">{opt}.</span>
+                            <span className="font-mono font-semibold">{opt}.</span>
                             <span>{optText}</span>
                           </div>
                         );
@@ -417,18 +408,18 @@ export function QuestionExplorerClient({
 
       {/* Pagination Bar */}
       {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between pt-4 border-t border-[var(--border)]">
           <button
             type="button"
             disabled={!pagination.hasPrevPage || isPending}
             onClick={() => applyFilters({ page: String(pagination.page - 1) })}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131c2e] hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
             <span>Previous</span>
           </button>
 
-          <span className="text-xs font-mono font-semibold text-slate-500">
+          <span className="text-xs font-mono text-[var(--muted-foreground)]">
             Page {pagination.page} of {pagination.totalPages}
           </span>
 
@@ -436,7 +427,7 @@ export function QuestionExplorerClient({
             type="button"
             disabled={!pagination.hasNextPage || isPending}
             onClick={() => applyFilters({ page: String(pagination.page + 1) })}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131c2e] hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
           >
             <span>Next</span>
             <ChevronRight className="w-4 h-4" />

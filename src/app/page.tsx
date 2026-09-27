@@ -1,14 +1,7 @@
 import Link from "next/link";
 import { getExams, getAllSubjects, getAllQuestions } from "@/lib/db";
-import {
-  ShieldCheck,
-  ArrowRight,
-  Award,
-  BarChart3,
-  RotateCcw,
-  Sliders,
-  Search,
-} from "lucide-react";
+import { ExamBrowserClient } from "@/components/exam/ExamBrowserClient";
+import { ArrowRight } from "lucide-react";
 
 export default async function HomePage() {
   const [exams, allSubjects, allQuestions] = await Promise.all([
@@ -20,377 +13,207 @@ export default async function HomePage() {
   const totalPyqs = allQuestions.filter((q) => q.type === "PYQ").length;
   const totalModels = allQuestions.filter((q) => q.type === "MODEL").length;
 
-  const coreCapabilities = [
-    {
-      icon: ShieldCheck,
-      label: "01 / AUTHENTICITY",
-      title: "Verified PYQs",
-      description:
-        "Every previous-year question is sourced from official commission papers with verified year and paper attribution. Never mixed or mislabeled.",
-      metric: "80% of every mock",
-    },
-    {
-      icon: Sliders,
-      label: "02 / SIMULATION",
-      title: "Realistic Mock Tests",
-      description:
-        "Configure full-length or subject-focused mocks enforcing exact UPSC, UPPSC, and SSC negative marking penalties and official durations.",
-      metric: "Practice & Exam modes",
-    },
-    {
-      icon: BarChart3,
-      label: "03 / DIAGNOSTICS",
-      title: "Detailed Analysis",
-      description:
-        "Dissect performance across PYQ vs Model pools, subject accuracy, topic mastery tiers, and a 7-category mistake taxonomy.",
-      metric: "Granular telemetry",
-    },
-    {
-      icon: RotateCcw,
-      label: "04 / RETENTION",
-      title: "Smart Revision",
-      description:
-        "Bookmark high-yield questions into structured folders and launch non-destructive retest drills directly from your mistake pool.",
-      metric: "1-click retest drills",
-    },
-  ];
-
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Editorial Hero Section */}
-      <section className="relative border-b border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#0b0f17]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Left Column: Hero Copy & Actions */}
-            <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs font-semibold bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700/80">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Strict 80:20 Architecture • Verified PYQs + Reviewed Model Items</span>
+    <div className="flex flex-col min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+      {/* Section 23: Editorial Hero */}
+      <section className="border-b border-[var(--border)]">
+        <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
+            {/* Left Column: Editorial Headline & Primary Actions */}
+            <div className="lg:col-span-7 space-y-7">
+              <div className="inline-flex items-center gap-2.5 text-xs font-mono uppercase tracking-[0.16em] text-[var(--accent)]">
+                <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
+                <span>MockMaster · Competitive Examination Platform</span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-[1.12]">
-                Prepare Smarter.
-                <br />
-                Practice Better.
-                <br />
-                <span className="text-blue-700 dark:text-blue-400">Perform With Confidence.</span>
-              </h1>
+              <div className="space-y-3">
+                <h1 className="font-display text-4xl sm:text-6xl font-normal tracking-tight text-[var(--foreground)] leading-[1.06]">
+                  Serious preparation.
+                  <br />
+                  <span className="italic text-[var(--accent)]">Measurable progress.</span>
+                </h1>
+              </div>
 
-              <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 max-w-xl leading-relaxed">
-                Build realistic competitive-exam mocks using verified PYQs and carefully reviewed model questions. Engineered for serious civil services and commission aspirants.
+              <p className="text-base sm:text-lg text-[var(--muted-foreground)] max-w-xl leading-relaxed">
+                Practice with verified PYQs, analyze your performance, and identify exactly where you need to improve.
               </p>
 
-              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="pt-1 flex flex-wrap items-center gap-3">
                 <Link
                   href="/mock/configure"
-                  className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl font-semibold text-sm bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white transition-colors shadow-xs"
+                  className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-md font-medium text-sm bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
                 >
-                  <span>Start a Mock</span>
+                  <span>Start Practicing</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
 
-                <Link
-                  href="/search"
-                  className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl font-semibold text-sm border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131c2e] hover:bg-slate-50 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 transition-colors"
+                <a
+                  href="#examinations"
+                  className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-md font-medium text-sm border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)]/60 transition-colors"
                 >
-                  <Search className="w-4 h-4 text-slate-500" />
-                  <span>Explore Questions</span>
-                </Link>
+                  <span>Explore Exams</span>
+                </a>
               </div>
 
-              {/* Pillar Bar */}
-              <div className="pt-6 border-t border-slate-200/80 dark:border-slate-800/80 grid grid-cols-3 gap-4 max-w-lg">
+              {/* Inline Editorial Telemetry Strip (Not Boxy Cards) */}
+              <div className="pt-8 border-t border-[var(--border)] grid grid-cols-3 gap-6 max-w-lg">
                 <div>
-                  <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400" />
-                    <span>Verified PYQs</span>
+                  <div className="text-xl sm:text-2xl font-mono font-semibold text-[var(--foreground)] tabular-nums">
+                    {exams.length}
                   </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    {totalPyqs} official items
-                  </p>
+                  <div className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                    Competitive Exams
+                  </div>
                 </div>
-                <div>
-                  <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400" />
-                    <span>Smart Analytics</span>
+                <div className="border-l border-[var(--border)] pl-6">
+                  <div className="text-xl sm:text-2xl font-mono font-semibold text-[var(--sage)] tabular-nums">
+                    {totalPyqs}+
                   </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    Topic & mistake matrix
-                  </p>
+                  <div className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                    Verified PYQs
+                  </div>
                 </div>
-                <div>
-                  <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" />
-                    <span>Revision</span>
+                <div className="border-l border-[var(--border)] pl-6">
+                  <div className="text-xl sm:text-2xl font-mono font-semibold text-[var(--plum)] tabular-nums">
+                    80 : 20
                   </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    Targeted retest drills
-                  </p>
+                  <div className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                    Default PYQ : Model
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Right Column: Architectural Specification Preview Card */}
+            {/* Right Column: Sophisticated Architectural Product Preview */}
             <div className="lg:col-span-5">
-              <div className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#131c2e] p-6 shadow-xs space-y-5">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-200/80 dark:border-slate-800">
-                  <div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Test Composition Engine
-                    </div>
-                    <div className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
-                      Deterministic 80:20 Question Mix
-                    </div>
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] overflow-hidden">
+                {/* Preview Header Bar */}
+                <div className="px-5 py-3.5 border-b border-[var(--border)] flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-semibold text-[var(--foreground)]">
+                      UPSC CSE · GS Paper I
+                    </span>
+                    <span className="text-[var(--muted-foreground)]">·</span>
+                    <span className="font-mono text-[11px] text-[var(--sage)]">
+                      PYQ 2023
+                    </span>
                   </div>
-                  <span className="px-2.5 py-1 rounded-md text-[11px] font-mono font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
-                    VERIFIED
+                  <span className="font-mono text-[11px] text-[var(--muted-foreground)]">
+                    +2.00 / -0.66
                   </span>
                 </div>
 
-                {/* Visual 80:20 Bar */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-semibold">
-                    <span className="text-emerald-700 dark:text-emerald-400">80% Verified PYQs</span>
-                    <span className="text-indigo-700 dark:text-indigo-400">20% Model</span>
-                  </div>
-                  <div className="h-3 w-full rounded-lg bg-slate-200 dark:bg-slate-800 overflow-hidden flex p-0.5 gap-0.5">
-                    <div className="h-full w-[80%] bg-emerald-600 dark:bg-emerald-500 rounded-l-md" />
-                    <div className="h-full w-[20%] bg-indigo-600 dark:bg-indigo-500 rounded-r-md" />
-                  </div>
-                </div>
-
-                {/* Sample Paper Breakdown */}
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <div className="p-3.5 rounded-lg bg-white dark:bg-[#0b0f17] border border-slate-200/80 dark:border-slate-800">
-                    <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                      Authentic Past Papers
+                {/* Preview Question Body */}
+                <div className="p-5 sm:p-6 space-y-5">
+                  <div className="space-y-2">
+                    <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
+                      Question 14 of 100 · Indian Polity &amp; Governance
                     </div>
-                    <div className="text-xl font-bold font-mono text-slate-900 dark:text-white mt-1">
-                      {totalPyqs}
-                    </div>
-                    <div className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium mt-0.5">
-                      2012–2024 Commission Papers
-                    </div>
-                  </div>
-                  <div className="p-3.5 rounded-lg bg-white dark:bg-[#0b0f17] border border-slate-200/80 dark:border-slate-800">
-                    <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                      Reviewed Model Pool
-                    </div>
-                    <div className="text-xl font-bold font-mono text-slate-900 dark:text-white mt-1">
-                      {totalModels}
-                    </div>
-                    <div className="text-[11px] text-indigo-700 dark:text-indigo-400 font-medium mt-0.5">
-                      Moderated & Syllabus-Aligned
-                    </div>
-                  </div>
-                </div>
-
-                {/* Rules List */}
-                <div className="space-y-2 pt-2 border-t border-slate-200/80 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300">
-                  <div className="flex items-center justify-between">
-                    <span>Source Year Hallucination</span>
-                    <span className="font-mono font-semibold text-slate-900 dark:text-white">0% (Strictly Prohibited)</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Unseen Question Priority</span>
-                    <span className="font-mono font-semibold text-slate-900 dark:text-white">Active per User</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Artificial Gamification</span>
-                    <span className="font-mono font-semibold text-slate-900 dark:text-white">None</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Supported Examinations Section */}
-      <section id="exams" className="py-16 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-          <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
-              Examination Syllabi ({exams.length} Official Commissions)
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
-              Supported Competitive Examinations
-            </h2>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md">
-            Each examination enforces its official marking scheme, negative marking penalty, and subject-wise question taxonomy across Civil Services, SSC, Banking, Defence, Railways, and Teaching.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {exams.slice(0, 6).map((exam) => {
-            const examSubjects = allSubjects.filter((s) => s.exam_id === exam.id);
-            const examQuestions = allQuestions.filter((q) => q.exam_id === exam.id);
-            const examPyqs = examQuestions.filter((q) => q.type === "PYQ").length;
-            const examModels = examQuestions.filter((q) => q.type === "MODEL").length;
-
-            return (
-              <div
-                key={exam.id}
-                className="rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-6 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-colors shadow-2xs"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-4">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>
-                        {examQuestions.length > 0
-                          ? `${examQuestions.length} Verified Questions`
-                          : `${examSubjects.length} Official Subjects`}
-                      </span>
-                    </span>
-                    <span className="text-xs font-mono text-slate-400 dark:text-slate-500">
-                      {exam.time_limit_minutes || exam.default_time_minutes || 60}m
-                    </span>
-                  </div>
-
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-                    {exam.name}
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed line-clamp-2">
-                    {exam.description}
-                  </p>
-
-                  {/* Subject Pills */}
-                  <div className="mt-4 flex flex-wrap gap-1.5">
-                    {examSubjects.slice(0, 4).map((sub) => (
-                      <span
-                        key={sub.id}
-                        className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300"
-                      >
-                        {sub.name}
-                      </span>
-                    ))}
-                    {examSubjects.length > 4 && (
-                      <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800/90 text-slate-500">
-                        +{examSubjects.length - 4} more
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Marking & Bank Metadata */}
-                  <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800/80 space-y-2 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500 dark:text-slate-400">Question Pool</span>
-                      <span className="font-mono font-semibold text-slate-900 dark:text-white">
-                        {examPyqs} PYQ + {examModels} Model
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500 dark:text-slate-400">Marking Scheme</span>
-                      <span className="font-mono font-semibold">
-                        <span className="text-emerald-600 dark:text-emerald-400">+{exam.marking_scheme.correct}</span>
-                        {" / "}
-                        <span className="text-rose-600 dark:text-rose-400">{exam.marking_scheme.wrong}</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-2 gap-2.5">
-                  <Link
-                    href={`/mock/configure?exam=${exam.slug}`}
-                    className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white transition-colors"
-                  >
-                    <span>Start Mock</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-
-                  <Link
-                    href={`/exam/${exam.slug}`}
-                    className="inline-flex items-center justify-center h-9 px-3 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors"
-                  >
-                    <span>Syllabus &amp; Bank</span>
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Complete 22-Examination Directory */}
-        {exams.length > 6 && (
-          <div className="mt-8 rounded-xl border border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#131c2e] p-5 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-              <div className="text-sm font-bold text-slate-900 dark:text-white">
-                Complete Examination Catalog ({exams.length} Supported Examinations)
-              </div>
-              <Link
-                href="/mock/configure"
-                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Configure Custom Ratio Mock →
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
-              {exams.map((exam) => (
-                <Link
-                  key={exam.id}
-                  href={`/exam/${exam.slug}`}
-                  className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0f172a] hover:border-blue-400 dark:hover:border-blue-600 transition text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between gap-1.5"
-                >
-                  <span className="truncate">{exam.name}</span>
-                  <ArrowRight className="w-3 h-3 text-slate-400 shrink-0" />
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* Core Capabilities Section */}
-      <section className="py-16 border-t border-slate-200/90 dark:border-slate-800/90 bg-white dark:bg-[#0b0f17]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl mb-10">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
-              Platform Architecture
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
-              Designed for Disciplined Exam Preparation
-            </h2>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
-              Every workflow is built around factual accuracy, structured feedback, and measurable improvement across your examination syllabus.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {coreCapabilities.map((cap) => {
-              const Icon = cap.icon;
-              return (
-                <div
-                  key={cap.title}
-                  className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-[#f8f9fa] dark:bg-[#131c2e] p-5 flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-[10px] font-mono font-bold tracking-wider text-slate-400 dark:text-slate-500">
-                        {cap.label}
-                      </span>
-                      <div className="w-8 h-8 rounded-lg bg-white dark:bg-[#0b0f17] border border-slate-200/80 dark:border-slate-800 flex items-center justify-center text-blue-700 dark:text-blue-400">
-                        <Icon className="w-4 h-4" />
-                      </div>
-                    </div>
-
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      {cap.title}
-                    </h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
-                      {cap.description}
+                    <p className="text-sm text-[var(--foreground)] leading-relaxed">
+                      Consider the following statements regarding the Constitutional Amendment Bill under Article 368 of the Constitution of India:
                     </p>
+                    <div className="pl-3 border-l-2 border-[var(--border)] space-y-1 text-xs text-[var(--muted-foreground)]">
+                      <p>1. Prior permission of the President is not required to introduce the bill.</p>
+                      <p>2. There is no provision for holding a joint sitting in case of disagreement.</p>
+                    </div>
                   </div>
 
-                  <div className="mt-5 pt-3 border-t border-slate-200/70 dark:border-slate-800/80 text-[11px] font-mono font-semibold text-slate-700 dark:text-slate-300">
-                    {cap.metric}
+                  {/* Preview Options */}
+                  <div className="space-y-2 text-xs">
+                    <div className="px-3.5 py-2.5 rounded border border-[var(--border)] text-[var(--muted-foreground)] flex items-center gap-3">
+                      <span className="font-mono text-[11px]">A</span>
+                      <span>1 only</span>
+                    </div>
+                    <div className="px-3.5 py-2.5 rounded border border-[var(--sage-border)] bg-[var(--sage-soft)] text-[var(--foreground)] font-medium flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-[11px] font-semibold text-[var(--sage)]">C</span>
+                        <span>Both 1 and 2</span>
+                      </div>
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--sage)]">
+                        Verified Key
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Preview Analytical Footer */}
+                  <div className="pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] text-[var(--muted-foreground)]">
+                    <span>24th Amendment Act, 1971 · Article 368(2)</span>
+                    <span className="font-mono text-[var(--accent)]">
+                      {totalModels} Model items ready
+                    </span>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            </div>
           </div>
+        </div>
+      </section>
+
+      {/* Editorial Methodology Strip (Dividers, No Boxy Cards) */}
+      <section className="border-b border-[var(--border)] bg-[var(--card)]/50">
+        <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:divide-x md:divide-[var(--border)]">
+            <div className="space-y-2 md:pr-6">
+              <div className="text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--accent)]">
+                01 / Authenticity
+              </div>
+              <h2 className="text-base font-semibold text-[var(--foreground)]">
+                Uncompromised PYQ Provenance
+              </h2>
+              <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
+                Every previous-year question is attributed to its official commission paper and year. Model questions are strictly separated and moderated.
+              </p>
+            </div>
+
+            <div className="space-y-2 md:px-8">
+              <div className="text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--accent)]">
+                02 / Calibration
+              </div>
+              <h2 className="text-base font-semibold text-[var(--foreground)]">
+                Controlled PYQ : Model Ratios
+              </h2>
+              <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
+                Start with the recommended 80% PYQ + 20% Model standard or dial in any custom ratio from 100/0 pure past papers to 0/100 fresh drills.
+              </p>
+            </div>
+
+            <div className="space-y-2 md:pl-8">
+              <div className="text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--accent)]">
+                03 / Diagnostics
+              </div>
+              <h2 className="text-base font-semibold text-[var(--foreground)]">
+                Mistake &amp; Syllabus Telemetry
+              </h2>
+              <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
+                Identify weak syllabus topics, compare PYQ vs Model accuracy, and classify errors across 7 diagnostic categories without gamified noise.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 9: Compact Searchable Examination Browser */}
+      <section id="examinations" className="py-16">
+        <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="space-y-1">
+              <div className="text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--accent)]">
+                Examination Directory
+              </div>
+              <h2 className="font-display text-2xl sm:text-3xl font-normal text-[var(--foreground)]">
+                Select an examination to begin
+              </h2>
+            </div>
+            <Link
+              href="/mock/configure"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--accent)] hover:underline"
+            >
+              <span>Open Custom Mock Builder</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <ExamBrowserClient exams={exams} subjects={allSubjects} />
         </div>
       </section>
     </div>

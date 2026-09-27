@@ -33,15 +33,16 @@ export default async function PricingPage() {
   ]);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
-      <div className="text-center max-w-2xl mx-auto space-y-3">
-        <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-          Transparent Academic Plans
-        </span>
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Student-Friendly Pricing for Serious Aspirants
+    <div className="max-w-[1140px] mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
+      <div className="max-w-2xl space-y-3 pb-6 border-b border-[var(--border)]">
+        <div className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--accent)]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+          <span>Academic Subscriptions</span>
+        </div>
+        <h1 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight text-[var(--foreground)]">
+          Student-Friendly Pricing for Serious Preparation
         </h1>
-        <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed">
+        <p className="text-sm sm:text-base text-[var(--muted-foreground)] leading-relaxed">
           Start free, upgrade to Pro at ₹59/month for deep subject &amp; mistake analytics, or unlock unrestricted preparation across all 22 exams with Elite at ₹99/month.
         </p>
       </div>

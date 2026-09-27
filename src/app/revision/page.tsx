@@ -2,42 +2,43 @@ import React from "react";
 import Link from "next/link";
 import { getSavedQuestions, getUserMistakes } from "@/lib/db";
 import { RevisionHubClient } from "@/components/revision/RevisionHubClient";
-import { Sliders, Search } from "lucide-react";
+import { Search, ArrowRight } from "lucide-react";
 
 export default async function RevisionPage() {
   const savedBookmarks = await getSavedQuestions();
   const userMistakes = await getUserMistakes();
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-5 border-b border-slate-200/90 dark:border-slate-800/90">
+    <div className="max-w-[1140px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+      {/* Editorial Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-[var(--border)]">
         <div>
-          <div className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">
-            Knowledge & Retention Library
+          <div className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--accent)] mb-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+            <span>Retention &amp; Error Register</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+          <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--foreground)]">
             Revision Hub
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Review bookmarked questions, drill classified mistakes, and strengthen weak syllabus concepts.
+          <p className="text-sm text-[var(--muted-foreground)] mt-1">
+            Review saved questions, drill classified mistakes, and isolate recurring weak areas.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <Link
             href="/search"
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131c2e] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors"
           >
-            <Search className="w-3.5 h-3.5 text-slate-400" />
-            <span>Explore Questions</span>
+            <Search className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
+            <span>Question Bank</span>
           </Link>
           <Link
             href="/mock/configure"
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-xs font-semibold bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white transition-colors shadow-2xs"
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
           >
-            <Sliders className="w-3.5 h-3.5" />
-            <span>New Mock</span>
+            <span>Start Mock</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
       </div>

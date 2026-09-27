@@ -10,14 +10,8 @@ import {
   getAllExamsForAdmin,
 } from "@/lib/db";
 import {
-  Layers,
-  ShieldCheck,
-  Sparkles,
-  Clock,
   UploadCloud,
   ArrowRight,
-  Award,
-  XCircle,
   CreditCard,
   Settings,
 } from "lucide-react";
@@ -42,7 +36,6 @@ export default async function AdminDashboardPage() {
     getAllExamsForAdmin(),
   ]);
 
-  // 8 Administrative Quality Control Metrics
   const totalQuestions = allQuestions.length;
   const approvedPyqCount = allQuestions.filter(
     (q) => q.type === "PYQ" && q.verification_status === "approved"
@@ -66,13 +59,13 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* Editorial Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-[var(--border)]">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+          <span className="text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--accent)]">
             Content Management &amp; Integrity
           </span>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--foreground)] mt-1">
+          <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--foreground)] mt-1">
             Platform Quality Overview
           </h1>
           <p className="text-sm text-[var(--muted-foreground)] mt-1">
@@ -83,120 +76,105 @@ export default async function AdminDashboardPage() {
         <div className="flex items-center gap-2.5">
           <Link
             href="/admin/model-questions"
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl font-semibold text-xs border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] transition"
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-md font-medium text-xs border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] transition"
           >
-            <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             <span>Moderation Queue ({pendingModelCount})</span>
           </Link>
           <Link
             href="/admin/questions?tab=import"
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl font-semibold text-xs bg-blue-600 text-white hover:bg-blue-700 transition shadow-xs"
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-md font-medium text-xs bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition"
           >
-            <UploadCloud className="w-4 h-4" />
+            <UploadCloud className="w-3.5 h-3.5" />
             <span>Import ZIP / CSV</span>
           </Link>
         </div>
       </div>
 
-      {/* 8 KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-5">
-          <div className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] flex items-center justify-between">
-            <span>Total Questions</span>
-            <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+      {/* Inline 8-Metric Editorial Strip */}
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] overflow-hidden">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border)]">
+          <div className="p-4">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
+              Total Bank
+            </div>
+            <div className="text-2xl font-mono font-semibold text-[var(--foreground)] mt-1">
+              {totalQuestions}
+            </div>
           </div>
-          <div className="text-3xl font-bold text-[var(--foreground)] tabular-nums mt-2">
-            {totalQuestions}
-          </div>
-          <p className="text-xs text-[var(--muted-foreground)] mt-1">Total repository items</p>
-        </Card>
 
-        <Card className="p-5">
-          <div className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center justify-between">
-            <span>Approved PYQs</span>
-            <ShieldCheck className="w-4 h-4" />
+          <div className="p-4">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--sage)]">
+              Approved PYQ
+            </div>
+            <div className="text-2xl font-mono font-semibold text-[var(--sage)] mt-1">
+              {approvedPyqCount}
+            </div>
           </div>
-          <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums mt-2">
-            {approvedPyqCount}
-          </div>
-          <p className="text-xs text-[var(--muted-foreground)] mt-1">Eligible for 80% PYQ pool</p>
-        </Card>
 
-        <Card className="p-5">
-          <div className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center justify-between">
-            <span>Pending PYQs</span>
-            <Clock className="w-4 h-4" />
+          <div className="p-4">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--accent)]">
+              Pending PYQ
+            </div>
+            <div className="text-2xl font-mono font-semibold text-[var(--accent)] mt-1">
+              {pendingPyqCount}
+            </div>
           </div>
-          <div className="text-3xl font-bold text-amber-600 dark:text-amber-400 tabular-nums mt-2">
-            {pendingPyqCount}
-          </div>
-          <p className="text-xs text-[var(--muted-foreground)] mt-1">Awaiting verification</p>
-        </Card>
 
-        <Card className="p-5">
-          <div className="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 flex items-center justify-between">
-            <span>Approved Model</span>
-            <Sparkles className="w-4 h-4" />
+          <div className="p-4">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--plum)]">
+              Approved Model
+            </div>
+            <div className="text-2xl font-mono font-semibold text-[var(--plum)] mt-1">
+              {approvedModelCount}
+            </div>
           </div>
-          <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 tabular-nums mt-2">
-            {approvedModelCount}
-          </div>
-          <p className="text-xs text-[var(--muted-foreground)] mt-1">Eligible for 20% Model pool</p>
-        </Card>
 
-        <Card className="p-5">
-          <div className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center justify-between">
-            <span>Pending Model</span>
-            <Clock className="w-4 h-4" />
+          <div className="p-4">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--accent)]">
+              Pending Model
+            </div>
+            <div className="text-2xl font-mono font-semibold text-[var(--accent)] mt-1">
+              {pendingModelCount}
+            </div>
           </div>
-          <div className="text-3xl font-bold text-amber-600 dark:text-amber-400 tabular-nums mt-2">
-            {pendingModelCount}
-          </div>
-          <p className="text-xs text-[var(--muted-foreground)] mt-1">In AI moderation queue</p>
-        </Card>
 
-        <Card className="p-5">
-          <div className="text-xs font-semibold uppercase tracking-wider text-red-700 dark:text-red-400 flex items-center justify-between">
-            <span>Rejected Items</span>
-            <XCircle className="w-4 h-4" />
+          <div className="p-4">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-rose-600">
+              Rejected
+            </div>
+            <div className="text-2xl font-mono font-semibold text-rose-600 mt-1">
+              {rejectedCount}
+            </div>
           </div>
-          <div className="text-3xl font-bold text-red-600 dark:text-red-400 tabular-nums mt-2">
-            {rejectedCount}
-          </div>
-          <p className="text-xs text-[var(--muted-foreground)] mt-1">Excluded from student mocks</p>
-        </Card>
 
-        <Card className="p-5">
-          <div className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] flex items-center justify-between">
-            <span>Import Batches</span>
-            <UploadCloud className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <div className="p-4">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
+              Batches
+            </div>
+            <div className="text-2xl font-mono font-semibold text-[var(--foreground)] mt-1">
+              {importBatchCount}
+            </div>
           </div>
-          <div className="text-3xl font-bold text-[var(--foreground)] tabular-nums mt-2">
-            {importBatchCount}
-          </div>
-          <p className="text-xs text-[var(--muted-foreground)] mt-1">Logged archive uploads</p>
-        </Card>
 
-        <Card className="p-5">
-          <div className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] flex items-center justify-between">
-            <span>AI Generated</span>
-            <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <div className="p-4">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
+              AI Generated
+            </div>
+            <div className="text-2xl font-mono font-semibold text-[var(--foreground)] mt-1">
+              {aiGeneratedActivityCount}
+            </div>
           </div>
-          <div className="text-3xl font-bold text-[var(--foreground)] tabular-nums mt-2">
-            {aiGeneratedActivityCount}
-          </div>
-          <p className="text-xs text-[var(--muted-foreground)] mt-1">Total Gemini synthesis items</p>
-        </Card>
+        </div>
       </div>
 
-      {/* Quick Action Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <Card className="p-6 flex flex-col justify-between space-y-4">
+      {/* Quick Action Editorial Rows */}
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] divide-y md:divide-y-0 md:divide-x divide-[var(--border)] grid grid-cols-1 md:grid-cols-3">
+        <div className="p-6 flex flex-col justify-between space-y-4">
           <div>
-            <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3">
-              <UploadCloud className="w-4 h-4" />
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--accent)] mb-1">
+              01 / Archive Pipeline
             </div>
-            <h3 className="font-bold text-base text-[var(--foreground)]">
+            <h3 className="font-semibold text-base text-[var(--foreground)]">
               Bulk Import Pipeline (ZIP / CSV)
             </h3>
             <p className="text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
@@ -205,19 +183,19 @@ export default async function AdminDashboardPage() {
           </div>
           <Link
             href="/admin/questions?tab=import"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--accent)] hover:underline"
           >
             <span>Launch Import Pipeline</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
-        </Card>
+        </div>
 
-        <Card className="p-6 flex flex-col justify-between space-y-4">
+        <div className="p-6 flex flex-col justify-between space-y-4">
           <div>
-            <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-3">
-              <Sparkles className="w-4 h-4" />
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--plum)] mb-1">
+              02 / AI Quality Gate
             </div>
-            <h3 className="font-bold text-base text-[var(--foreground)]">
+            <h3 className="font-semibold text-base text-[var(--foreground)]">
               Model Question Review Queue
             </h3>
             <p className="text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
@@ -226,19 +204,19 @@ export default async function AdminDashboardPage() {
           </div>
           <Link
             href="/admin/model-questions"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--plum)] hover:underline"
           >
             <span>Open Moderation Queue ({pendingModelCount})</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
-        </Card>
+        </div>
 
-        <Card className="p-6 flex flex-col justify-between space-y-4">
+        <div className="p-6 flex flex-col justify-between space-y-4">
           <div>
-            <div className="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-3">
-              <Award className="w-4 h-4" />
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--sage)] mb-1">
+              03 / Examination Catalog
             </div>
-            <h3 className="font-bold text-base text-[var(--foreground)]">
+            <h3 className="font-semibold text-base text-[var(--foreground)]">
               Exam Syllabi &amp; Marking Schemes
             </h3>
             <p className="text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
@@ -247,12 +225,12 @@ export default async function AdminDashboardPage() {
           </div>
           <Link
             href="/admin/exams"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--sage)] hover:underline"
           >
             <span>Configure Taxonomy ({allExams.length} Exams)</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
-        </Card>
+        </div>
       </div>
 
       {/* Subscriptions & Payments Ledger + System Settings */}
@@ -260,11 +238,9 @@ export default async function AdminDashboardPage() {
         <Card className="lg:col-span-7 overflow-hidden">
           <div className="p-5 border-b border-[var(--border)] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                <CreditCard className="w-4 h-4" />
-              </div>
+              <CreditCard className="w-4 h-4 text-[var(--sage)]" />
               <div>
-                <h3 className="font-bold text-base text-[var(--foreground)]">
+                <h3 className="font-semibold text-sm text-[var(--foreground)]">
                   Subscriptions &amp; Payment Ledger
                 </h3>
                 <p className="text-xs text-[var(--muted-foreground)]">
@@ -285,7 +261,7 @@ export default async function AdminDashboardPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-[var(--muted)]/60 text-[var(--muted-foreground)] uppercase tracking-wider border-b border-[var(--border)]">
+                <thead className="bg-[var(--muted)]/60 text-[var(--muted-foreground)] font-mono uppercase tracking-wider border-b border-[var(--border)]">
                   <tr>
                     <th className="py-2.5 px-4">Order ID</th>
                     <th className="py-2.5 px-4">Plan</th>
@@ -300,10 +276,10 @@ export default async function AdminDashboardPage() {
                       <td className="py-2.5 px-4 font-mono text-[11px] text-[var(--muted-foreground)]">
                         {tx.provider_order_id}
                       </td>
-                      <td className="py-2.5 px-4 font-bold text-[var(--foreground)]">
+                      <td className="py-2.5 px-4 font-medium text-[var(--foreground)]">
                         {tx.plan_code}
                       </td>
-                      <td className="py-2.5 px-4 font-semibold tabular-nums text-[var(--foreground)]">
+                      <td className="py-2.5 px-4 font-mono font-semibold tabular-nums text-[var(--foreground)]">
                         ₹{Math.round((tx.amount_paise || 0) / 100)}
                       </td>
                       <td className="py-2.5 px-4">
@@ -326,11 +302,9 @@ export default async function AdminDashboardPage() {
           <div>
             <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                  <Settings className="w-4 h-4" />
-                </div>
+                <Settings className="w-4 h-4 text-[var(--accent)]" />
                 <div>
-                  <h3 className="font-bold text-base text-[var(--foreground)]">
+                  <h3 className="font-semibold text-sm text-[var(--foreground)]">
                     System Settings &amp; AI Telemetry
                   </h3>
                   <p className="text-xs text-[var(--muted-foreground)]">
@@ -341,22 +315,27 @@ export default async function AdminDashboardPage() {
               <Badge variant="model">{aiLogs.length} AI Runs</Badge>
             </div>
 
-            <div className="mt-4 space-y-2.5">
+            <div className="mt-4 space-y-2">
               {Object.entries(systemSettings).map(([key, val]) => (
                 <div
                   key={key}
-                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--muted)]/40 border border-[var(--border)] text-xs"
+                  className="flex items-center justify-between py-2 px-3 rounded-md bg-[var(--muted)]/40 border border-[var(--border)] text-xs"
                 >
                   <span className="font-mono text-[11px] text-[var(--muted-foreground)]">{key}</span>
-                  <span className="font-bold text-[var(--foreground)]">{String(val)}</span>
+                  <span className="font-mono font-semibold text-[var(--foreground)]">{String(val)}</span>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-between text-xs text-[var(--muted-foreground)]">
-            <span>Active Catalog Exams: <strong className="text-[var(--foreground)]">{allExams.filter((e) => e.is_active !== false).length} / {allExams.length}</strong></span>
-            <Link href="/pricing" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">
+            <span>
+              Active Catalog Exams:{" "}
+              <strong className="font-mono text-[var(--foreground)]">
+                {allExams.filter((e) => e.is_active !== false).length} / {allExams.length}
+              </strong>
+            </span>
+            <Link href="/pricing" className="text-[var(--accent)] font-medium hover:underline">
               View Pricing Page →
             </Link>
           </div>
@@ -367,7 +346,7 @@ export default async function AdminDashboardPage() {
       <Card className="overflow-hidden">
         <div className="p-5 border-b border-[var(--border)] flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-base text-[var(--foreground)]">
+            <h3 className="font-semibold text-sm text-[var(--foreground)]">
               Recent Question Import Batches
             </h3>
             <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
@@ -384,7 +363,7 @@ export default async function AdminDashboardPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
-              <thead className="bg-[var(--muted)]/60 text-[var(--muted-foreground)] uppercase tracking-wider border-b border-[var(--border)]">
+              <thead className="bg-[var(--muted)]/60 text-[var(--muted-foreground)] font-mono uppercase tracking-wider border-b border-[var(--border)]">
                 <tr>
                   <th className="py-3 px-4">Batch ID</th>
                   <th className="py-3 px-4">Archive / Filename</th>
@@ -401,13 +380,13 @@ export default async function AdminDashboardPage() {
                     <td className="py-3 px-4 font-mono text-[11px] text-[var(--muted-foreground)]">
                       {b.id}
                     </td>
-                    <td className="py-3 px-4 font-semibold text-[var(--foreground)]">
+                    <td className="py-3 px-4 font-medium text-[var(--foreground)]">
                       {b.filename}
                     </td>
                     <td className="py-3 px-4">
                       <Badge variant="default">{b.import_type}</Badge>
                     </td>
-                    <td className="py-3 px-4 font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                    <td className="py-3 px-4 font-mono font-semibold text-[var(--sage)] tabular-nums">
                       {b.imported_rows}
                     </td>
                     <td className="py-3 px-4">
@@ -419,7 +398,7 @@ export default async function AdminDashboardPage() {
                     <td className="py-3 px-4 text-right">
                       <Link
                         href={`/admin/questions?batchId=${b.id}`}
-                        className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+                        className="text-[var(--accent)] font-medium hover:underline"
                       >
                         Inspect Batch →
                       </Link>
