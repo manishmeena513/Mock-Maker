@@ -86,3 +86,37 @@ export async function canUserCreateRetest(userId: string = "default-user"): Prom
     maxAllowed: limit,
   };
 }
+
+export async function canUserSendAIChatMessage(userId: string = "default-user"): Promise<{
+  allowed: boolean;
+  reason?: string;
+  currentCount: number;
+  maxAllowed: number;
+  remaining: number;
+  tier: string;
+}> {
+  const status = await getUserPlanStatus(userId);
+  const used = status.dailyAiAssistantUsed ?? 0;
+  const limit = status.dailyAiAssistantLimit ?? 15;
+  const remaining = Math.max(0, limit - used);
+
+  if (limit !== Infinity && used >= limit) {
+    return {
+      allowed: false,
+      reason: `You have reached the daily limit of ${limit} AI Assistant messages for ${status.tier} plan users. Upgrade to Pro (75/day) or Elite (300/day) for extended AI exam preparation assistance.`,
+      currentCount: used,
+      maxAllowed: limit,
+      remaining: 0,
+      tier: status.tier,
+    };
+  }
+
+  return {
+    allowed: true,
+    currentCount: used,
+    maxAllowed: limit,
+    remaining,
+    tier: status.tier,
+  };
+}
+

@@ -21,8 +21,9 @@ export type UserPlanType =
   | "PRO"
   | "ELITE"
   | "PREMIUM";
-export type ImportType = "CSV" | "ZIP";
+export type ImportType = "CSV" | "ZIP" | "GITHUB";
 export type ImportStatus = "processing" | "completed" | "failed" | "partial";
+export type GitHubDuplicateStatus = "new" | "duplicate" | "possible_duplicate";
 
 export type PYQModelRatio = 100 | 90 | 80 | 70 | 60 | 50 | 40 | 30 | 20 | 10 | 0;
 
@@ -159,6 +160,11 @@ export interface Question {
   import_batch_id?: string | null;
   import_source_filename?: string | null;
   import_source_row?: number | null;
+  source_repository?: string | null;
+  source_url?: string | null;
+  source_path?: string | null;
+  source_commit?: string | null;
+  ai_confidence?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -237,8 +243,83 @@ export interface QuestionImportBatch {
   imported_rows: number;
   status: ImportStatus;
   error_log?: Json | null;
+  source_repository?: string | null;
+  source_branch?: string | null;
+  source_path?: string | null;
+  files_scanned?: number;
+  questions_extracted?: number;
+  approved_count?: number;
+  rejected_count?: number;
+  pending_count?: number;
   created_at: string;
   completed_at: string | null;
+}
+
+export interface GitHubImportCandidate {
+  id: string;
+  batch_id: string;
+  question_text: string;
+  normalized_question_text: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_answer: "A" | "B" | "C" | "D" | null;
+  requires_answer_verification: boolean;
+  explanation: StructuredExplanation;
+  exam_id: string | null;
+  subject_id: string | null;
+  topic_id: string | null;
+  exam_name: string | null;
+  subject_name: string | null;
+  topic_name: string | null;
+  question_type: QuestionType;
+  difficulty: DifficultyLevel;
+  source_repository: string;
+  source_branch: string | null;
+  source_path: string;
+  source_filename: string;
+  source_line: number | null;
+  source_year: number | null;
+  source_paper: string | null;
+  source_url: string | null;
+  source_commit: string | null;
+  confidence: number;
+  duplicate_status: GitHubDuplicateStatus;
+  duplicate_match_id?: string | null;
+  duplicate_similarity?: number | null;
+  verification_status: VerificationStatus;
+  validation_warnings: string[];
+  validation_errors: string[];
+  promoted_question_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIAssistantUsageLog {
+  id: string;
+  user_id: string;
+  provider: string;
+  model: string | null;
+  message_length: number;
+  response_length: number;
+  latency_ms: number | null;
+  status: "success" | "failed" | "rate_limited";
+  context_exam?: string | null;
+  context_subject?: string | null;
+  context_topic?: string | null;
+  error_message?: string | null;
+  created_at: string;
+}
+
+export interface AdminAuditLog {
+  id: string;
+  admin_user_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  metadata?: Json | null;
+  created_at: string;
 }
 
 export type SubscriptionStatus =
@@ -332,6 +413,7 @@ export interface PlanLimits {
   canGenerateAIQuestions?: boolean;
   allowAiGeneration?: boolean;
   dailyAiGenerationLimit?: number;
+  dailyAiAssistantLimit?: number;
   hasAdvancedAnalytics: boolean;
   hasDetailedExplanations?: boolean;
   allowedPyqRatios?: number[];

@@ -397,6 +397,13 @@ export function QuestionExplorerClient({
                       correctAnswer={q.correct_answer}
                       type={q.type}
                       sourceYear={q.source_year}
+                      questionText={q.question_text}
+                      options={{
+                        A: q.option_a,
+                        B: q.option_b,
+                        C: q.option_c,
+                        D: q.option_d,
+                      }}
                     />
                   </div>
                 )}

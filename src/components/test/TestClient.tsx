@@ -20,7 +20,9 @@ import {
   AlertTriangle,
   LayoutGrid,
   X,
+  Sparkles,
 } from "lucide-react";
+import { useAIAssistant } from "@/components/ai/AIAssistantContext";
 
 interface TestClientProps {
   mockTest: MockTest;
@@ -35,6 +37,7 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
   const [showSubmitModal, setShowSubmitModal] = useState<boolean>(false);
   const [paletteOpen, setPaletteOpen] = useState<boolean>(false);
+  const { setExamContext, toggleAssistant, isOpen: isAIOpen } = useAIAssistant();
 
   const storageKey = `mockmaster_answers_${mockTest.id}`;
 
@@ -68,6 +71,34 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
 
   const isPracticeMode = mockTest.mode === "practice";
   const hasAnsweredCurrent = Boolean(currentMockQuestion?.user_answer);
+
+  useEffect(() => {
+    if (!q) return;
+    setExamContext({
+      exam: mockTest.exam_id,
+      subject: q.subject_id,
+      topic: q.explanation?.concept || q.topic_id,
+      questionText: q.question_text,
+      options: {
+        A: q.option_a,
+        B: q.option_b,
+        C: q.option_c,
+        D: q.option_d,
+      },
+      userAnswer: currentMockQuestion?.user_answer || null,
+      correctAnswer: isPracticeMode ? q.correct_answer : null,
+      explanation: isPracticeMode ? q.explanation?.why || null : null,
+      mode: mockTest.mode,
+      page: "test",
+    });
+  }, [
+    q,
+    currentMockQuestion?.user_answer,
+    isPracticeMode,
+    mockTest.exam_id,
+    mockTest.mode,
+    setExamContext,
+  ]);
 
   const handleSelectOption = async (option: "A" | "B" | "C" | "D") => {
     if (isPracticeMode && hasAnsweredCurrent) {
@@ -188,13 +219,28 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
             <span className="text-[var(--muted-foreground)]"> / {questions.length}</span>
           </div>
 
-          {/* Right: Timer, Collapsible Palette Trigger & Submit */}
+          {/* Right: Timer, AI Assistant, Collapsible Palette Trigger & Submit */}
           <div className="flex items-center gap-2">
             <ExamTimer
               initialMinutes={mockTest.time_limit_minutes}
               startedAt={mockTest.started_at}
               onTimeUp={handleFinalizeMock}
             />
+
+            <button
+              type="button"
+              onClick={toggleAssistant}
+              aria-label="Toggle AI Assistant"
+              title="Ask MockMaster AI"
+              className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
+                isAIOpen
+                  ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                  : "border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:border-[var(--accent-border)]"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
+              <span className="hidden sm:inline">AI</span>
+            </button>
 
             <div className="hidden md:block">
               <ModeToggle />
@@ -348,6 +394,13 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
                 userAnswer={currentMockQuestion.user_answer}
                 type={q.type}
                 sourceYear={q.source_year}
+                questionText={q.question_text}
+                options={{
+                  A: q.option_a,
+                  B: q.option_b,
+                  C: q.option_c,
+                  D: q.option_d,
+                }}
               />
             </div>
           )}

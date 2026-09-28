@@ -324,6 +324,13 @@ export function RevisionHubClient({ initialSaved, initialMistakes }: RevisionHub
                           correctAnswer={q.correct_answer}
                           type={q.type}
                           sourceYear={q.source_year}
+                          questionText={q.question_text}
+                          options={{
+                            A: q.option_a,
+                            B: q.option_b,
+                            C: q.option_c,
+                            D: q.option_d,
+                          }}
                         />
                       </div>
                     )}
@@ -450,6 +457,13 @@ export function RevisionHubClient({ initialSaved, initialMistakes }: RevisionHub
                           userAnswer={m.userAnswer}
                           type={q.type}
                           sourceYear={q.source_year}
+                          questionText={q.question_text}
+                          options={{
+                            A: q.option_a,
+                            B: q.option_b,
+                            C: q.option_c,
+                            D: q.option_d,
+                          }}
                         />
                       </div>
                     )}

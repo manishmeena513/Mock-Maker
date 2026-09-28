@@ -1,4 +1,12 @@
-import { AIQuestionProvider, GenerateQuestionsParams, GeneratedModelQuestion } from "../types";
+import {
+  AIQuestionProvider,
+  GenerateQuestionsParams,
+  GeneratedModelQuestion,
+  AIAssistantChatParams,
+  AIAssistantChatResponse,
+  ExtractQuestionsChunkParams,
+  ExtractedCandidateItem,
+} from "../types";
 
 export class OpenAIProvider implements AIQuestionProvider {
   name = "openai";
@@ -9,8 +17,24 @@ export class OpenAIProvider implements AIQuestionProvider {
   }
 
   async generateQuestions(params: GenerateQuestionsParams): Promise<GeneratedModelQuestion[]> {
-    console.log(`[OpenAIProvider stub] Called for exam=${params.examName}, count=${params.count}. Ready for Phase 2 API swap.`);
-    // Future expansion: call OpenAI gpt-4o / gpt-4o-mini
+    console.log(
+      `[OpenAIProvider stub] Called for exam=${params.examName}, count=${params.count}. Ready for Phase 2 API swap.`
+    );
+    return [];
+  }
+
+  async chatWithAssistant(params: AIAssistantChatParams): Promise<AIAssistantChatResponse> {
+    return {
+      reply: `Answer:\nOption A\n\nWhy:\nDetailed explanation for: ${params.message}\n\nWhy other options are incorrect:\nA / B / C / D\n\nExam takeaway:\nFocus on core syllabus concepts.`,
+      model: "gpt-4o-mini",
+      provider: this.name,
+      latencyMs: 5,
+    };
+  }
+
+  async extractQuestionsFromChunk(
+    _params: ExtractQuestionsChunkParams
+  ): Promise<ExtractedCandidateItem[]> {
     return [];
   }
 }

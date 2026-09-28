@@ -3,7 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Sliders, Bookmark, Search } from "lucide-react";
+import { LayoutDashboard, Sliders, Bookmark, Search, Sparkles } from "lucide-react";
+import { useAIAssistant } from "@/components/ai/AIAssistantContext";
 
 const WORKSPACE_PREFIXES = [
   "/dashboard",
@@ -21,6 +22,7 @@ const WORKSPACE_PREFIXES = [
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { isOpen: isAIOpen, toggleAssistant } = useAIAssistant();
   const isWorkspaceRoute = WORKSPACE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
   if (!isWorkspaceRoute) {
@@ -34,7 +36,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Subtle Mobile Bottom Navigation Bar */}
       <nav
         aria-label="Mobile Quick Navigation"
-        className="md:hidden fixed bottom-0 inset-x-0 z-30 h-13 bg-[var(--background)]/95 backdrop-blur-md border-t border-[var(--border)] grid grid-cols-4 px-2"
+        className="md:hidden fixed bottom-0 inset-x-0 z-30 h-13 bg-[var(--background)]/95 backdrop-blur-md border-t border-[var(--border)] grid grid-cols-5 px-2"
       >
         <Link
           href="/dashboard"
@@ -80,6 +82,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Search className="w-3.5 h-3.5" />
           <span>Search</span>
         </Link>
+        <button
+          type="button"
+          onClick={toggleAssistant}
+          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium cursor-pointer ${
+            isAIOpen
+              ? "text-[var(--accent)] font-semibold"
+              : "text-[var(--muted-foreground)]"
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
+          <span>AI Mentor</span>
+        </button>
       </nav>
     </div>
   );

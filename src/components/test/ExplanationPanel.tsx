@@ -1,5 +1,9 @@
+"use client";
+
 import React from "react";
+import { Sparkles } from "lucide-react";
 import { StructuredExplanation, QuestionType } from "@/types/database";
+import { useAIAssistant } from "@/components/ai/AIAssistantContext";
 
 interface ExplanationPanelProps {
   correctAnswer: "A" | "B" | "C" | "D";
@@ -8,6 +12,8 @@ interface ExplanationPanelProps {
   userAnswer?: "A" | "B" | "C" | "D" | null;
   type?: QuestionType;
   sourceYear?: number | null;
+  questionText?: string;
+  options?: { A: string; B: string; C: string; D: string };
 }
 
 export function ExplanationPanel({
@@ -15,13 +21,32 @@ export function ExplanationPanel({
   explanation,
   isUserCorrect,
   userAnswer,
+  questionText,
+  options,
 }: ExplanationPanelProps) {
+  const { updateExamContext, openAssistant } = useAIAssistant();
+
   const userCorrect =
     isUserCorrect !== undefined
       ? isUserCorrect
       : userAnswer
       ? userAnswer === correctAnswer
       : true;
+
+  const handleAskAI = () => {
+    updateExamContext({
+      ...(questionText ? { questionText } : {}),
+      ...(options ? { options } : {}),
+      userAnswer: userAnswer || null,
+      correctAnswer,
+      explanation: `${explanation.why} (${explanation.concept})`,
+    });
+    openAssistant(
+      userCorrect
+        ? "Summarize the key exam takeaway and why the other options are incorrect"
+        : "Explain why my selected answer is wrong and how to eliminate the distractors"
+    );
+  };
 
   return (
     <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] overflow-hidden">
@@ -37,9 +62,19 @@ export function ExplanationPanel({
             ? "Correct Response"
             : `Incorrect ${userAnswer ? `(Selected ${userAnswer})` : "(Unattempted)"}`}
         </span>
-        <span className="font-semibold text-[var(--foreground)]">
-          Official Key: Option {correctAnswer}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="font-semibold text-[var(--foreground)]">
+            Official Key: Option {correctAnswer}
+          </span>
+          <button
+            type="button"
+            onClick={handleAskAI}
+            className="inline-flex items-center gap-1 rounded border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-mono font-semibold text-[var(--accent)] hover:opacity-90 transition-opacity cursor-pointer"
+          >
+            <Sparkles className="w-3 h-3" />
+            <span>Ask AI Mentor</span>
+          </button>
+        </div>
       </div>
 
       <div className="p-5 space-y-4 text-xs sm:text-sm leading-relaxed">

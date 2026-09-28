@@ -14,6 +14,7 @@ import {
   ArrowRight,
   CreditCard,
   Settings,
+  GitBranch,
 } from "lucide-react";
 import { Badge, Card } from "@/components/ui/primitives";
 
@@ -69,16 +70,23 @@ export default async function AdminDashboardPage() {
             Platform Quality Overview
           </h1>
           <p className="text-sm text-[var(--muted-foreground)] mt-1">
-            Monitor question bank verification states, moderate AI model items, and audit bulk CSV/ZIP imports.
+            Monitor question bank verification states, moderate AI model items, and audit bulk CSV/ZIP/GitHub imports.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
           <Link
             href="/admin/model-questions"
             className="inline-flex items-center gap-2 h-9 px-4 rounded-md font-medium text-xs border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] transition"
           >
             <span>Moderation Queue ({pendingModelCount})</span>
+          </Link>
+          <Link
+            href="/admin/import/github"
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-md font-medium text-xs border border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)] hover:opacity-90 transition"
+          >
+            <GitBranch className="w-3.5 h-3.5" />
+            <span>Import from GitHub</span>
           </Link>
           <Link
             href="/admin/questions?tab=import"

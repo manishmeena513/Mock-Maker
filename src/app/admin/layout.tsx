@@ -12,6 +12,7 @@ import {
   ArrowUpRight,
   LogOut,
   Loader2,
+  GitBranch,
 } from "lucide-react";
 import { ModeToggle } from "@/components/shared/ModeToggle";
 import { BrandLogo } from "@/components/shared/BrandLogo";
@@ -32,6 +33,11 @@ const ADMIN_NAV = [
     name: "ZIP / CSV Import",
     href: "/admin/questions?tab=import",
     icon: UploadCloud,
+  },
+  {
+    name: "GitHub Importer",
+    href: "/admin/import/github",
+    icon: GitBranch,
   },
   {
     name: "AI Moderation Queue",
@@ -65,6 +71,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       // continue
     } finally {
       try {
+        window.dispatchEvent(new Event("mockmaster:logout"));
         const preservedTheme = window.localStorage.getItem("theme");
         window.localStorage.clear();
         if (preservedTheme) window.localStorage.setItem("theme", preservedTheme);

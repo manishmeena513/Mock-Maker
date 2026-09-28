@@ -23,6 +23,9 @@ import {
   PaymentProvider,
   PaymentTransaction,
   UserAnalyticsSummary,
+  GitHubImportCandidate,
+  AIAssistantUsageLog,
+  AdminAuditLog,
 } from "@/types/database";
 import { createClient } from "./supabase/server";
 import { assertProductionDatabaseConfigured, isProductionRuntime } from "@/lib/config/env";
@@ -48,6 +51,9 @@ interface GlobalMockMasterStore {
   inMemorySystemSettings: Map<string, unknown>;
   inMemoryAILogs: AIGenerationLog[];
   inMemoryWebhookEvents: Set<string>;
+  inMemoryAIAssistantLogs: AIAssistantUsageLog[];
+  inMemoryGitHubCandidates: Map<string, GitHubImportCandidate>;
+  inMemoryAdminAuditLogs: AdminAuditLog[];
 }
 
 const g = globalThis as unknown as { __mockmaster_store?: GlobalMockMasterStore };
@@ -75,6 +81,9 @@ if (!g.__mockmaster_store) {
     ]),
     inMemoryAILogs: [],
     inMemoryWebhookEvents: new Set(),
+    inMemoryAIAssistantLogs: [],
+    inMemoryGitHubCandidates: new Map(),
+    inMemoryAdminAuditLogs: [],
   };
 }
 
@@ -97,6 +106,18 @@ const inMemorySystemSettings =
   g.__mockmaster_store.inMemorySystemSettings || new Map<string, unknown>();
 const inMemoryAILogs = g.__mockmaster_store.inMemoryAILogs;
 const inMemoryWebhookEvents = g.__mockmaster_store.inMemoryWebhookEvents;
+if (!g.__mockmaster_store.inMemoryAIAssistantLogs) {
+  g.__mockmaster_store.inMemoryAIAssistantLogs = [];
+}
+if (!g.__mockmaster_store.inMemoryGitHubCandidates) {
+  g.__mockmaster_store.inMemoryGitHubCandidates = new Map();
+}
+if (!g.__mockmaster_store.inMemoryAdminAuditLogs) {
+  g.__mockmaster_store.inMemoryAdminAuditLogs = [];
+}
+const inMemoryAIAssistantLogs = g.__mockmaster_store.inMemoryAIAssistantLogs;
+const inMemoryGitHubCandidates = g.__mockmaster_store.inMemoryGitHubCandidates;
+const inMemoryAdminAuditLogs = g.__mockmaster_store.inMemoryAdminAuditLogs;
 
 function checkProductionDatabaseGuard() {
   if (isProductionRuntime() && !isSupabaseConfigured()) {
@@ -724,7 +745,10 @@ export async function addQuestionToBank(question: Question): Promise<void> {
 }
 
 export async function addQuestionsBatchToBank(questions: Question[]): Promise<number> {
-  dynamicQuestionsBank = [...questions, ...dynamicQuestionsBank];
+  dynamicQuestionsBank.unshift(...questions);
+  if (g.__mockmaster_store) {
+    g.__mockmaster_store.dynamicQuestionsBank = dynamicQuestionsBank;
+  }
   return questions.length;
 }
 
@@ -770,9 +794,12 @@ export async function updateQuestionInBank(
 }
 
 export async function deleteQuestionFromBank(questionId: string): Promise<boolean> {
-  const initialLen = dynamicQuestionsBank.length;
-  dynamicQuestionsBank = dynamicQuestionsBank.filter((q) => q.id !== questionId);
-  return dynamicQuestionsBank.length < initialLen;
+  const idx = dynamicQuestionsBank.findIndex((q) => q.id === questionId);
+  if (idx !== -1) {
+    dynamicQuestionsBank.splice(idx, 1);
+    return true;
+  }
+  return false;
 }
 
 // Phase 2: Import Batches
@@ -1912,3 +1939,298 @@ export async function getUserAnalytics(
     recentMocks,
   };
 }
+
+// ==========================================
+// Phase 6: AI Assistant Usage, GitHub Import Candidates & Admin Audit Logs
+// ==========================================
+
+export async function updateImportBatchRecord(
+  batchId: string,
+  updates: Partial<QuestionImportBatch>
+): Promise<QuestionImportBatch | null> {
+  const existing = inMemoryImportBatches.get(batchId);
+  if (existing) {
+    const updated: QuestionImportBatch = {
+      ...existing,
+      ...updates,
+    };
+    inMemoryImportBatches.set(batchId, updated);
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = await createClient();
+        await supabase.from("question_import_batches").update(updates).eq("id", batchId);
+      } catch {
+        // fallback
+      }
+    }
+    return updated;
+  }
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data } = await supabase
+        .from("question_import_batches")
+        .update(updates)
+        .eq("id", batchId)
+        .select("*")
+        .maybeSingle();
+      if (data) {
+        inMemoryImportBatches.set(batchId, data as QuestionImportBatch);
+        return data as QuestionImportBatch;
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  return null;
+}
+
+export async function recordAIAssistantUsageLog(
+  log: Omit<AIAssistantUsageLog, "id" | "created_at">
+): Promise<AIAssistantUsageLog> {
+  const id = `ai-chat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  const fullLog: AIAssistantUsageLog = {
+    id,
+    created_at: new Date().toISOString(),
+    ...log,
+  };
+
+  inMemoryAIAssistantLogs.unshift(fullLog);
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      await supabase.from("ai_assistant_usage_logs").insert(fullLog);
+    } catch {
+      // fallback
+    }
+  }
+
+  return fullLog;
+}
+
+export async function getUserDailyAIAssistantCount(
+  userId: string = "default-user",
+  targetDate?: string
+): Promise<number> {
+  const target = targetDate ? new Date(targetDate) : new Date();
+  const startOfDay = new Date(
+    Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate(), 0, 0, 0, 0)
+  ).toISOString();
+  const endOfDay = new Date(
+    Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate(), 23, 59, 59, 999)
+  ).toISOString();
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { count, error } = await supabase
+        .from("ai_assistant_usage_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("status", "success")
+        .gte("created_at", startOfDay)
+        .lte("created_at", endOfDay);
+
+      if (!error && typeof count === "number") {
+        // Also merge in-memory logs for test runs
+        const memCount = inMemoryAIAssistantLogs.filter(
+          (l) =>
+            l.user_id === userId &&
+            l.status === "success" &&
+            l.created_at >= startOfDay &&
+            l.created_at <= endOfDay
+        ).length;
+        return Math.max(count, memCount);
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  checkProductionDatabaseGuard();
+  let count = 0;
+  for (const log of inMemoryAIAssistantLogs) {
+    if (
+      log.user_id === userId &&
+      log.status === "success" &&
+      log.created_at >= startOfDay &&
+      log.created_at <= endOfDay
+    ) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+export async function getAIAssistantUsageLogs(limit: number = 100): Promise<AIAssistantUsageLog[]> {
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from("ai_assistant_usage_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (!error && data && data.length > 0) {
+        return data as AIAssistantUsageLog[];
+      }
+    } catch {
+      // fallback
+    }
+  }
+  return inMemoryAIAssistantLogs.slice(0, limit);
+}
+
+export async function saveGitHubImportCandidates(
+  candidates: GitHubImportCandidate[]
+): Promise<void> {
+  for (const c of candidates) {
+    inMemoryGitHubCandidates.set(c.id, c);
+  }
+
+  if (isSupabaseConfigured() && candidates.length > 0) {
+    try {
+      const supabase = await createClient();
+      await supabase.from("github_import_candidates").upsert(candidates);
+    } catch {
+      // fallback
+    }
+  }
+}
+
+export async function getGitHubImportCandidatesByBatchId(
+  batchId: string
+): Promise<GitHubImportCandidate[]> {
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from("github_import_candidates")
+        .select("*")
+        .eq("batch_id", batchId)
+        .order("created_at", { ascending: true });
+      if (!error && data && data.length > 0) {
+        for (const c of data as GitHubImportCandidate[]) {
+          inMemoryGitHubCandidates.set(c.id, c);
+        }
+        return data as GitHubImportCandidate[];
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  const list: GitHubImportCandidate[] = [];
+  for (const c of inMemoryGitHubCandidates.values()) {
+    if (c.batch_id === batchId) {
+      list.push(c);
+    }
+  }
+  return list;
+}
+
+export async function getAllGitHubImportCandidates(): Promise<GitHubImportCandidate[]> {
+  return Array.from(inMemoryGitHubCandidates.values());
+}
+
+export async function getGitHubImportCandidateById(
+  candidateId: string
+): Promise<GitHubImportCandidate | null> {
+  const mem = inMemoryGitHubCandidates.get(candidateId);
+  if (mem) return mem;
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data } = await supabase
+        .from("github_import_candidates")
+        .select("*")
+        .eq("id", candidateId)
+        .maybeSingle();
+      if (data) {
+        inMemoryGitHubCandidates.set(candidateId, data as GitHubImportCandidate);
+        return data as GitHubImportCandidate;
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  return null;
+}
+
+export async function updateGitHubImportCandidate(
+  candidateId: string,
+  updates: Partial<GitHubImportCandidate>
+): Promise<GitHubImportCandidate | null> {
+  const existing = await getGitHubImportCandidateById(candidateId);
+  if (!existing) return null;
+
+  const updated: GitHubImportCandidate = {
+    ...existing,
+    ...updates,
+    updated_at: new Date().toISOString(),
+  };
+  inMemoryGitHubCandidates.set(candidateId, updated);
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      await supabase
+        .from("github_import_candidates")
+        .update({ ...updates, updated_at: updated.updated_at })
+        .eq("id", candidateId);
+    } catch {
+      // fallback
+    }
+  }
+
+  return updated;
+}
+
+export async function recordAdminAuditLog(
+  log: Omit<AdminAuditLog, "id" | "created_at">
+): Promise<AdminAuditLog> {
+  const id = `audit-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  const fullLog: AdminAuditLog = {
+    id,
+    created_at: new Date().toISOString(),
+    ...log,
+  };
+
+  inMemoryAdminAuditLogs.unshift(fullLog);
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      await supabase.from("admin_audit_logs").insert(fullLog);
+    } catch {
+      // fallback
+    }
+  }
+
+  return fullLog;
+}
+
+export async function getAdminAuditLogs(limit: number = 100): Promise<AdminAuditLog[]> {
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from("admin_audit_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (!error && data && data.length > 0) {
+        return data as AdminAuditLog[];
+      }
+    } catch {
+      // fallback
+    }
+  }
+  return inMemoryAdminAuditLogs.slice(0, limit);
+}
+

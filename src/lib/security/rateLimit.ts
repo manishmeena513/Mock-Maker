@@ -118,3 +118,19 @@ export const paymentLimiter = createRateLimiter({
   max: 20,             // 20 payment attempts per minute
   keyPrefix: "pay",
 });
+
+export const aiChatLimiter = createRateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  max: 12,             // 12 chat requests per minute per user/IP
+  keyPrefix: "ai-chat",
+});
+
+export const githubImportLimiter = createRateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  max: 8,              // 8 GitHub import operations per minute per admin
+  keyPrefix: "gh-import",
+});
+
+export function resetRateLimitStore(): void {
+  store.records.clear();
+}

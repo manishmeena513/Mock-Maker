@@ -18,7 +18,9 @@ import {
   ChevronDown,
   Loader2,
   LayoutDashboard,
+  Sparkles,
 } from "lucide-react";
+import { useAIAssistant } from "@/components/ai/AIAssistantContext";
 
 interface SessionUser {
   id: string;
@@ -36,6 +38,7 @@ export function Navbar() {
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [userPlan, setUserPlan] = useState<string>("FREE");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { isOpen: isAIOpen, toggleAssistant } = useAIAssistant();
 
   useEffect(() => {
     let active = true;
@@ -95,6 +98,7 @@ export function Navbar() {
       // safe fallback
     } finally {
       try {
+        window.dispatchEvent(new Event("mockmaster:logout"));
         const preservedTheme = window.localStorage.getItem("theme");
         const keysToRemove: string[] = [];
         for (let i = 0; i < window.localStorage.length; i++) {
@@ -163,8 +167,25 @@ export function Navbar() {
           </nav>
         </div>
 
-        {/* Right: Search, Theme Toggle, Profile & Primary CTA */}
+        {/* Right: Search, AI Assistant, Theme Toggle, Profile & Primary CTA */}
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleAssistant}
+            aria-label="Toggle AI Assistant"
+            title="MockMaster AI — Exam Preparation Assistant"
+            data-testid="navbar-ai-assistant-toggle"
+            className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
+              isAIOpen
+                ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                : "border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:border-[var(--accent-border)] hover:text-[var(--accent)]"
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
+            <span className="hidden lg:inline">AI Assistant</span>
+            <span className="lg:hidden">AI</span>
+          </button>
+
           <Link
             href="/search"
             aria-label="Search Question Repository"
@@ -347,6 +368,17 @@ export function Navbar() {
                 <ArrowRight className="w-3.5 h-3.5 opacity-40" />
               </Link>
             ))}
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                toggleAssistant();
+              }}
+              className="w-full px-3 py-2 rounded-md text-xs font-medium flex items-center justify-between text-[var(--accent)] hover:bg-[var(--muted)]/50 transition-colors"
+            >
+              <span>AI Assistant (Exam Mentor)</span>
+              <Sparkles className="w-3.5 h-3.5" />
+            </button>
             <Link
               href="/search"
               onClick={() => setMobileMenuOpen(false)}

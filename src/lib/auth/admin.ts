@@ -11,7 +11,24 @@ export interface AdminAuthResult {
  * Strictly verifies authentication and queries `user_roles` for the 'admin' role.
  * Never trusts client-side metadata or tokens.
  */
-export async function verifyAdminAuthorization(): Promise<AdminAuthResult> {
+export async function verifyAdminAuthorization(req?: Request): Promise<AdminAuthResult> {
+  if (process.env.NODE_ENV !== "production" && req) {
+    const testAuth = req.headers.get("x-test-auth");
+    const testRole = req.headers.get("x-test-role");
+    if (testAuth === "unauthenticated") {
+      return {
+        authorized: false,
+        error: "Authentication required. Please sign in as an administrator.",
+      };
+    }
+    if (testRole && testRole !== "admin") {
+      return {
+        authorized: false,
+        error: "Forbidden: Administrator privileges required for this operation.",
+      };
+    }
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 

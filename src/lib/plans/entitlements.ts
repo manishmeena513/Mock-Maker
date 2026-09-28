@@ -1,5 +1,10 @@
-import { PLAN_LIMITS, normalizePlanTier, CanonicalPlanId } from "./plans";
-import { getUserPlan, getUserDailyMockCount, getUserSavedQuestionCount } from "@/lib/db";
+import { PLAN_LIMITS, normalizePlanTier, CanonicalPlanId, getAiAssistantDailyLimit } from "./plans";
+import {
+  getUserPlan,
+  getUserDailyMockCount,
+  getUserSavedQuestionCount,
+  getUserDailyAIAssistantCount,
+} from "@/lib/db";
 import { UserPlanType } from "@/types/database";
 
 export interface UserEntitlements {
@@ -22,6 +27,9 @@ export interface UserEntitlements {
   hasDetailedExplanations: boolean;
   allowAiGeneration: boolean;
   dailyAiGenerationLimit: number;
+  dailyAiAssistantUsed: number;
+  dailyAiAssistantLimit: number;
+  dailyAiAssistantRemaining: number;
   allowedPyqRatios: number[];
 }
 
@@ -30,13 +38,15 @@ export async function getUserEntitlements(userId: string = "default-user"): Prom
   const tier = normalizePlanTier(plan);
   const limits = PLAN_LIMITS[plan] || PLAN_LIMITS[tier] || PLAN_LIMITS.FREE;
 
-  const [dailyMocksUsed, savedQuestionsCount] = await Promise.all([
+  const [dailyMocksUsed, savedQuestionsCount, dailyAiAssistantUsed] = await Promise.all([
     getUserDailyMockCount(userId),
     getUserSavedQuestionCount(userId),
+    getUserDailyAIAssistantCount(userId),
   ]);
 
   const dailyMocksLimit = limits.dailyMockLimit ?? limits.maxMocksPerDay ?? 3;
   const savedQuestionsLimit = limits.maxSavedQuestions ?? 20;
+  const dailyAiAssistantLimit = getAiAssistantDailyLimit(tier);
 
   const dailyMocksRemaining =
     dailyMocksLimit === Infinity
@@ -47,6 +57,11 @@ export async function getUserEntitlements(userId: string = "default-user"): Prom
     savedQuestionsLimit === Infinity
       ? Infinity
       : Math.max(0, savedQuestionsLimit - savedQuestionsCount);
+
+  const dailyAiAssistantRemaining =
+    dailyAiAssistantLimit === Infinity
+      ? Infinity
+      : Math.max(0, dailyAiAssistantLimit - dailyAiAssistantUsed);
 
   return {
     userId,
@@ -68,6 +83,9 @@ export async function getUserEntitlements(userId: string = "default-user"): Prom
     hasDetailedExplanations: Boolean(limits.hasDetailedExplanations ?? true),
     allowAiGeneration: Boolean(limits.allowAiGeneration ?? limits.canGenerateAIQuestions),
     dailyAiGenerationLimit: limits.dailyAiGenerationLimit ?? 0,
+    dailyAiAssistantUsed,
+    dailyAiAssistantLimit,
+    dailyAiAssistantRemaining,
     allowedPyqRatios: limits.allowedPyqRatios || [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0],
   };
 }

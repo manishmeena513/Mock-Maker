@@ -31,6 +31,19 @@ export function normalizePlanTier(plan?: UserPlanType | string | null): Canonica
   return "FREE";
 }
 
+export function getAiAssistantDailyLimit(tier: CanonicalPlanId): number {
+  if (tier === "ELITE") {
+    const val = Number(process.env.AI_CHAT_LIMIT_ELITE);
+    return Number.isFinite(val) && val > 0 ? val : 300;
+  }
+  if (tier === "PRO") {
+    const val = Number(process.env.AI_CHAT_LIMIT_PRO);
+    return Number.isFinite(val) && val > 0 ? val : 75;
+  }
+  const val = Number(process.env.AI_CHAT_LIMIT_FREE);
+  return Number.isFinite(val) && val > 0 ? val : 15;
+}
+
 export const FREE_PLAN_LIMITS: PlanLimits = {
   plan: "FREE",
   dailyMockLimit: 3,
@@ -43,6 +56,7 @@ export const FREE_PLAN_LIMITS: PlanLimits = {
   allowAiGeneration: false,
   canGenerateAIQuestions: false,
   dailyAiGenerationLimit: 0,
+  dailyAiAssistantLimit: 15,
   allowedPyqRatios: [...PYQ_MODEL_RATIOS],
 };
 
@@ -58,6 +72,7 @@ export const PRO_PLAN_LIMITS: PlanLimits = {
   allowAiGeneration: true,
   canGenerateAIQuestions: true,
   dailyAiGenerationLimit: 25,
+  dailyAiAssistantLimit: 75,
   allowedPyqRatios: [...PYQ_MODEL_RATIOS],
 };
 
@@ -73,6 +88,7 @@ export const ELITE_PLAN_LIMITS: PlanLimits = {
   allowAiGeneration: true,
   canGenerateAIQuestions: true,
   dailyAiGenerationLimit: 100,
+  dailyAiAssistantLimit: 300,
   allowedPyqRatios: [...PYQ_MODEL_RATIOS],
 };
 

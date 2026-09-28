@@ -13,7 +13,8 @@
     "test:phase3": "tsx scripts/test-phase3.mjs",
     "test:phase4": "tsx scripts/test-phase4.mjs",
     "test:phase5": "tsx scripts/test-phase5.mjs",
-    "test:all": "node scripts/test-phase1.mjs && tsx scripts/test-phase2.mjs && tsx scripts/test-100-generation.mjs && tsx scripts/test-phase3.mjs && tsx scripts/test-phase4.mjs && tsx scripts/test-phase5.mjs"
+    "test:phase6": "tsx scripts/test-phase6.mjs",
+    "test:all": "node scripts/test-phase1.mjs && tsx scripts/test-phase2.mjs && tsx scripts/test-100-generation.mjs && tsx scripts/test-phase3.mjs && tsx scripts/test-phase4.mjs && tsx scripts/test-phase5.mjs && tsx scripts/test-phase6.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

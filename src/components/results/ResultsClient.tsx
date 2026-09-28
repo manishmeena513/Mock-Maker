@@ -822,6 +822,13 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
                         userAnswer={mq.user_answer}
                         type={mq.question.type}
                         sourceYear={mq.question.source_year}
+                        questionText={mq.question.question_text}
+                        options={{
+                          A: mq.question.option_a,
+                          B: mq.question.option_b,
+                          C: mq.question.option_c,
+                          D: mq.question.option_d,
+                        }}
                       />
                     )}
                   </div>
@@ -896,6 +903,13 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
                       userAnswer={mq.user_answer}
                       type={q.type}
                       sourceYear={q.source_year}
+                      questionText={q.question_text}
+                      options={{
+                        A: q.option_a,
+                        B: q.option_b,
+                        C: q.option_c,
+                        D: q.option_d,
+                      }}
                     />
                   </div>
                 )}
@@ -989,6 +1003,13 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
                 userAnswer={activeReviewQuestion.user_answer}
                 type={activeReviewQuestion.question.type}
                 sourceYear={activeReviewQuestion.question.source_year}
+                questionText={activeReviewQuestion.question.question_text}
+                options={{
+                  A: activeReviewQuestion.question.option_a,
+                  B: activeReviewQuestion.question.option_b,
+                  C: activeReviewQuestion.question.option_c,
+                  D: activeReviewQuestion.question.option_d,
+                }}
               />
             </div>
           </div>

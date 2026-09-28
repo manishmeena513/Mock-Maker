@@ -5,6 +5,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/shared/Navbar";
 import { AppShell } from "@/components/shared/AppShell";
 import { Footer } from "@/components/shared/Footer";
+import { AIAssistantProvider } from "@/components/ai/AIAssistantContext";
+import { AIAssistantDrawer } from "@/components/ai/AIAssistantDrawer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -79,9 +81,12 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)] selection:bg-[var(--accent-soft)] selection:text-[var(--foreground)] transition-colors duration-150">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <Navbar />
-          <AppShell>{children}</AppShell>
-          <Footer />
+          <AIAssistantProvider>
+            <Navbar />
+            <AppShell>{children}</AppShell>
+            <Footer />
+            <AIAssistantDrawer />
+          </AIAssistantProvider>
         </ThemeProvider>
       </body>
     </html>
