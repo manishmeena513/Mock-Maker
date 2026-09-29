@@ -17,8 +17,10 @@ CREATE INDEX IF NOT EXISTS idx_saved_questions_qid ON saved_questions(question_i
 CREATE INDEX IF NOT EXISTS idx_saved_questions_category ON saved_questions(user_id, category);
 CREATE INDEX IF NOT EXISTS idx_seen_log_qid ON question_seen_log(question_id);
 
--- 4. Mistake Category Validation
+-- 4. Mistake Category Validation (supports all MistakeCategory values in database.ts)
 DO $$ BEGIN
+  ALTER TABLE mock_questions
+  DROP CONSTRAINT IF EXISTS chk_mock_questions_mistake_category;
   ALTER TABLE mock_questions
   ADD CONSTRAINT chk_mock_questions_mistake_category
   CHECK (
@@ -26,9 +28,17 @@ DO $$ BEGIN
     mistake_category IN (
       'conceptual',
       'factual',
+      'factual_gap',
       'misread',
+      'misread_question',
       'calculation',
       'guessing',
+      'guessed',
+      'silly',
+      'silly_error',
+      'confused_options',
+      'memory_gap',
+      'elimination_failure',
       'time_pressure',
       'other'
     )

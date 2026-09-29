@@ -2,7 +2,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS exams (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   name TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,
   description TEXT,
@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS exams (
 );
 
 CREATE TABLE IF NOT EXISTS subjects (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  exam_id UUID NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  exam_id TEXT NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   slug TEXT NOT NULL,
   order_index INT DEFAULT 0,
@@ -22,8 +22,8 @@ CREATE TABLE IF NOT EXISTS subjects (
 );
 
 CREATE TABLE IF NOT EXISTS topics (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  subject_id UUID NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   slug TEXT NOT NULL,
   order_index INT DEFAULT 0,

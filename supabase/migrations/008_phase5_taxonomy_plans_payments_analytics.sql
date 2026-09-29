@@ -21,21 +21,25 @@ ALTER TABLE mock_tests ADD COLUMN IF NOT EXISTS is_retest BOOLEAN NOT NULL DEFAU
 
 -- 4. Payment Transactions Table (Server-verified order & payment ledger)
 CREATE TABLE IF NOT EXISTS payment_transactions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  subscription_id UUID REFERENCES subscriptions(id) ON DELETE SET NULL,
+  subscription_id TEXT REFERENCES subscriptions(id) ON DELETE SET NULL,
   provider payment_provider_enum NOT NULL DEFAULT 'razorpay',
   provider_order_id TEXT NOT NULL,
   provider_payment_id TEXT,
-  plan_id TEXT NOT NULL,
-  plan_type user_plan_type NOT NULL,
-  billing_cycle TEXT NOT NULL CHECK (billing_cycle IN ('monthly', 'yearly')),
+  provider_signature TEXT,
+  plan TEXT,
+  plan_code TEXT,
+  plan_id TEXT,
+  plan_type TEXT,
+  billing_cycle TEXT NOT NULL CHECK (billing_cycle IN ('monthly', 'yearly', 'annual')),
   amount_paise INT NOT NULL,
   currency TEXT NOT NULL DEFAULT 'INR',
-  status TEXT NOT NULL DEFAULT 'created' CHECK (status IN ('created', 'captured', 'failed', 'refunded')),
+  status TEXT NOT NULL DEFAULT 'created' CHECK (status IN ('created', 'paid', 'captured', 'failed', 'refunded')),
   failure_reason TEXT,
   metadata JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
   verified_at TIMESTAMPTZ
 );
 
@@ -64,22 +68,41 @@ CREATE INDEX IF NOT EXISTS idx_mock_questions_test_correct ON mock_questions(moc
 ALTER TABLE payment_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own payment transactions" ON payment_transactions;
 CREATE POLICY "Users can view own payment transactions"
   ON payment_transactions FOR SELECT
   TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own payment transactions" ON payment_transactions;
+CREATE POLICY "Users can insert own payment transactions"
+  ON payment_transactions FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own payment transactions" ON payment_transactions;
+CREATE POLICY "Users can update own payment transactions"
+  ON payment_transactions FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins manage all payment transactions" ON payment_transactions;
 CREATE POLICY "Admins manage all payment transactions"
   ON payment_transactions FOR ALL
   TO authenticated
-  USING (public.is_admin());
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Public read system settings" ON system_settings;
 CREATE POLICY "Public read system settings"
   ON system_settings FOR SELECT
   TO authenticated, anon
   USING (true);
 
+DROP POLICY IF EXISTS "Admins manage system settings" ON system_settings;
 CREATE POLICY "Admins manage system settings"
   ON system_settings FOR ALL
   TO authenticated
-  USING (public.is_admin());
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());

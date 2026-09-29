@@ -32,7 +32,7 @@ export interface AIAssistantUsageQuota {
 
 interface AIAssistantContextValue {
   isOpen: boolean;
-  openAssistant: (initialPrompt?: string) => void;
+  openAssistant: (initialPrompt?: string, overrideContext?: Partial<AIAssistantContextPayload>) => void;
   closeAssistant: () => void;
   toggleAssistant: () => void;
   examContext: AIAssistantContextPayload;
@@ -58,6 +58,7 @@ export function AIAssistantProvider({ children }: { children: React.ReactNode })
   const [examContext, setExamContextState] = useState<AIAssistantContextPayload>({
     mode: "general",
   });
+  const examContextRef = useRef<AIAssistantContextPayload>(examContext);
   const [messages, setMessages] = useState<AIAssistantMessageItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -133,18 +134,26 @@ export function AIAssistantProvider({ children }: { children: React.ReactNode })
   }, [isOpen, usage]);
 
   const setExamContext = useCallback((ctx: AIAssistantContextPayload) => {
-    setExamContextState(ctx || { mode: "general" });
+    const nextCtx = ctx || { mode: "general" };
+    examContextRef.current = nextCtx;
+    setExamContextState(nextCtx);
   }, []);
 
   const updateExamContext = useCallback((partial: Partial<AIAssistantContextPayload>) => {
-    setExamContextState((prev) => ({
-      ...(prev || {}),
-      ...partial,
-    }));
+    setExamContextState((prev) => {
+      const nextCtx: AIAssistantContextPayload = {
+        ...(prev || {}),
+        ...partial,
+      };
+      examContextRef.current = nextCtx;
+      return nextCtx;
+    });
   }, []);
 
   const clearExamContext = useCallback(() => {
-    setExamContextState({ mode: "general" });
+    const nextCtx: AIAssistantContextPayload = { mode: "general" };
+    examContextRef.current = nextCtx;
+    setExamContextState(nextCtx);
   }, []);
 
   const stopGeneration = useCallback(() => {
@@ -178,7 +187,7 @@ export function AIAssistantProvider({ children }: { children: React.ReactNode })
       setError(null);
       setQuotaExceeded(false);
 
-      const activeCtx = overrideContext || examContext;
+      const activeCtx = overrideContext || examContextRef.current || examContext;
       const userMessage: AIAssistantMessageItem = {
         id: `msg-user-${Date.now()}`,
         role: "user",
@@ -225,7 +234,7 @@ export function AIAssistantProvider({ children }: { children: React.ReactNode })
           if (data?.quotaExceeded) {
             setQuotaExceeded(true);
           }
-          setError(data?.error || "Unable to get a response from MockMaster AI.");
+          setError(data?.error || "AI couldn't process that request right now. Please try again.");
           setIsGenerating(false);
           return;
         }
@@ -253,11 +262,21 @@ export function AIAssistantProvider({ children }: { children: React.ReactNode })
   );
 
   const openAssistant = useCallback(
-    (initialPrompt?: string) => {
+    (initialPrompt?: string, overrideContext?: Partial<AIAssistantContextPayload>) => {
+      let mergedContext: AIAssistantContextPayload | undefined;
+      if (overrideContext) {
+        mergedContext = {
+          ...(examContextRef.current || {}),
+          ...overrideContext,
+        };
+        examContextRef.current = mergedContext;
+        setExamContextState(mergedContext);
+      }
       setIsOpen(true);
       if (initialPrompt && initialPrompt.trim()) {
+        const contextForPrompt = mergedContext || examContextRef.current;
         setTimeout(() => {
-          sendMessage(initialPrompt.trim());
+          sendMessage(initialPrompt.trim(), contextForPrompt);
         }, 50);
       }
     },

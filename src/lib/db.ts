@@ -704,6 +704,28 @@ export async function getAllQuestions(filters?: {
   filename?: string;
   search?: string;
 }): Promise<Question[]> {
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data: dbQuestions, error } = await supabase
+        .from("questions")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (!error && dbQuestions && dbQuestions.length > 0) {
+        const existingIds = new Set(dynamicQuestionsBank.map((q) => q.id));
+        for (const dbQ of dbQuestions as Question[]) {
+          if (!existingIds.has(dbQ.id)) {
+            dynamicQuestionsBank.unshift(dbQ);
+            existingIds.add(dbQ.id);
+          }
+        }
+      }
+    } catch {
+      // fallback to inMemory bank
+    }
+  }
+
   let list = [...dynamicQuestionsBank];
 
   if (filters?.examId) {
@@ -742,6 +764,18 @@ export async function getAllQuestions(filters?: {
 
 export async function addQuestionToBank(question: Question): Promise<void> {
   dynamicQuestionsBank.unshift(question);
+  if (g.__mockmaster_store) {
+    g.__mockmaster_store.dynamicQuestionsBank = dynamicQuestionsBank;
+  }
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      await supabase.from("questions").upsert(question);
+    } catch {
+      // fallback
+    }
+  }
 }
 
 export async function addQuestionsBatchToBank(questions: Question[]): Promise<number> {
@@ -749,6 +783,35 @@ export async function addQuestionsBatchToBank(questions: Question[]): Promise<nu
   if (g.__mockmaster_store) {
     g.__mockmaster_store.dynamicQuestionsBank = dynamicQuestionsBank;
   }
+
+  if (isSupabaseConfigured() && questions.length > 0) {
+    try {
+      const supabase = await createClient();
+      // Ensure referenced exams, subjects, and topics exist in Supabase before inserting questions
+      const examIds = Array.from(new Set(questions.map((q) => q.exam_id)));
+      const subjectIds = Array.from(new Set(questions.map((q) => q.subject_id)));
+      const topicIds = Array.from(new Set(questions.map((q) => q.topic_id)));
+
+      const examsToSync = inMemoryExams.filter((e) => examIds.includes(e.id));
+      const subjectsToSync = inMemorySubjects.filter((s) => subjectIds.includes(s.id));
+      const topicsToSync = inMemoryTopics.filter((t) => topicIds.includes(t.id));
+
+      if (examsToSync.length > 0) {
+        await supabase.from("exams").upsert(examsToSync, { onConflict: "id" });
+      }
+      if (subjectsToSync.length > 0) {
+        await supabase.from("subjects").upsert(subjectsToSync, { onConflict: "id" });
+      }
+      if (topicsToSync.length > 0) {
+        await supabase.from("topics").upsert(topicsToSync, { onConflict: "id" });
+      }
+
+      await supabase.from("questions").upsert(questions, { onConflict: "id" });
+    } catch (err) {
+      console.warn("Supabase addQuestionsBatchToBank sync warning:", err);
+    }
+  }
+
   return questions.length;
 }
 
@@ -805,16 +868,70 @@ export async function deleteQuestionFromBank(questionId: string): Promise<boolea
 // Phase 2: Import Batches
 export async function createImportBatchRecord(batch: QuestionImportBatch): Promise<void> {
   inMemoryImportBatches.set(batch.id, batch);
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const safeBatch = {
+        ...batch,
+        admin_user_id:
+          batch.admin_user_id && /^[0-9a-f-]{36}$/i.test(batch.admin_user_id)
+            ? batch.admin_user_id
+            : null,
+      };
+      await supabase.from("question_import_batches").upsert(safeBatch, { onConflict: "id" });
+    } catch (err) {
+      console.warn("Supabase createImportBatchRecord sync warning:", err);
+    }
+  }
 }
 
 export async function getImportBatches(): Promise<QuestionImportBatch[]> {
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from("question_import_batches")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (!error && data && data.length > 0) {
+        for (const b of data as QuestionImportBatch[]) {
+          inMemoryImportBatches.set(b.id, b);
+        }
+      }
+    } catch {
+      // fallback
+    }
+  }
+
   return Array.from(inMemoryImportBatches.values()).sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
 }
 
 export async function getImportBatchById(batchId: string): Promise<QuestionImportBatch | null> {
-  return inMemoryImportBatches.get(batchId) || null;
+  const mem = inMemoryImportBatches.get(batchId);
+  if (mem) return mem;
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data } = await supabase
+        .from("question_import_batches")
+        .select("*")
+        .eq("id", batchId)
+        .maybeSingle();
+      if (data) {
+        inMemoryImportBatches.set(batchId, data as QuestionImportBatch);
+        return data as QuestionImportBatch;
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  return null;
 }
 
 // Phase 2: Bookmarks & Revision
@@ -826,15 +943,38 @@ export async function toggleSaveQuestion(
   const key = `${userId}-${questionId}`;
   if (inMemorySavedQuestionRecords.has(key)) {
     inMemorySavedQuestionRecords.delete(key);
+    if (isSupabaseConfigured() && /^[0-9a-f-]{36}$/i.test(userId)) {
+      try {
+        const supabase = await createClient();
+        await supabase
+          .from("saved_questions")
+          .delete()
+          .eq("user_id", userId)
+          .eq("question_id", questionId);
+      } catch {
+        // fallback
+      }
+    }
     return { saved: false, category };
   } else {
-    inMemorySavedQuestionRecords.set(key, {
+    const newRecord = {
       id: `saved-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       user_id: userId,
       question_id: questionId,
       category,
       saved_at: new Date().toISOString(),
-    });
+    };
+    inMemorySavedQuestionRecords.set(key, newRecord);
+    if (isSupabaseConfigured() && /^[0-9a-f-]{36}$/i.test(userId)) {
+      try {
+        const supabase = await createClient();
+        await supabase.from("saved_questions").upsert(newRecord, {
+          onConflict: "user_id,question_id",
+        });
+      } catch {
+        // fallback
+      }
+    }
     return { saved: true, category };
   }
 }
@@ -842,6 +982,30 @@ export async function toggleSaveQuestion(
 export async function getSavedQuestions(userId: string = "default-user"): Promise<
   Array<{ id: string; category: "important" | "difficult" | "revise_later"; saved_at: string; question: Question }>
 > {
+  if (isSupabaseConfigured() && /^[0-9a-f-]{36}$/i.test(userId)) {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from("saved_questions")
+        .select("*")
+        .eq("user_id", userId)
+        .order("saved_at", { ascending: false });
+      if (!error && data && data.length > 0) {
+        for (const r of data as Array<{
+          id: string;
+          user_id: string;
+          question_id: string;
+          category: "important" | "difficult" | "revise_later";
+          saved_at: string;
+        }>) {
+          inMemorySavedQuestionRecords.set(`${r.user_id}-${r.question_id}`, r);
+        }
+      }
+    } catch {
+      // fallback
+    }
+  }
+
   const results = [];
   for (const record of inMemorySavedQuestionRecords.values()) {
     if (record.user_id === userId) {
@@ -1067,17 +1231,17 @@ export async function getUserPlan(userId: string = "default-user"): Promise<{ pl
         };
       }
 
-      // Check users table for direct plan attribute
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("plan")
-        .eq("id", userId)
+      // Check user_plans table for direct plan attribute
+      const { data: userPlanData, error: userPlanError } = await supabase
+        .from("user_plans")
+        .select("plan, valid_until")
+        .eq("user_id", userId)
         .maybeSingle();
 
-      if (!userError && userData?.plan) {
+      if (!userPlanError && userPlanData?.plan) {
         return {
-          plan: String(userData.plan).toUpperCase() as UserPlanType,
-          validUntil: null,
+          plan: String(userPlanData.plan).toUpperCase() as UserPlanType,
+          validUntil: userPlanData.valid_until || null,
         };
       }
     } catch {
@@ -1109,13 +1273,15 @@ export async function updateUserPlan(
   plan: UserPlanType,
   validUntil: string | null = null
 ): Promise<void> {
-  if (isSupabaseConfigured()) {
+  if (isSupabaseConfigured() && /^[0-9a-f-]{36}$/i.test(userId)) {
     try {
       const supabase = await createClient();
-      await supabase
-        .from("users")
-        .update({ plan: plan.toLowerCase(), updated_at: new Date().toISOString() })
-        .eq("id", userId);
+      await supabase.from("user_plans").upsert({
+        user_id: userId,
+        plan: plan.toLowerCase(),
+        valid_until: validUntil,
+        updated_at: new Date().toISOString(),
+      });
     } catch {
       // continue
     }
@@ -1184,10 +1350,12 @@ export async function createOrUpdateSubscription(
       const supabase = await createClient();
       await supabase.from("subscriptions").upsert(fullSub);
       if (fullSub.status === "active" || fullSub.status === "trialing") {
-        await supabase
-          .from("users")
-          .update({ plan: fullSub.plan.toLowerCase(), updated_at: now })
-          .eq("id", fullSub.user_id);
+        await supabase.from("user_plans").upsert({
+          user_id: fullSub.user_id,
+          plan: fullSub.plan.toLowerCase(),
+          valid_until: fullSub.current_period_end,
+          updated_at: now,
+        });
       }
     } catch {
       // fallback
@@ -2094,9 +2262,27 @@ export async function saveGitHubImportCandidates(
   if (isSupabaseConfigured() && candidates.length > 0) {
     try {
       const supabase = await createClient();
-      await supabase.from("github_import_candidates").upsert(candidates);
-    } catch {
-      // fallback
+      const examIds = Array.from(new Set(candidates.map((c) => c.exam_id).filter(Boolean))) as string[];
+      const subjectIds = Array.from(new Set(candidates.map((c) => c.subject_id).filter(Boolean))) as string[];
+      const topicIds = Array.from(new Set(candidates.map((c) => c.topic_id).filter(Boolean))) as string[];
+
+      const examsToSync = inMemoryExams.filter((e) => examIds.includes(e.id));
+      const subjectsToSync = inMemorySubjects.filter((s) => subjectIds.includes(s.id));
+      const topicsToSync = inMemoryTopics.filter((t) => topicIds.includes(t.id));
+
+      if (examsToSync.length > 0) {
+        await supabase.from("exams").upsert(examsToSync, { onConflict: "id" });
+      }
+      if (subjectsToSync.length > 0) {
+        await supabase.from("subjects").upsert(subjectsToSync, { onConflict: "id" });
+      }
+      if (topicsToSync.length > 0) {
+        await supabase.from("topics").upsert(topicsToSync, { onConflict: "id" });
+      }
+
+      await supabase.from("github_import_candidates").upsert(candidates, { onConflict: "id" });
+    } catch (err) {
+      console.warn("Supabase saveGitHubImportCandidates sync warning:", err);
     }
   }
 }

@@ -37,11 +37,11 @@ CREATE TABLE IF NOT EXISTS user_plans (
 );
 
 CREATE TABLE IF NOT EXISTS user_progress (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  exam_id UUID NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
-  subject_id UUID NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
-  topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
+  exam_id TEXT NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
+  subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+  topic_id TEXT NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
   total_attempted INT NOT NULL DEFAULT 0,
   total_correct INT NOT NULL DEFAULT 0,
   accuracy DECIMAL NOT NULL DEFAULT 0,
@@ -51,23 +51,23 @@ CREATE TABLE IF NOT EXISTS user_progress (
 
 CREATE TABLE IF NOT EXISTS question_seen_log (
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  question_id UUID NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+  question_id TEXT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
   seen_count INT NOT NULL DEFAULT 1,
   last_seen_at TIMESTAMPTZ DEFAULT now(),
   PRIMARY KEY(user_id, question_id)
 );
 
 CREATE TABLE IF NOT EXISTS saved_questions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  question_id UUID NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+  question_id TEXT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
   category TEXT NOT NULL DEFAULT 'important' CHECK (category IN ('important', 'difficult', 'revise_later')),
   saved_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE(user_id, question_id)
 );
 
 CREATE TABLE IF NOT EXISTS question_import_batches (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   admin_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   filename TEXT NOT NULL,
   import_type import_type_enum NOT NULL,

@@ -282,7 +282,6 @@ export async function POST(req: NextRequest) {
   }
 
   const candidates = result.candidates;
-  await saveGitHubImportCandidates(candidates);
 
   const validCandidatesCount = candidates.filter((c) => c.validation_errors.length === 0).length;
   const invalidCandidatesCount = candidates.filter((c) => c.validation_errors.length > 0).length;
@@ -316,6 +315,7 @@ export async function POST(req: NextRequest) {
   };
 
   await createImportBatchRecord(batchRecord);
+  await saveGitHubImportCandidates(candidates);
 
   await recordAdminAuditLog({
     admin_user_id: auth.userId || null,
@@ -624,6 +624,7 @@ export async function PATCH(req: NextRequest) {
 
       promotedQuestions.push(newQuestion);
       affectedBatches.add(cand.batch_id);
+      await addQuestionsBatchToBank([newQuestion]);
 
       const updatedCand = await updateGitHubImportCandidate(id, {
         verification_status: "approved",
@@ -636,10 +637,6 @@ export async function PATCH(req: NextRequest) {
         promoted_question_id: newQuestionId,
       });
       if (updatedCand) approvedCandidates.push(updatedCand);
-    }
-
-    if (promotedQuestions.length > 0) {
-      await addQuestionsBatchToBank(promotedQuestions);
     }
 
     for (const bId of affectedBatches) {

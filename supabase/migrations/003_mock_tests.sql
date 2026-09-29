@@ -12,11 +12,11 @@ EXCEPTION
 END $$;
 
 CREATE TABLE IF NOT EXISTS mock_tests (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  exam_id UUID NOT NULL REFERENCES exams(id) ON DELETE RESTRICT,
-  subject_ids UUID[] NOT NULL DEFAULT '{}',
-  topic_ids UUID[] NOT NULL DEFAULT '{}',
+  exam_id TEXT NOT NULL REFERENCES exams(id) ON DELETE RESTRICT,
+  subject_ids TEXT[] NOT NULL DEFAULT '{}',
+  topic_ids TEXT[] NOT NULL DEFAULT '{}',
 
   mode test_mode NOT NULL DEFAULT 'practice',
   total_questions INT NOT NULL,
@@ -35,22 +35,22 @@ CREATE TABLE IF NOT EXISTS mock_tests (
   total_wrong INT DEFAULT 0,
   total_unattempted INT DEFAULT 0,
 
-  ratio_warning TEXT, -- Stores warning if 80:20 could not be strictly met
+  ratio_warning TEXT, -- Stores warning if target PYQ/Model ratio could not be strictly met
 
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS mock_questions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  mock_test_id UUID NOT NULL REFERENCES mock_tests(id) ON DELETE CASCADE,
-  question_id UUID NOT NULL REFERENCES questions(id) ON DELETE RESTRICT,
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  mock_test_id TEXT NOT NULL REFERENCES mock_tests(id) ON DELETE CASCADE,
+  question_id TEXT NOT NULL REFERENCES questions(id) ON DELETE RESTRICT,
   order_index INT NOT NULL,
 
   user_answer CHAR(1) CHECK (user_answer IN ('A', 'B', 'C', 'D')),
   is_correct BOOLEAN,
   is_marked_for_review BOOLEAN DEFAULT false,
   time_spent_seconds INT DEFAULT 0,
-  mistake_category TEXT, -- 'conceptual', 'misread', 'confused_options', 'guess', 'factual_gap', 'silly'
+  mistake_category TEXT,
 
   answered_at TIMESTAMPTZ,
   UNIQUE(mock_test_id, order_index)

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { DifficultyLevel, StructuredExplanation } from "@/types/database";
+import type { DifficultyLevel } from "@/types/database";
 
 export const GeneratedExplanationSchema = z.object({
   why: z.string().min(1, "explanation.why is required"),
@@ -38,29 +38,48 @@ export interface GenerateQuestionsParams {
   }>;
 }
 
+const boundedOptionalText = (maxLen: number) =>
+  z
+    .string()
+    .transform((s) => s.trim().slice(0, maxLen))
+    .nullable()
+    .optional();
+
 export const AIAssistantContextSchema = z
   .object({
-    exam: z.string().max(120).nullable().optional(),
-    subject: z.string().max(120).nullable().optional(),
-    topic: z.string().max(160).nullable().optional(),
-    questionText: z.string().max(2500).nullable().optional(),
+    exam: boundedOptionalText(120),
+    subject: boundedOptionalText(120),
+    topic: boundedOptionalText(160),
+    questionText: boundedOptionalText(2000),
     options: z
       .object({
-        A: z.string().max(600).optional(),
-        B: z.string().max(600).optional(),
-        C: z.string().max(600).optional(),
-        D: z.string().max(600).optional(),
+        A: z
+          .string()
+          .transform((s) => s.trim().slice(0, 500))
+          .optional(),
+        B: z
+          .string()
+          .transform((s) => s.trim().slice(0, 500))
+          .optional(),
+        C: z
+          .string()
+          .transform((s) => s.trim().slice(0, 500))
+          .optional(),
+        D: z
+          .string()
+          .transform((s) => s.trim().slice(0, 500))
+          .optional(),
       })
       .nullable()
       .optional(),
     userAnswer: z.enum(["A", "B", "C", "D"]).nullable().optional(),
     correctAnswer: z.enum(["A", "B", "C", "D"]).nullable().optional(),
-    explanation: z.string().max(2500).nullable().optional(),
+    explanation: boundedOptionalText(1500),
     mode: z
       .enum(["practice", "exam", "results", "revision", "explorer", "general"])
       .nullable()
       .optional(),
-    page: z.string().max(120).nullable().optional(),
+    page: boundedOptionalText(120),
   })
   .optional();
 
@@ -68,7 +87,10 @@ export type AIAssistantContextPayload = z.infer<typeof AIAssistantContextSchema>
 
 export const AIAssistantHistoryItemSchema = z.object({
   role: z.enum(["user", "assistant"]),
-  content: z.string().min(1).max(4000),
+  content: z
+    .string()
+    .min(1)
+    .transform((s) => s.slice(0, 2500)),
 });
 
 export type AIAssistantHistoryItem = z.infer<typeof AIAssistantHistoryItemSchema>;
@@ -90,6 +112,17 @@ export interface AIAssistantChatParams {
   userId?: string;
 }
 
+export type GeminiErrorCategory =
+  | "missing_api_key"
+  | "invalid_api_key"
+  | "api_key_restriction"
+  | "quota_exceeded"
+  | "rate_limited"
+  | "model_unavailable"
+  | "invalid_request"
+  | "timeout"
+  | "service_error";
+
 export interface AIAssistantChatResponse {
   reply: string;
   model: string;
@@ -105,13 +138,15 @@ export interface ExtractedCandidateItem {
   option_d: string;
   correct_answer: "A" | "B" | "C" | "D" | null;
   requires_answer_verification?: boolean;
-  explanation?: {
-    why?: string;
-    concept?: string;
-    exam_perspective?: string;
-    remember?: string;
-    related_concept?: string;
-  } | string;
+  explanation?:
+    | {
+        why?: string;
+        concept?: string;
+        exam_perspective?: string;
+        remember?: string;
+        related_concept?: string;
+      }
+    | string;
   exam?: string | null;
   subject?: string | null;
   topic?: string | null;
@@ -140,4 +175,3 @@ export interface AIQuestionProvider {
   chatWithAssistant(params: AIAssistantChatParams): Promise<AIAssistantChatResponse>;
   extractQuestionsFromChunk(params: ExtractQuestionsChunkParams): Promise<ExtractedCandidateItem[]>;
 }
-

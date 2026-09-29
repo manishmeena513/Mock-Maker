@@ -18,10 +18,10 @@ EXCEPTION
 END $$;
 
 CREATE TABLE IF NOT EXISTS questions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  exam_id UUID NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
-  subject_id UUID NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
-  topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  exam_id TEXT NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
+  subject_id TEXT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+  topic_id TEXT NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
 
   -- Strict integrity field: 'PYQ' or 'MODEL'. AI questions can NEVER be marked PYQ.
   type question_type NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS questions (
   times_correct INT DEFAULT 0,
 
   -- Audit & Source tracking for bulk imports
-  import_batch_id UUID,
+  import_batch_id TEXT,
   import_source_filename TEXT,
   import_source_row INT,
 

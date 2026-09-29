@@ -15,6 +15,7 @@ import {
   addQuestionsBatchToBank,
   createImportBatchRecord,
 } from "@/lib/db";
+import { verifyAdminAuthorization } from "@/lib/auth/admin";
 import { QuestionImportBatch } from "@/types/database";
 
 // Helper to gather complete taxonomy for validation
@@ -36,6 +37,11 @@ async function getTaxonomyMap() {
 }
 
 export async function previewCsvImportAction(formData: FormData): Promise<ImportPreviewResult> {
+  const auth = await verifyAdminAuthorization();
+  if (!auth.authorized) {
+    throw new Error(auth.error || "Forbidden: Administrator privileges required.");
+  }
+
   const file = formData.get("file") as File | null;
   if (!file) throw new Error("No CSV file uploaded.");
 
@@ -53,6 +59,11 @@ export async function previewCsvImportAction(formData: FormData): Promise<Import
 }
 
 export async function previewZipImportAction(formData: FormData): Promise<ImportPreviewResult> {
+  const auth = await verifyAdminAuthorization();
+  if (!auth.authorized) {
+    throw new Error(auth.error || "Forbidden: Administrator privileges required.");
+  }
+
   const file = formData.get("file") as File | null;
   if (!file) throw new Error("No ZIP file uploaded.");
 
@@ -77,6 +88,11 @@ export async function confirmImportAction({
   importType: "CSV" | "ZIP";
   validRows: ParsedRowResult[];
 }): Promise<{ success: boolean; batchId: string; importedCount: number }> {
+  const auth = await verifyAdminAuthorization();
+  if (!auth.authorized) {
+    throw new Error(auth.error || "Forbidden: Administrator privileges required.");
+  }
+
   if (validRows.length === 0) {
     throw new Error("No valid questions to import.");
   }
@@ -88,7 +104,7 @@ export async function confirmImportAction({
 
   const batchRecord: QuestionImportBatch = {
     id: batchId,
-    admin_user_id: null,
+    admin_user_id: auth.userId && auth.userId !== "local-dev-admin" ? auth.userId : null,
     filename,
     import_type: importType,
     total_files: importType === "ZIP" ? new Set(validRows.map((r) => r.filename)).size : 1,

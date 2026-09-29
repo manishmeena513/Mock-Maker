@@ -24,7 +24,7 @@ export function ExplanationPanel({
   questionText,
   options,
 }: ExplanationPanelProps) {
-  const { updateExamContext, openAssistant } = useAIAssistant();
+  const { openAssistant } = useAIAssistant();
 
   const userCorrect =
     isUserCorrect !== undefined
@@ -34,17 +34,18 @@ export function ExplanationPanel({
       : true;
 
   const handleAskAI = () => {
-    updateExamContext({
+    const contextOverride = {
       ...(questionText ? { questionText } : {}),
       ...(options ? { options } : {}),
       userAnswer: userAnswer || null,
       correctAnswer,
       explanation: `${explanation.why} (${explanation.concept})`,
-    });
+    };
     openAssistant(
       userCorrect
         ? "Summarize the key exam takeaway and why the other options are incorrect"
-        : "Explain why my selected answer is wrong and how to eliminate the distractors"
+        : "Explain why my selected answer is wrong and how to eliminate the distractors",
+      contextOverride
     );
   };
 

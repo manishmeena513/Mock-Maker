@@ -1,165 +1,71 @@
-"use client";
-
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import {
-  LayoutDashboard,
-  Layers,
-  Sparkles,
-  UploadCloud,
-  BookOpen,
-  ArrowUpRight,
-  LogOut,
-  Loader2,
-  GitBranch,
-} from "lucide-react";
-import { ModeToggle } from "@/components/shared/ModeToggle";
-import { BrandLogo } from "@/components/shared/BrandLogo";
-import { createClient } from "@/lib/supabase/client";
+import { redirect } from "next/navigation";
+import { ShieldAlert, ArrowLeft, Database } from "lucide-react";
+import { verifyAdminAuthorization } from "@/lib/auth/admin";
+import { AdminShellClient } from "@/components/admin/AdminShellClient";
 
-const ADMIN_NAV = [
-  {
-    name: "Overview & Settings",
-    href: "/admin/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    name: "Question Bank",
-    href: "/admin/questions",
-    icon: Layers,
-  },
-  {
-    name: "ZIP / CSV Import",
-    href: "/admin/questions?tab=import",
-    icon: UploadCloud,
-  },
-  {
-    name: "GitHub Importer",
-    href: "/admin/import/github",
-    icon: GitBranch,
-  },
-  {
-    name: "AI Moderation Queue",
-    href: "/admin/model-questions",
-    icon: Sparkles,
-  },
-  {
-    name: "Exams & Taxonomy (22)",
-    href: "/admin/exams",
-    icon: BookOpen,
-  },
-];
+export const dynamic = "force-dynamic";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+export default async function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const auth = await verifyAdminAuthorization();
 
-  const handleAdminLogout = async () => {
-    if (isLoggingOut) return;
-    setIsLoggingOut(true);
-    try {
-      try {
-        const supabase = createClient();
-        await supabase.auth.signOut();
-      } catch {
-        // continue
-      }
-      await fetch("/api/auth/logout", { method: "POST", cache: "no-store" });
-    } catch {
-      // continue
-    } finally {
-      try {
-        window.dispatchEvent(new Event("mockmaster:logout"));
-        const preservedTheme = window.localStorage.getItem("theme");
-        window.localStorage.clear();
-        if (preservedTheme) window.localStorage.setItem("theme", preservedTheme);
-        window.sessionStorage.clear();
-      } catch {
-        // ignore
-      }
-      setIsLoggingOut(false);
-      router.replace("/auth/login");
-      router.refresh();
-    }
-  };
+  if (auth.unauthenticated) {
+    redirect("/auth/login?redirectTo=/admin/dashboard");
+  }
 
-  return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] flex flex-col">
-      {/* Top Editorial CMS Bar */}
-      <header className="sticky top-0 z-40 h-16 bg-[var(--background)]/92 backdrop-blur-md border-b border-[var(--border)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Link href="/admin/dashboard" className="flex items-center gap-3">
-              <BrandLogo size="sm" />
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-[var(--accent-muted)] text-[var(--accent)] border border-[var(--accent)]/30">
-                CMS Admin
-              </span>
-            </Link>
+  if (!auth.authorized) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] flex items-center justify-center px-4 py-16">
+        <div className="max-w-lg w-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 sm:p-8 space-y-5">
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded text-[11px] font-mono uppercase tracking-wider bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25">
+            <ShieldAlert className="w-3.5 h-3.5" />
+            <span>403 Forbidden · Admin Access Required</span>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <ModeToggle />
+          <div>
+            <h1 className="font-display text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+              Forbidden: Administrator privileges required
+            </h1>
+            <p className="text-sm text-[var(--muted-foreground)] mt-2 leading-relaxed">
+              Your account does not currently have administrator privileges in{" "}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded bg-[var(--muted)]">
+                public.user_roles
+              </code>
+              . Administrative routes and import pipelines are restricted to verified administrators.
+            </p>
+          </div>
+
+          {auth.schemaMissing && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 space-y-2 text-xs">
+              <div className="flex items-center gap-2 font-semibold text-amber-700 dark:text-amber-300">
+                <Database className="w-4 h-4 shrink-0" />
+                <span>Database Schema Not Initialized</span>
+              </div>
+              <p className="text-[var(--muted-foreground)] leading-relaxed">
+                The <code className="font-mono">public.user_roles</code> table was not found in your Supabase project. Run{" "}
+                <code className="font-mono">supabase/full_production_schema.sql</code> in the Supabase SQL Editor to create all tables and assign your administrator role.
+              </p>
+            </div>
+          )}
+
+          <div className="pt-2 flex flex-wrap items-center gap-3">
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] transition"
+              className="inline-flex items-center gap-2 h-9 px-4 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition"
             >
-              <span>Student Workspace</span>
-              <ArrowUpRight className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Return to Student Workspace</span>
             </Link>
-            <button
-              type="button"
-              onClick={handleAdminLogout}
-              disabled={isLoggingOut}
-              data-testid="admin-logout-button"
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-xs font-medium border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition cursor-pointer disabled:opacity-50"
-            >
-              {isLoggingOut ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <LogOut className="w-3.5 h-3.5" />
-              )}
-              <span className="hidden sm:inline">
-                {isLoggingOut ? "Logging out..." : "Logout"}
-              </span>
-            </button>
           </div>
         </div>
-      </header>
-
-      {/* Secondary Navigation Bar */}
-      <div className="bg-[var(--card)] border-b border-[var(--border)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1 overflow-x-auto h-11 text-xs font-medium">
-          {ADMIN_NAV.map((item) => {
-            const Icon = item.icon;
-            const baseHref = item.href.split("?")[0];
-            const isActive =
-              pathname === baseHref &&
-              (item.href.includes("tab=import") ? false : true);
-
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition whitespace-nowrap ${
-                  isActive
-                    ? "bg-[var(--muted)] text-[var(--foreground)] font-semibold"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]/50"
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{item.name}</span>
-              </Link>
-            );
-          })}
-        </div>
       </div>
+    );
+  }
 
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-        {children}
-      </main>
-    </div>
-  );
+  return <AdminShellClient>{children}</AdminShellClient>;
 }

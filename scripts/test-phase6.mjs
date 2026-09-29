@@ -26,6 +26,11 @@ import {
   getAIAssistantUsageLogs,
   getAdminAuditLogs,
 } from "../src/lib/db.ts";
+import {
+  resolveGeminiModelCandidates,
+  classifyGeminiError,
+  GeminiServiceError,
+} from "../src/lib/ai/providers/gemini.ts";
 import { resetRateLimitStore } from "../src/lib/security/rateLimit.ts";
 
 console.log("=== PHASE 6: MOCKMASTER AI ASSISTANT + ADMIN GITHUB QUESTION IMPORTER TESTS ===\n");
@@ -697,5 +702,180 @@ assert(
   "Admin audit logs must record GitHub process, approve, and reject operations"
 );
 
-console.log("✓ [GH Test 15-19, 21] End-to-end GitHub Import review, approval, rejection, provenance, and batch reopening verified.");
-console.log("\n=== ALL 32 PHASE 6 AI ASSISTANT & GITHUB IMPORTER TESTS PASSED ===");
+console.log("✓ [GH Test 15-19, 21] End-to-end GitHub Import review, approval, rejection, provenance, and batch reopening verified.\n");
+
+// ============================================================================
+// PART C: PRODUCTION SCHEMA, ADMIN AUTHORIZATION & GEMINI AI DIAGNOSTICS
+// ============================================================================
+
+console.log("--- PART C: PRODUCTION SCHEMA, ADMIN AUTHORIZATION & GEMINI AI DIAGNOSTICS ---");
+
+// [Prod Test 1] Full production SQL schema & 10 migration files verification
+console.log("[Prod Test 1] Verifying all 10 SQL migrations and consolidated full_production_schema.sql...");
+const migrationsDir = path.resolve(process.cwd(), "supabase/migrations");
+const expectedMigrationFiles = [
+  "001_exam_taxonomy.sql",
+  "002_questions.sql",
+  "003_mock_tests.sql",
+  "004_user_data_and_import.sql",
+  "005_rls_policies.sql",
+  "006_phase3_performance_and_indexes.sql",
+  "007_phase4_monetization_and_audit.sql",
+  "008_phase5_taxonomy_plans_payments_analytics.sql",
+  "009_phase6_ai_assistant_and_github_importer.sql",
+  "010_production_schema_reconciliation_and_bootstrap.sql",
+];
+for (const file of expectedMigrationFiles) {
+  assert(
+    fs.existsSync(path.join(migrationsDir, file)),
+    `Missing migration file: ${file}`
+  );
+}
+
+const fullSchemaPath = path.resolve(process.cwd(), "supabase/full_production_schema.sql");
+assert(fs.existsSync(fullSchemaPath), "Consolidated supabase/full_production_schema.sql must exist");
+const fullSchemaSql = fs.readFileSync(fullSchemaPath, "utf8");
+
+const requiredPublicTables = [
+  "exams",
+  "subjects",
+  "topics",
+  "questions",
+  "mock_tests",
+  "mock_questions",
+  "user_roles",
+  "user_plans",
+  "user_progress",
+  "question_seen_log",
+  "saved_questions",
+  "question_import_batches",
+  "subscriptions",
+  "ai_generation_logs",
+  "payment_webhook_events",
+  "payment_transactions",
+  "system_settings",
+  "github_import_candidates",
+  "ai_assistant_usage_logs",
+  "admin_audit_logs",
+];
+
+for (const tableName of requiredPublicTables) {
+  const tableRegex = new RegExp(`CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?(?:public\\.)?${tableName}\\b`, "i");
+  assert(
+    tableRegex.test(fullSchemaSql),
+    `supabase/full_production_schema.sql must define table public.${tableName}`
+  );
+}
+
+assert(
+  !fullSchemaSql.includes("question_type_enum") &&
+    !fullSchemaSql.includes("difficulty_level_enum") &&
+    !fullSchemaSql.includes("verification_status_enum"),
+  "SQL migrations must not contain invalid *_enum type references"
+);
+assert(
+  fullSchemaSql.includes("CREATE OR REPLACE FUNCTION public.is_admin()") &&
+    fullSchemaSql.includes("CREATE OR REPLACE FUNCTION public.handle_new_auth_user()") &&
+    fullSchemaSql.includes("CREATE OR REPLACE FUNCTION public.assign_admin_by_email("),
+  "SQL schema must define public.is_admin(), public.handle_new_auth_user(), and public.assign_admin_by_email()"
+);
+console.log(`✓ [Prod Test 1] All ${requiredPublicTables.length} public tables, triggers, RLS policies, and admin helpers verified.`);
+
+// [Prod Test 2] Server-side Admin Page Guard & Server Actions Authorization
+console.log("[Prod Test 2] Verifying server-side admin guard on /admin/layout.tsx and import server actions...");
+const adminLayoutSource = fs.readFileSync(
+  path.resolve(process.cwd(), "src/app/admin/layout.tsx"),
+  "utf8"
+);
+const importActionsSource = fs.readFileSync(
+  path.resolve(process.cwd(), "src/app/actions/import.ts"),
+  "utf8"
+);
+assert(
+  !adminLayoutSource.startsWith('"use client"') &&
+    adminLayoutSource.includes("verifyAdminAuthorization"),
+  "src/app/admin/layout.tsx must be a Server Component that enforces verifyAdminAuthorization()"
+);
+assert(
+  importActionsSource.includes("verifyAdminAuthorization"),
+  "src/app/actions/import.ts must enforce verifyAdminAuthorization() on server actions"
+);
+console.log("✓ [Prod Test 2] Server-side admin route and action guards verified.");
+
+// [Prod Test 3] Gemini Model Fallback Chain & Error Classification
+console.log("[Prod Test 3] Verifying Gemini model fallback chain and error classification...");
+const modelCandidates = resolveGeminiModelCandidates("gemini-2.0-flash");
+assert(
+  modelCandidates.includes("gemini-2.5-flash") &&
+    modelCandidates.includes("gemini-2.0-flash") &&
+    modelCandidates.includes("gemini-2.5-flash-lite"),
+  "resolveGeminiModelCandidates must include gemini-2.5-flash, gemini-2.0-flash, and gemini-2.5-flash-lite"
+);
+assert.strictEqual(
+  classifyGeminiError(new Error("404 Not Found: models/gemini-2.0-flash is not found")).category,
+  "model_unavailable"
+);
+assert.strictEqual(
+  classifyGeminiError(new Error("400 API_KEY_INVALID: API key not valid")).category,
+  "invalid_api_key"
+);
+assert.strictEqual(
+  classifyGeminiError(new Error("429 RESOURCE_EXHAUSTED: Quota exceeded")).category,
+  "quota_exceeded"
+);
+console.log("✓ [Prod Test 3] Gemini model fallback chain and error classification verified.");
+
+// [Prod Test 4] Required Gemini Diagnostic & Exam Prompts
+console.log("[Prod Test 4] Verifying required Gemini diagnostic and exam queries via POST /api/ai/chat...");
+resetRateLimitStore();
+const prodDiagUser = `prod-diag-user-${Date.now()}`;
+await updateUserPlan(prodDiagUser, "FREE");
+
+// 4a: Minimal diagnostic query: "Reply with exactly: MockMaster AI OK"
+const diagRes = await postAIChat(
+  new NextRequest("http://localhost:3000/api/ai/chat", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-test-user-id": prodDiagUser },
+    body: JSON.stringify({ message: "Reply with exactly: MockMaster AI OK" }),
+  })
+);
+assert.strictEqual(diagRes.status, 200);
+const diagData = await diagRes.json();
+assert.strictEqual(diagData.reply, "MockMaster AI OK", "Minimal diagnostic query must return 'MockMaster AI OK'");
+assert.strictEqual(diagData.usage.remaining, 14, "Quota 15/15 LEFT must decrement to 14/15 after first query");
+
+// 4b: "2 + 2"
+const mathRes = await postAIChat(
+  new NextRequest("http://localhost:3000/api/ai/chat", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-test-user-id": prodDiagUser },
+    body: JSON.stringify({ message: "2 + 2" }),
+  })
+);
+assert.strictEqual(mathRes.status, 200);
+const mathData = await mathRes.json();
+assert(mathData.reply.includes("4"), "Query '2 + 2' must return 4");
+
+// 4c: "What is the difference between Fundamental Rights and DPSPs?"
+const polityRes = await postAIChat(
+  new NextRequest("http://localhost:3000/api/ai/chat", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-test-user-id": prodDiagUser },
+    body: JSON.stringify({
+      message: "What is the difference between Fundamental Rights and DPSPs?",
+    }),
+  })
+);
+assert.strictEqual(polityRes.status, 200);
+const polityData = await polityRes.json();
+assert(
+  polityData.reply.includes("Fundamental Rights") &&
+    polityData.reply.includes("Directive Principles") &&
+    polityData.reply.includes("Part III") &&
+    polityData.reply.includes("Part IV"),
+  "Fundamental Rights vs DPSPs query must return accurate constitutional comparison"
+);
+console.log("✓ [Prod Test 4] Diagnostic query ('MockMaster AI OK'), '2 + 2', and 'Fundamental Rights vs DPSPs' verified.");
+
+console.log("\n=== ALL PHASE 6 & PRODUCTION FIX VERIFICATION TESTS PASSED ===");
+

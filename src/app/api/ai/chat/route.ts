@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAIProvider, AIAssistantChatRequestSchema } from "@/lib/ai";
+import { GeminiServiceError, getConfiguredGeminiModel } from "@/lib/ai/providers/gemini";
 import { createClient } from "@/lib/supabase/server";
 import { canUserSendAIChatMessage } from "@/lib/plans/limits";
 import { recordAIAssistantUsageLog } from "@/lib/db";
 import { aiChatLimiter } from "@/lib/security/rateLimit";
 import { generateRequestId, logger, withRequestIdHeaders } from "@/lib/monitoring/logger";
+
+function redactUserId(userId: string): string {
+  if (!userId || userId.length <= 8) return "u_redacted";
+  return `${userId.slice(0, 4)}...${userId.slice(-4)}`;
+}
 
 async function resolveAuthenticatedUser(req: NextRequest): Promise<{
   authenticated: boolean;
@@ -87,6 +93,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const requestId = generateRequestId();
+  const configuredModel = getConfiguredGeminiModel();
 
   // 1. Authentication Check
   const auth = await resolveAuthenticatedUser(req);
@@ -102,11 +109,18 @@ export async function POST(req: NextRequest) {
   // 2. Per-Minute Burst Rate Limiting
   const rateCheck = await aiChatLimiter.check(req, userId);
   if (!rateCheck.success) {
-    logger.warn("Rate limit exceeded on AI Assistant chat", { requestId, userId });
+    logger.warn("Rate limit exceeded on AI Assistant chat", {
+      requestId,
+      userId: redactUserId(userId),
+      provider: "gemini",
+      model: configuredModel,
+      status: 429,
+      errorCategory: "rate_limited",
+    });
     await recordAIAssistantUsageLog({
       user_id: userId,
       provider: "gemini",
-      model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+      model: configuredModel,
       message_length: 0,
       response_length: 0,
       latency_ms: 0,
@@ -117,6 +131,8 @@ export async function POST(req: NextRequest) {
       NextResponse.json(
         {
           error: "Too many messages sent in a short window. Please wait a few seconds before asking again.",
+          errorCategory: "rate_limited",
+          requestId,
         },
         { status: 429 }
       ),
@@ -130,7 +146,7 @@ export async function POST(req: NextRequest) {
     body = await req.json();
   } catch {
     return withRequestIdHeaders(
-      NextResponse.json({ error: "Invalid JSON request body." }, { status: 400 }),
+      NextResponse.json({ error: "Invalid JSON request body.", requestId }, { status: 400 }),
       requestId
     );
   }
@@ -140,7 +156,7 @@ export async function POST(req: NextRequest) {
     const firstIssue = parsed.error.issues[0]?.message || "Invalid chat request payload.";
     return withRequestIdHeaders(
       NextResponse.json(
-        { error: firstIssue, details: parsed.error.format() },
+        { error: firstIssue, errorCategory: "invalid_request", requestId },
         { status: 400 }
       ),
       requestId
@@ -153,7 +169,7 @@ export async function POST(req: NextRequest) {
     await recordAIAssistantUsageLog({
       user_id: userId,
       provider: "gemini",
-      model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+      model: configuredModel,
       message_length: parsed.data.message.length,
       response_length: 0,
       latency_ms: 0,
@@ -169,6 +185,8 @@ export async function POST(req: NextRequest) {
         {
           error: quota.reason || "Daily AI Assistant message quota reached.",
           quotaExceeded: true,
+          errorCategory: "quota_exceeded",
+          requestId,
           usage: {
             used: quota.currentCount,
             limit: quota.maxAllowed,
@@ -218,6 +236,7 @@ export async function POST(req: NextRequest) {
         model: result.model,
         provider: result.provider,
         latencyMs: result.latencyMs,
+        requestId,
         usage: {
           used: newUsed,
           limit: quota.maxAllowed,
@@ -229,17 +248,32 @@ export async function POST(req: NextRequest) {
     );
   } catch (err: unknown) {
     const latencyMs = Math.max(1, Date.now() - startTime);
-    const errMsg =
-      err instanceof Error
+    const isGeminiErr = err instanceof GeminiServiceError;
+    const errorCategory = isGeminiErr ? err.category : "service_error";
+    const errorCode = isGeminiErr ? err.statusCode : 503;
+    const modelAttempted = isGeminiErr ? err.model : configuredModel;
+    const isTimeout = isGeminiErr ? err.isTimeout : false;
+    const userMessage =
+      isGeminiErr && err.message
         ? err.message
-        : "AI Assistant is temporarily unavailable. Please try again shortly.";
+        : "AI couldn't process that request right now. Please try again.";
 
-    logger.error("AI Assistant chat failure", err, { requestId, userId });
+    // Structured server-side diagnostic log (never logs GEMINI_API_KEY, tokens, or secrets)
+    logger.error("AI Assistant chat failure", err, {
+      requestId,
+      provider: aiProvider.name,
+      model: modelAttempted,
+      status: 503,
+      errorCategory,
+      errorCode,
+      timeout: isTimeout,
+      userId: redactUserId(userId),
+    });
 
     await recordAIAssistantUsageLog({
       user_id: userId,
       provider: aiProvider.name,
-      model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+      model: modelAttempted,
       message_length: parsed.data.message.length,
       response_length: 0,
       latency_ms: latencyMs,
@@ -247,13 +281,15 @@ export async function POST(req: NextRequest) {
       context_exam: parsed.data.context?.exam || null,
       context_subject: parsed.data.context?.subject || null,
       context_topic: parsed.data.context?.topic || null,
-      error_message: errMsg,
+      error_message: `${errorCategory} (${errorCode})`,
     });
 
     return withRequestIdHeaders(
       NextResponse.json(
         {
-          error: "MockMaster AI is temporarily unavailable. Please try again in a moment.",
+          error: userMessage,
+          errorCategory,
+          requestId,
         },
         { status: 503 }
       ),
