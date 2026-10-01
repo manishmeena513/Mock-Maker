@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getVerifiedServerUser } from "@/lib/auth/server";
 import { getUserPlan } from "@/lib/db";
 
 export async function GET() {
@@ -12,33 +12,21 @@ export async function GET() {
   let plan = "FREE";
 
   try {
-    const supabase = await createClient();
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
+    const verified = await getVerifiedServerUser();
 
-    if (authUser) {
-      const planInfo = await getUserPlan(authUser.id);
+    if (verified.authenticated && verified.userId) {
+      const planInfo = await getUserPlan(verified.userId);
       plan = planInfo.plan === "PREMIUM" ? "PRO" : planInfo.plan;
       user = {
-        id: authUser.id,
-        email: authUser.email || "aspirant@mockmaster.in",
-        name:
-          (authUser.user_metadata?.full_name as string) ||
-          (authUser.user_metadata?.name as string) ||
-          authUser.email?.split("@")[0] ||
-          "Aspirant",
-        role:
-          (authUser.user_metadata?.role as "user" | "admin") ||
-          (authUser.email?.includes("admin") ? "admin" : "user"),
+        id: verified.userId,
+        email: verified.email || "aspirant@mockmaster.in",
+        name: verified.name || "Aspirant",
+        role: verified.role,
       };
-    } else {
-      const planInfo = await getUserPlan("default-user");
-      plan = planInfo.plan === "PREMIUM" ? "PRO" : planInfo.plan;
     }
   } catch {
-    const planInfo = await getUserPlan("default-user");
-    plan = planInfo.plan === "PREMIUM" ? "PRO" : planInfo.plan;
+    user = null;
+    plan = "FREE";
   }
 
   return NextResponse.json(

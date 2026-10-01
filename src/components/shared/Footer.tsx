@@ -8,10 +8,11 @@ import { BrandLogo } from "./BrandLogo";
 export function Footer() {
   const pathname = usePathname();
 
-  // Hide footer during active test sessions
+  // Hide footer during active test sessions or admin shell
   if (
     (pathname.startsWith("/mock/") && !pathname.startsWith("/mock/configure")) ||
-    pathname.startsWith("/test/")
+    pathname.startsWith("/test/") ||
+    pathname.startsWith("/admin")
   ) {
     return null;
   }
@@ -19,9 +20,9 @@ export function Footer() {
   return (
     <footer
       role="contentinfo"
-      className="border-t border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)] transition-colors"
+      className="border-t border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)] transition-colors pb-16 md:pb-0"
     >
-      <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mm-container py-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-[var(--border-subtle)]">
           <div className="space-y-1">
             <Link href="/" className="inline-flex items-center">

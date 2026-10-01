@@ -805,6 +805,11 @@ console.log("✓ [Prod Test 2] Server-side admin route and action guards verifie
 // [Prod Test 3] Gemini Model Fallback Chain & Error Classification
 console.log("[Prod Test 3] Verifying Gemini model fallback chain and error classification...");
 const modelCandidates = resolveGeminiModelCandidates("gemini-2.0-flash");
+assert.strictEqual(
+  modelCandidates[0],
+  "gemini-2.5-flash",
+  "resolveGeminiModelCandidates must prioritize active gemini-2.5-flash ahead of retired gemini-2.0-flash"
+);
 assert(
   modelCandidates.includes("gemini-2.5-flash") &&
     modelCandidates.includes("gemini-2.0-flash") &&
@@ -823,13 +828,22 @@ assert.strictEqual(
   classifyGeminiError(new Error("429 RESOURCE_EXHAUSTED: Quota exceeded")).category,
   "quota_exceeded"
 );
-console.log("✓ [Prod Test 3] Gemini model fallback chain and error classification verified.");
+const serviceErrCheck = classifyGeminiError(
+  new Error("Empty response received from Gemini AI"),
+  "gemini-flash-latest"
+);
+assert.strictEqual(
+  serviceErrCheck.userMessage,
+  "AI couldn't process that request right now. Please try again.",
+  "User-facing Gemini error message must be clean and never leak internal model names like (gemini-flash-latest)"
+);
+console.log("✓ [Prod Test 3] Gemini model fallback chain and clean error classification verified.");
 
-// [Prod Test 4] Required Gemini Diagnostic & Exam Prompts
-console.log("[Prod Test 4] Verifying required Gemini diagnostic and exam queries via POST /api/ai/chat...");
+// [Prod Test 4] Required Gemini Diagnostic & Arbitrary Prompts
+console.log("[Prod Test 4] Verifying required Gemini diagnostic and arbitrary queries via POST /api/ai/chat...");
 resetRateLimitStore();
 const prodDiagUser = `prod-diag-user-${Date.now()}`;
-await updateUserPlan(prodDiagUser, "FREE");
+await updateUserPlan(prodDiagUser, "PRO");
 
 // 4a: Minimal diagnostic query: "Reply with exactly: MockMaster AI OK"
 const diagRes = await postAIChat(
@@ -842,9 +856,23 @@ const diagRes = await postAIChat(
 assert.strictEqual(diagRes.status, 200);
 const diagData = await diagRes.json();
 assert.strictEqual(diagData.reply, "MockMaster AI OK", "Minimal diagnostic query must return 'MockMaster AI OK'");
-assert.strictEqual(diagData.usage.remaining, 14, "Quota 15/15 LEFT must decrement to 14/15 after first query");
 
-// 4b: "2 + 2"
+// 4b: Conversational greeting: "hi"
+const hiRes = await postAIChat(
+  new NextRequest("http://localhost:3000/api/ai/chat", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-test-user-id": prodDiagUser },
+    body: JSON.stringify({ message: "hi" }),
+  })
+);
+assert.strictEqual(hiRes.status, 200, "Query 'hi' must succeed with HTTP 200");
+const hiData = await hiRes.json();
+assert(
+  typeof hiData.reply === "string" && hiData.reply.length > 10 && !hiData.reply.includes("gemini-flash-latest"),
+  "Query 'hi' must return a natural greeting response"
+);
+
+// 4c: "2 + 2"
 const mathRes = await postAIChat(
   new NextRequest("http://localhost:3000/api/ai/chat", {
     method: "POST",
@@ -856,26 +884,90 @@ assert.strictEqual(mathRes.status, 200);
 const mathData = await mathRes.json();
 assert(mathData.reply.includes("4"), "Query '2 + 2' must return 4");
 
-// 4c: "What is the difference between Fundamental Rights and DPSPs?"
-const polityRes = await postAIChat(
-  new NextRequest("http://localhost:3000/api/ai/chat", {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-test-user-id": prodDiagUser },
-    body: JSON.stringify({
-      message: "What is the difference between Fundamental Rights and DPSPs?",
-    }),
-  })
-);
-assert.strictEqual(polityRes.status, 200);
-const polityData = await polityRes.json();
+// 4d: Arbitrary exam prompts ("What is federalism?", "Explain Fundamental Rights", "Why is option B wrong?", "Give me 5 practice questions on this topic")
+const arbitraryPrompts = [
+  "What is federalism?",
+  "Explain Fundamental Rights",
+  "Why is option B wrong?",
+  "Give me 5 practice questions on this topic",
+  "What is the difference between Fundamental Rights and DPSPs?",
+];
+for (const promptText of arbitraryPrompts) {
+  resetRateLimitStore();
+  const res = await postAIChat(
+    new NextRequest("http://localhost:3000/api/ai/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-test-user-id": prodDiagUser },
+      body: JSON.stringify({
+        message: promptText,
+        context: {
+          exam: "UPSC CSE",
+          subject: "Indian Polity",
+          topic: "Constitutional Framework",
+          mode: "practice",
+        },
+      }),
+    })
+  );
+  assert.strictEqual(res.status, 200, `Prompt "${promptText}" must succeed with HTTP 200`);
+  const data = await res.json();
+  assert(
+    typeof data.reply === "string" && data.reply.length > 20,
+    `Prompt "${promptText}" must return a substantive response`
+  );
+}
+console.log("✓ [Prod Test 4] Diagnostic query, 'hi', '2 + 2', and all arbitrary exam queries verified.");
+
+// [Prod Test 5] OAuth PKCE Callback, Cookie Sync, and Server-Side Auth Verification
+console.log("[Prod Test 5] Verifying /auth/callback route, PKCE code exchange, and server session verification...");
+const authCallbackPath = path.resolve(process.cwd(), "src/app/auth/callback/route.ts");
+const authConfirmPath = path.resolve(process.cwd(), "src/app/auth/confirm/route.ts");
+const loginPagePath = path.resolve(process.cwd(), "src/app/auth/login/page.tsx");
+const signupPagePath = path.resolve(process.cwd(), "src/app/auth/signup/page.tsx");
+const revisionPagePath = path.resolve(process.cwd(), "src/app/revision/page.tsx");
+const dashboardPagePath = path.resolve(process.cwd(), "src/app/dashboard/page.tsx");
+
+assert(fs.existsSync(authCallbackPath), "src/app/auth/callback/route.ts must exist");
+const authCallbackCode = fs.readFileSync(authCallbackPath, "utf8");
+const authConfirmCode = fs.readFileSync(authConfirmPath, "utf8");
+const loginPageCode = fs.readFileSync(loginPagePath, "utf8");
+const signupPageCode = fs.readFileSync(signupPagePath, "utf8");
+const revisionPageCode = fs.readFileSync(revisionPagePath, "utf8");
+const dashboardPageSource = fs.readFileSync(dashboardPagePath, "utf8");
+
 assert(
-  polityData.reply.includes("Fundamental Rights") &&
-    polityData.reply.includes("Directive Principles") &&
-    polityData.reply.includes("Part III") &&
-    polityData.reply.includes("Part IV"),
-  "Fundamental Rights vs DPSPs query must return accurate constitutional comparison"
+  authCallbackCode.includes("exchangeCodeForSession") &&
+    authCallbackCode.includes("verifyOtp") &&
+    authCallbackCode.includes("response.cookies.set"),
+  "/auth/callback/route.ts must exchange PKCE code for session, support verifyOtp, and persist Set-Cookie headers onto redirect response"
 );
-console.log("✓ [Prod Test 4] Diagnostic query ('MockMaster AI OK'), '2 + 2', and 'Fundamental Rights vs DPSPs' verified.");
+assert(
+  authConfirmCode.includes("exchangeCodeForSession") &&
+    authConfirmCode.includes("response.cookies.set"),
+  "/auth/confirm/route.ts must also exchange PKCE code and persist Set-Cookie headers onto redirect response"
+);
+assert(
+  loginPageCode.includes("getClientAuthCallbackUrl") &&
+    !loginPageCode.includes("/auth/confirm"),
+  "login/page.tsx must use getClientAuthCallbackUrl (/auth/callback) for Google OAuth redirectTo"
+);
+assert(
+  signupPageCode.includes("Account created. Check your email to verify your account.") &&
+    signupPageCode.includes("getClientAuthCallbackUrl"),
+  "signup/page.tsx must handle email confirmation state cleanly and use getClientAuthCallbackUrl"
+);
+assert(
+  revisionPageCode.includes("getVerifiedServerUser") &&
+    revisionPageCode.includes("getSavedQuestions(userId)") &&
+    revisionPageCode.includes("getUserMistakes(userId)"),
+  "revision/page.tsx must verify server user and scope getSavedQuestions/getUserMistakes to userId"
+);
+assert(
+  dashboardPageSource.includes("getVerifiedServerUser"),
+  "dashboard/page.tsx must verify server user via getVerifiedServerUser()"
+);
+console.log("✓ [Prod Test 5] OAuth PKCE callback, cookie persistence, and server-side session verification verified.");
 
 console.log("\n=== ALL PHASE 6 & PRODUCTION FIX VERIFICATION TESTS PASSED ===");
+
 

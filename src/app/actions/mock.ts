@@ -24,7 +24,7 @@ import {
   TopicPerformanceSummary,
 } from "@/types/database";
 import { assertCanCreateMock, assertCanCreateRetest } from "@/lib/plans";
-import { createClient } from "@/lib/supabase/server";
+import { getVerifiedServerUser } from "@/lib/auth/server";
 
 const MockConfigSchema = z.object({
   examSlug: z.string().min(1, "Exam is required"),
@@ -76,14 +76,11 @@ function shuffleQuestionOptions(q: Question): Question {
 export async function generateMockAction(input: MockConfigInput) {
   const validated = MockConfigSchema.parse(input);
 
-  let userId = "default-user";
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user?.id) userId = user.id;
-  } catch {
-    // fallback to default-user
+  const verified = await getVerifiedServerUser();
+  if (verified.isSupabaseConfigured && (!verified.authenticated || !verified.userId)) {
+    throw new Error("Sign in first to use this feature.");
   }
+  const userId = verified.userId || "default-user";
 
   // Centralized plan limit enforcement
   await assertCanCreateMock(userId);
@@ -361,16 +358,11 @@ export async function generateRetestDrillAction({
   if (!questionIds || questionIds.length === 0) {
     throw new Error("No question IDs provided for retest drill");
   }
-  let userId = "default-user";
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user?.id) userId = user.id;
-  } catch {
-    // fallback
+  const verified = await getVerifiedServerUser();
+  if (verified.isSupabaseConfigured && (!verified.authenticated || !verified.userId)) {
+    throw new Error("Sign in first to use this feature.");
   }
+  const userId = verified.userId || "default-user";
 
   await assertCanCreateRetest(userId);
   const drillId = await createRetestDrill(questionIds, userId);

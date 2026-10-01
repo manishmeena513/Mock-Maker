@@ -14,33 +14,33 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", ...props }, ref) => {
     const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
       primary:
-        "bg-[var(--primary)] hover:opacity-90 text-[var(--primary-foreground)] border border-transparent",
+        "bg-[var(--primary)] hover:opacity-92 text-[var(--primary-foreground)] border border-transparent shadow-2xs",
       accent:
-        "bg-[var(--accent)] hover:opacity-90 text-[var(--accent-foreground)] border border-transparent",
+        "bg-[var(--accent)] hover:opacity-92 text-[var(--accent-foreground)] border border-transparent shadow-2xs",
       secondary:
         "bg-[var(--secondary)] hover:bg-[var(--border)]/60 text-[var(--foreground)] border border-[var(--border)]",
       outline:
-        "bg-[var(--card)] hover:bg-[var(--muted)]/60 text-[var(--foreground)] border border-[var(--border)]",
+        "bg-[var(--card)] hover:bg-[var(--muted)]/70 hover:border-[var(--border-strong)] text-[var(--foreground)] border border-[var(--border)]",
       ghost:
         "bg-transparent hover:bg-[var(--muted)]/70 text-[var(--muted-foreground)] hover:text-[var(--foreground)] border border-transparent",
       danger:
-        "bg-[var(--destructive)] hover:opacity-90 text-white border border-transparent",
+        "bg-[var(--destructive)] hover:opacity-92 text-white border border-transparent",
       success:
-        "bg-[var(--sage)] hover:opacity-90 text-white border border-transparent",
+        "bg-[var(--sage)] hover:opacity-92 text-white border border-transparent",
     };
 
     const sizes: Record<NonNullable<ButtonProps["size"]>, string> = {
       sm: "h-8 px-3 text-xs rounded-md gap-1.5",
       md: "h-9 px-4 text-xs rounded-md gap-2",
       lg: "h-11 px-5 text-sm rounded-md gap-2.5",
-      icon: "h-8 w-8 rounded-md justify-center",
+      icon: "h-9 w-9 sm:h-8 sm:w-8 rounded-md justify-center",
     };
 
     return (
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center font-medium tracking-[-0.01em] transition-all duration-150 active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:pointer-events-none select-none",
+          "mm-btn-press inline-flex items-center justify-center font-medium tracking-[-0.01em] cursor-pointer disabled:opacity-50 disabled:pointer-events-none select-none",
           variants[variant],
           sizes[size],
           className
@@ -55,15 +55,21 @@ Button.displayName = "Button";
 /* ============================================================================
  * CARD — Restrained Architectural Surface
  * ========================================================================== */
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  interactive?: boolean;
+}
+
 export function Card({
   className,
+  interactive = false,
   children,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+}: CardProps) {
   return (
     <div
       className={cn(
-        "rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]",
+        "rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] min-w-0",
+        interactive && "mm-card-interactive",
         className
       )}
       {...props}
@@ -81,7 +87,7 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        "px-5 py-4 border-b border-[var(--border)] flex flex-col gap-1",
+        "px-5 py-4 border-b border-[var(--border)] flex flex-col gap-1 min-w-0",
         className
       )}
       {...props}
@@ -124,7 +130,7 @@ export function CardContent({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("p-5", className)} {...props}>
+    <div className={cn("p-5 min-w-0", className)} {...props}>
       {children}
     </div>
   );
@@ -181,7 +187,7 @@ export const Input = React.forwardRef<
   <input
     ref={ref}
     className={cn(
-      "w-full h-9 px-3 py-1.5 text-xs rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)] transition-colors",
+      "w-full h-10 sm:h-9 px-3 py-1.5 text-base sm:text-xs rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)] transition-colors",
       className
     )}
     {...props}
@@ -196,7 +202,7 @@ export const Select = React.forwardRef<
   <select
     ref={ref}
     className={cn(
-      "w-full h-9 px-3 py-1.5 text-xs font-medium rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] focus:outline-none focus:border-[var(--accent)] transition-colors",
+      "w-full h-10 sm:h-9 px-3 py-1.5 text-base sm:text-xs font-medium rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] focus:outline-none focus:border-[var(--accent)] transition-colors",
       className
     )}
     {...props}
@@ -246,7 +252,7 @@ export function Progress({
 export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("animate-pulse rounded-md bg-[var(--muted)]", className)}
+      className={cn("mm-skeleton rounded-md bg-[var(--muted)]", className)}
       {...props}
     />
   );
@@ -271,7 +277,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "rounded-lg border border-[var(--border)] bg-[var(--card)] p-8 text-center flex flex-col items-center justify-center max-w-full",
+        "rounded-lg border border-[var(--border)] bg-[var(--card)] p-8 text-center flex flex-col items-center justify-center max-w-full animate-fade-in",
         className
       )}
     >
@@ -302,20 +308,20 @@ export function ErrorState({
     <div
       role="alert"
       className={cn(
-        "rounded-lg border border-rose-500/30 bg-rose-500/10 p-4 flex items-start gap-3 text-[var(--foreground)]",
+        "rounded-lg border border-rose-500/30 bg-rose-500/10 p-4 flex items-start gap-3 text-[var(--foreground)] animate-fade-in",
         className
       )}
     >
       <AlertCircle className="w-4 h-4 text-[var(--destructive)] shrink-0 mt-0.5" />
-      <div className="flex-1 text-xs">
+      <div className="flex-1 min-w-0 text-xs">
         <div className="font-semibold">{title}</div>
-        <div className="mt-0.5 text-[var(--muted-foreground)] leading-relaxed">{message}</div>
+        <div className="mt-0.5 text-[var(--muted-foreground)] leading-relaxed break-words">{message}</div>
       </div>
       {onRetry && (
         <button
           type="button"
           onClick={onRetry}
-          className="px-2.5 py-1 rounded text-xs font-medium bg-[var(--card)] border border-[var(--border)] hover:bg-[var(--muted)] transition"
+          className="mm-btn-press px-2.5 py-1 rounded text-xs font-medium bg-[var(--card)] border border-[var(--border)] hover:bg-[var(--muted)] transition shrink-0"
         >
           Retry
         </button>
@@ -342,22 +348,36 @@ export function Dialog({
   children: React.ReactNode;
   maxWidth?: string;
 }) {
+  React.useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
   if (!open) return null;
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="dialog-title"
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4 overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4 overflow-y-auto animate-fade-in"
     >
       <div
         className={cn(
-          "bg-[var(--card)] border border-[var(--border)] rounded-lg w-full p-6 shadow-xl my-8 max-h-[90vh] overflow-y-auto animate-editorial",
+          "bg-[var(--card)] border border-[var(--border)] rounded-lg w-full p-5 sm:p-6 shadow-xl my-auto max-h-[88dvh] overflow-y-auto touch-scroll animate-scale-in",
           maxWidth
         )}
       >
         <div className="flex items-start justify-between gap-4 pb-4 border-b border-[var(--border)]">
-          <div>
+          <div className="min-w-0">
             <h3 id="dialog-title" className="text-base font-semibold text-[var(--foreground)]">
               {title}
             </h3>
@@ -369,7 +389,7 @@ export function Dialog({
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition"
+            className="mm-btn-press p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition shrink-0"
           >
             <X className="w-4 h-4" />
           </button>

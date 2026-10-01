@@ -119,11 +119,11 @@ export function QuestionExplorerClient({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search questions by concept, constitutional article, keyword..."
-            className="w-full h-10 pl-10 pr-24 rounded-md border border-[var(--border)] bg-[var(--background)] text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)]"
+            className="w-full h-10 pl-10 pr-24 rounded-md border border-[var(--border)] bg-[var(--background)] text-base sm:text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)] transition-colors"
           />
           <button
             type="submit"
-            className="absolute right-1.5 h-7 px-3.5 rounded text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity cursor-pointer"
+            className="absolute right-1.5 h-7 px-3.5 rounded text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity cursor-pointer mm-btn-press"
           >
             Search
           </button>
@@ -145,7 +145,7 @@ export function QuestionExplorerClient({
                 setSelectedTopic("all");
                 applyFilters({ exam: val, subject: null, topic: null });
               }}
-              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-xs font-medium text-[var(--foreground)]"
+              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-base sm:text-xs font-medium text-[var(--foreground)] transition-colors focus:outline-none focus:border-[var(--accent)]"
             >
               <option value="all">All Exams</option>
               {exams.map((exam) => (
@@ -169,7 +169,7 @@ export function QuestionExplorerClient({
                 setSelectedTopic("all");
                 applyFilters({ subject: val, topic: null });
               }}
-              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-xs font-medium text-[var(--foreground)]"
+              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-base sm:text-xs font-medium text-[var(--foreground)] transition-colors focus:outline-none focus:border-[var(--accent)]"
             >
               <option value="all">All Subjects</option>
               {availableSubjects.map((sub) => (
@@ -192,7 +192,7 @@ export function QuestionExplorerClient({
                 setSelectedTopic(val);
                 applyFilters({ topic: val });
               }}
-              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-xs font-medium text-[var(--foreground)]"
+              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-base sm:text-xs font-medium text-[var(--foreground)] transition-colors focus:outline-none focus:border-[var(--accent)]"
             >
               <option value="all">All Topics</option>
               {availableTopics.map((top) => (
@@ -215,7 +215,7 @@ export function QuestionExplorerClient({
                 setSelectedType(val);
                 applyFilters({ type: val });
               }}
-              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-xs font-medium text-[var(--foreground)]"
+              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-base sm:text-xs font-medium text-[var(--foreground)] transition-colors focus:outline-none focus:border-[var(--accent)]"
             >
               <option value="all">All Types</option>
               <option value="PYQ">Verified PYQ</option>
@@ -235,7 +235,7 @@ export function QuestionExplorerClient({
                 setSelectedDifficulty(val);
                 applyFilters({ difficulty: val });
               }}
-              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-xs font-medium text-[var(--foreground)]"
+              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-base sm:text-xs font-medium text-[var(--foreground)] transition-colors focus:outline-none focus:border-[var(--accent)]"
             >
               <option value="all">All Levels</option>
               <option value="easy">Easy</option>
@@ -256,7 +256,7 @@ export function QuestionExplorerClient({
                 setSelectedYear(val);
                 applyFilters({ year: val });
               }}
-              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-xs font-medium text-[var(--foreground)]"
+              className="w-full h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--background)] text-base sm:text-xs font-medium text-[var(--foreground)] transition-colors focus:outline-none focus:border-[var(--accent)]"
             >
               <option value="all">All Years</option>
               {years.map((yr) => (
@@ -286,7 +286,7 @@ export function QuestionExplorerClient({
           <button
             type="button"
             onClick={handleResetFilters}
-            className="inline-flex items-center gap-1 text-xs font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors cursor-pointer mm-btn-press"
           >
             <RotateCcw className="w-3 h-3" />
             <span>Reset Filters</span>
@@ -345,7 +345,7 @@ export function QuestionExplorerClient({
                     <button
                       type="button"
                       onClick={() => setExpandedQuestionId(isExpanded ? null : q.id)}
-                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] hover:border-[var(--border-strong)] text-[var(--foreground)] transition-all cursor-pointer mm-btn-press"
                     >
                       <span>{isExpanded ? "Hide Solution" : "Options & Solution"}</span>
                       {isExpanded ? (
@@ -363,7 +363,7 @@ export function QuestionExplorerClient({
                 </p>
 
                 {isExpanded && (
-                  <div className="pt-4 border-t border-[var(--border)] space-y-4">
+                  <div className="pt-4 border-t border-[var(--border)] space-y-4 animate-editorial">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                       {(["A", "B", "C", "D"] as const).map((opt) => {
                         const optText =
@@ -420,7 +420,7 @@ export function QuestionExplorerClient({
             type="button"
             disabled={!pagination.hasPrevPage || isPending}
             onClick={() => applyFilters({ page: String(pagination.page - 1) })}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] hover:border-[var(--border-strong)] disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer mm-btn-press"
           >
             <ChevronLeft className="w-4 h-4" />
             <span>Previous</span>
@@ -434,7 +434,7 @@ export function QuestionExplorerClient({
             type="button"
             disabled={!pagination.hasNextPage || isPending}
             onClick={() => applyFilters({ page: String(pagination.page + 1) })}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] hover:border-[var(--border-strong)] disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer mm-btn-press"
           >
             <span>Next</span>
             <ChevronRight className="w-4 h-4" />

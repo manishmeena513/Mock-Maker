@@ -67,6 +67,23 @@ export function AIAssistantProvider({ children }: { children: React.ReactNode })
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  const refreshUsageQuota = useCallback(async () => {
+    try {
+      const res = await fetch("/api/ai/chat", {
+        method: "GET",
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.usage) {
+        setUsage(data.usage);
+      }
+    } catch {
+      // ignore network errors
+    }
+  }, []);
+
   // Restore session conversation on mount
   useEffect(() => {
     try {
@@ -95,7 +112,7 @@ export function AIAssistantProvider({ children }: { children: React.ReactNode })
     }
   }, [messages]);
 
-  // Listen for logout events to clear session chat history
+  // Listen for logout and auth-change events to keep session chat & usage synced
   useEffect(() => {
     const handleClearOnLogout = () => {
       if (abortControllerRef.current) {
@@ -104,6 +121,8 @@ export function AIAssistantProvider({ children }: { children: React.ReactNode })
       setMessages([]);
       setIsOpen(false);
       setError(null);
+      setUsage(null);
+      setQuotaExceeded(false);
       try {
         sessionStorage.removeItem(SESSION_STORAGE_KEY);
       } catch {
@@ -111,27 +130,24 @@ export function AIAssistantProvider({ children }: { children: React.ReactNode })
       }
     };
 
+    const handleAuthChange = () => {
+      void refreshUsageQuota();
+    };
+
     window.addEventListener("mockmaster:logout", handleClearOnLogout);
+    window.addEventListener("mockmaster:auth-change", handleAuthChange);
     return () => {
       window.removeEventListener("mockmaster:logout", handleClearOnLogout);
+      window.removeEventListener("mockmaster:auth-change", handleAuthChange);
     };
-  }, []);
+  }, [refreshUsageQuota]);
 
-  // Fetch initial quota when drawer opens for the first time
+  // Refresh quota whenever drawer opens
   useEffect(() => {
-    if (isOpen && !usage) {
-      fetch("/api/ai/chat", { method: "GET" })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data?.usage) {
-            setUsage(data.usage);
-          }
-        })
-        .catch(() => {
-          // ignore
-        });
+    if (isOpen) {
+      void refreshUsageQuota();
     }
-  }, [isOpen, usage]);
+  }, [isOpen, refreshUsageQuota]);
 
   const setExamContext = useCallback((ctx: AIAssistantContextPayload) => {
     const nextCtx = ctx || { mode: "general" };
@@ -216,6 +232,8 @@ export function AIAssistantProvider({ children }: { children: React.ReactNode })
         const res = await fetch("/api/ai/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+          credentials: "same-origin",
           body: JSON.stringify({
             message: trimmed,
             history: historyPayload,

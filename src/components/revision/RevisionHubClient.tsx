@@ -130,7 +130,7 @@ export function RevisionHubClient({ initialSaved, initialMistakes }: RevisionHub
   return (
     <div className="space-y-6">
       {/* Clean 3-Tab Navigation Bar: Saved | Mistakes | Weak Areas */}
-      <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] overflow-x-auto">
+      <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] overflow-x-auto touch-scroll pb-px">
         <div role="tablist" aria-label="Revision Library Tabs" className="flex items-center gap-6">
           {primaryTabs.map((t) => {
             const isActive = activeTab === t.id;
@@ -141,7 +141,7 @@ export function RevisionHubClient({ initialSaved, initialMistakes }: RevisionHub
                 role="tab"
                 aria-selected={isActive}
                 onClick={() => setActiveTab(t.id)}
-                className={`py-3 text-xs font-medium border-b-2 transition-colors shrink-0 flex items-center gap-2 cursor-pointer ${
+                className={`py-3 text-xs font-medium border-b-2 transition-all shrink-0 flex items-center gap-2 cursor-pointer mm-btn-press ${
                   isActive
                     ? "border-[var(--foreground)] text-[var(--foreground)] font-semibold"
                     : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
@@ -175,10 +175,10 @@ export function RevisionHubClient({ initialSaved, initialMistakes }: RevisionHub
                   key={cat.id}
                   type="button"
                   onClick={() => setSavedCategoryFilter(cat.id)}
-                  className={`h-8 px-3 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                  className={`h-8 px-3 rounded-md text-xs font-medium transition-all cursor-pointer mm-btn-press ${
                     savedCategoryFilter === cat.id
-                      ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
-                      : "bg-[var(--card)] border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                      ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs"
+                      : "bg-[var(--card)] border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:border-[var(--border-strong)]"
                   }`}
                 >
                   {cat.label}
@@ -191,7 +191,7 @@ export function RevisionHubClient({ initialSaved, initialMistakes }: RevisionHub
                 type="button"
                 onClick={() => handleStartRetest(filteredSaved.map((s) => s.question.id))}
                 disabled={isStartingDrill}
-                className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity cursor-pointer"
+                className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity cursor-pointer mm-btn-press shrink-0"
               >
                 <Play className="w-3 h-3 fill-current" />
                 <span>
@@ -260,7 +260,7 @@ export function RevisionHubClient({ initialSaved, initialMistakes }: RevisionHub
                         <button
                           type="button"
                           onClick={() => handleStartRetest([q.id])}
-                          className="inline-flex items-center gap-1 h-8 px-3 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1 h-8 px-3 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] hover:border-[var(--border-strong)] text-[var(--foreground)] transition-all cursor-pointer mm-btn-press"
                         >
                           <RotateCcw className="w-3 h-3" />
                           <span>Practice</span>
@@ -269,7 +269,7 @@ export function RevisionHubClient({ initialSaved, initialMistakes }: RevisionHub
                         <button
                           type="button"
                           onClick={() => setExpandedQuestionId(isExpanded ? null : q.id)}
-                          className="inline-flex items-center gap-1 h-8 px-3 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1 h-8 px-3 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] hover:border-[var(--border-strong)] text-[var(--foreground)] transition-all cursor-pointer mm-btn-press"
                         >
                           <span>{isExpanded ? "Hide" : "Review"}</span>
                           {isExpanded ? (
@@ -282,7 +282,7 @@ export function RevisionHubClient({ initialSaved, initialMistakes }: RevisionHub
                         <button
                           type="button"
                           onClick={() => handleRemoveBookmark(q.id)}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-md text-[var(--muted-foreground)] hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-md text-[var(--muted-foreground)] hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer mm-btn-press"
                           title="Remove from Saved"
                           aria-label="Remove"
                         >
@@ -353,7 +353,7 @@ export function RevisionHubClient({ initialSaved, initialMistakes }: RevisionHub
               <select
                 value={mistakeCategoryFilter}
                 onChange={(e) => setMistakeCategoryFilter(e.target.value)}
-                className="h-8 px-3 rounded-md border border-[var(--border)] bg-[var(--card)] text-xs font-medium text-[var(--foreground)]"
+                className="h-8 px-3 rounded-md border border-[var(--border)] bg-[var(--card)] text-base sm:text-xs font-medium text-[var(--foreground)]"
               >
                 <option value="all">All Mistakes ({initialMistakes.length})</option>
                 <option value="conceptual">Conceptual</option>
@@ -371,7 +371,7 @@ export function RevisionHubClient({ initialSaved, initialMistakes }: RevisionHub
                 type="button"
                 onClick={() => handleStartRetest(filteredMistakes.map((m) => m.question.id))}
                 disabled={isStartingDrill}
-                className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity cursor-pointer"
+                className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity cursor-pointer mm-btn-press shrink-0"
               >
                 <Play className="w-3 h-3 fill-current" />
                 <span>
@@ -428,7 +428,7 @@ export function RevisionHubClient({ initialSaved, initialMistakes }: RevisionHub
                         <button
                           type="button"
                           onClick={() => handleStartRetest([q.id])}
-                          className="inline-flex items-center gap-1 h-8 px-3 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1 h-8 px-3 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] hover:border-[var(--border-strong)] text-[var(--foreground)] transition-all cursor-pointer mm-btn-press"
                         >
                           <RotateCcw className="w-3 h-3" />
                           <span>Practice</span>
@@ -437,7 +437,7 @@ export function RevisionHubClient({ initialSaved, initialMistakes }: RevisionHub
                         <button
                           type="button"
                           onClick={() => setExpandedQuestionId(isExpanded ? null : q.id)}
-                          className="inline-flex items-center gap-1 h-8 px-3 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1 h-8 px-3 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] hover:border-[var(--border-strong)] text-[var(--foreground)] transition-all cursor-pointer mm-btn-press"
                         >
                           <span>{isExpanded ? "Hide" : "Review"}</span>
                           {isExpanded ? (
@@ -518,7 +518,7 @@ export function RevisionHubClient({ initialSaved, initialMistakes }: RevisionHub
                   type="button"
                   onClick={() => handleStartRetest(wt.questionIds)}
                   disabled={isStartingDrill}
-                  className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity shrink-0 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity shrink-0 cursor-pointer mm-btn-press"
                 >
                   <RotateCcw className="w-3 h-3" />
                   <span>Practice ({wt.count})</span>

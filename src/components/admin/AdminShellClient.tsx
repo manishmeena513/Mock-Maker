@@ -103,7 +103,7 @@ export function AdminShellClient({ children }: { children: React.ReactNode }) {
             <ModeToggle />
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] transition"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] transition mm-btn-press"
             >
               <span>Student Workspace</span>
               <ArrowUpRight className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
@@ -113,7 +113,7 @@ export function AdminShellClient({ children }: { children: React.ReactNode }) {
               onClick={handleAdminLogout}
               disabled={isLoggingOut}
               data-testid="admin-logout-button"
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-xs font-medium border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-xs font-medium border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition cursor-pointer disabled:opacity-50 mm-btn-press"
             >
               {isLoggingOut ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -130,7 +130,7 @@ export function AdminShellClient({ children }: { children: React.ReactNode }) {
 
       {/* Secondary Navigation Bar */}
       <div className="bg-[var(--card)] border-b border-[var(--border)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1 overflow-x-auto h-11 text-xs font-medium">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1 overflow-x-auto touch-scroll h-11 text-xs font-medium">
           {ADMIN_NAV.map((item) => {
             const Icon = item.icon;
             const baseHref = item.href.split("?")[0];
@@ -142,7 +142,7 @@ export function AdminShellClient({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition whitespace-nowrap mm-btn-press ${
                   isActive
                     ? "bg-[var(--muted)] text-[var(--foreground)] font-semibold"
                     : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]/50"
@@ -157,7 +157,7 @@ export function AdminShellClient({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
         {children}
       </main>
     </div>

@@ -1116,12 +1116,55 @@ export interface UserMistakeItem {
 
 export async function getUserMistakes(userId: string = "default-user"): Promise<UserMistakeItem[]> {
   const mistakes: UserMistakeItem[] = [];
+  const seenIds = new Set<string>();
+
+  if (isSupabaseConfigured() && /^[0-9a-f-]{36}$/i.test(userId)) {
+    try {
+      const supabase = await createClient();
+      const { data: dbTests } = await supabase
+        .from("mock_tests")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("status", "completed")
+        .order("created_at", { ascending: false });
+
+      if (dbTests && dbTests.length > 0) {
+        const testIds = dbTests.map((t) => t.id);
+        const { data: dbQuestions } = await supabase
+          .from("mock_questions")
+          .select("*, question:questions(*)")
+          .in("mock_test_id", testIds)
+          .eq("is_correct", false)
+          .not("user_answer", "is", null);
+
+        if (dbQuestions) {
+          for (const mq of dbQuestions as MockQuestion[]) {
+            if (mq.user_answer && !mq.is_correct && mq.question) {
+              seenIds.add(mq.id);
+              mistakes.push({
+                id: mq.id,
+                mockTestId: mq.mock_test_id,
+                orderIndex: mq.order_index,
+                question: mq.question,
+                userAnswer: mq.user_answer,
+                mistakeCategory: mq.mistake_category || "conceptual",
+                answeredAt: mq.answered_at,
+              });
+            }
+          }
+        }
+      }
+    } catch {
+      // fallback to inMemory
+    }
+  }
 
   for (const [testId, qList] of inMemoryMockQuestions.entries()) {
     const test = inMemoryMockTests.get(testId);
-    if (test && test.status === "completed" && (test.user_id === userId || userId === "default-user")) {
+    if (test && test.status === "completed" && test.user_id === userId) {
       qList.forEach((mq) => {
-        if (mq.user_answer && !mq.is_correct && mq.question) {
+        if (mq.user_answer && !mq.is_correct && mq.question && !seenIds.has(mq.id)) {
+          seenIds.add(mq.id);
           mistakes.push({
             id: mq.id,
             mockTestId: testId,

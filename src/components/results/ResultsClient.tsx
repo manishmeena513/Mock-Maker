@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -43,6 +43,16 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
   const [mistakeFilter, setMistakeFilter] = useState<string>("all");
   const [questionList, setQuestionsList] = useState<MockQuestion[]>(questions);
   const [isRetesting, startRetestTransition] = useTransition();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedQuestionIndex !== null) {
+        setSelectedQuestionIndex(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedQuestionIndex]);
 
   // Compute metrics
   const totalQuestions = questionList.length;
@@ -240,7 +250,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
     selectedQuestionIndex !== null ? questionList[selectedQuestionIndex] : null;
 
   return (
-    <div className="max-w-[1140px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="mm-container py-8 sm:py-10 space-y-8 animate-editorial">
       {/* Editorial Report Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-[var(--border)]">
         <div>
@@ -248,10 +258,10 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
             <span>Evaluation Dossier • {mockTest.mode.toUpperCase()} Mode</span>
           </div>
-          <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--foreground)]">
+          <h1 className="font-display text-fluid-h1 font-semibold tracking-tight text-[var(--foreground)]">
             Performance &amp; Diagnostic Report
           </h1>
-          <p className="text-sm text-[var(--muted-foreground)] mt-1">
+          <p className="text-xs sm:text-sm text-[var(--muted-foreground)] mt-1">
             Evaluated under official marking rules (+{scheme.correct} correct, {scheme.wrong} negative marking).
           </p>
         </div>
@@ -262,7 +272,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
               type="button"
               onClick={() => handleRetestMistakes()}
               disabled={isRetesting}
-              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity cursor-pointer"
+              className="mm-btn-press inline-flex items-center gap-1.5 h-9 px-4 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>
@@ -273,26 +283,26 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
 
           <Link
             href="/mock/configure"
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors"
+            className="mm-btn-press inline-flex items-center gap-1.5 h-9 px-4 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors"
           >
             <span>New Mock</span>
           </Link>
         </div>
       </div>
 
-      {/* TOP INLINE SUMMARY STRIP: Score | Accuracy | Correct | Incorrect | Unattempted */}
-      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] overflow-hidden">
+      {/* TOP INLINE SUMMARY STRIP */}
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] overflow-hidden shadow-xs">
         <div className="grid grid-cols-2 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border)]">
           {/* Score */}
-          <div className="p-5 col-span-2 sm:col-span-1">
+          <div className="p-4 sm:p-5 col-span-2 sm:col-span-1">
             <div className="text-[11px] font-mono uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
               Net Score
             </div>
             <div className="mt-2 flex items-baseline gap-1.5">
-              <span className="text-2xl sm:text-3xl font-mono font-semibold text-[var(--foreground)]">
+              <span className="text-2xl sm:text-3xl font-mono font-semibold text-[var(--foreground)] tabular-nums">
                 {roundedScore}
               </span>
-              <span className="text-xs font-mono text-[var(--muted-foreground)]">
+              <span className="text-xs font-mono text-[var(--muted-foreground)] tabular-nums">
                 / {maxPossibleScore}
               </span>
             </div>
@@ -302,11 +312,11 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
           </div>
 
           {/* Accuracy */}
-          <div className="p-5">
+          <div className="p-4 sm:p-5">
             <div className="text-[11px] font-mono uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
               Accuracy
             </div>
-            <div className="mt-2 text-2xl sm:text-3xl font-mono font-semibold text-[var(--accent)]">
+            <div className="mt-2 text-2xl sm:text-3xl font-mono font-semibold text-[var(--accent)] tabular-nums">
               {accuracy}%
             </div>
             <div className="mt-1 text-[11px] text-[var(--muted-foreground)]">
@@ -315,11 +325,11 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
           </div>
 
           {/* Correct */}
-          <div className="p-5">
+          <div className="p-4 sm:p-5">
             <div className="text-[11px] font-mono uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
               Correct
             </div>
-            <div className="mt-2 text-2xl sm:text-3xl font-mono font-semibold text-[var(--sage)]">
+            <div className="mt-2 text-2xl sm:text-3xl font-mono font-semibold text-[var(--sage)] tabular-nums">
               {correctCount}
             </div>
             <div className="mt-1 text-[11px] font-mono text-[var(--sage)]">
@@ -328,11 +338,11 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
           </div>
 
           {/* Incorrect */}
-          <div className="p-5">
+          <div className="p-4 sm:p-5">
             <div className="text-[11px] font-mono uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
               Incorrect
             </div>
-            <div className="mt-2 text-2xl sm:text-3xl font-mono font-semibold text-rose-600 dark:text-rose-400">
+            <div className="mt-2 text-2xl sm:text-3xl font-mono font-semibold text-rose-600 dark:text-rose-400 tabular-nums">
               {wrongCount}
             </div>
             <div className="mt-1 text-[11px] font-mono text-rose-600 dark:text-rose-400">
@@ -341,11 +351,11 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
           </div>
 
           {/* Unattempted */}
-          <div className="p-5">
+          <div className="p-4 sm:p-5">
             <div className="text-[11px] font-mono uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
               Unattempted
             </div>
-            <div className="mt-2 text-2xl sm:text-3xl font-mono font-semibold text-[var(--foreground)]">
+            <div className="mt-2 text-2xl sm:text-3xl font-mono font-semibold text-[var(--foreground)] tabular-nums">
               {unattemptedCount}
             </div>
             <div className="mt-1 text-[11px] text-[var(--muted-foreground)]">
@@ -358,19 +368,19 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
         <div className="h-1.5 w-full bg-[var(--muted)] flex">
           <div
             style={{ width: `${(correctCount / Math.max(1, totalQuestions)) * 100}%` }}
-            className="bg-[var(--sage)] h-full"
+            className="bg-[var(--sage)] h-full transition-all duration-300"
             title={`Correct: ${correctCount}`}
           />
           <div
             style={{ width: `${(wrongCount / Math.max(1, totalQuestions)) * 100}%` }}
-            className="bg-rose-600 dark:bg-rose-500 h-full"
+            className="bg-rose-600 dark:bg-rose-500 h-full transition-all duration-300"
             title={`Incorrect: ${wrongCount}`}
           />
         </div>
       </div>
 
       {/* Progressive Disclosure Tabs */}
-      <div className="flex border-b border-[var(--border)] overflow-x-auto gap-6">
+      <div className="flex border-b border-[var(--border)] overflow-x-auto touch-scroll gap-6">
         {[
           { id: "overview", label: "Overview & PYQ vs Model" },
           { id: "subjects", label: `Subject Breakdown (${subjectList.length})` },
@@ -397,9 +407,9 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
       {activeTab === "overview" && (
         <div className="space-y-6 animate-editorial">
           {/* PYQ vs Model Comparative Split */}
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] divide-y md:divide-y-0 md:divide-x divide-[var(--border)] grid grid-cols-1 md:grid-cols-2">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] divide-y md:divide-y-0 md:divide-x divide-[var(--border)] grid grid-cols-1 md:grid-cols-2 shadow-xs">
             {/* Verified PYQ Pool */}
-            <div className="p-6 space-y-4">
+            <div className="p-5 sm:p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[var(--sage)]" />
@@ -449,7 +459,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
             </div>
 
             {/* Model Question Pool */}
-            <div className="p-6 space-y-4">
+            <div className="p-5 sm:p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[var(--plum)]" />
@@ -501,20 +511,20 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
 
           {/* Recommended Revision Strip */}
           {weakTopics.length > 0 && (
-            <div className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-muted)] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="rounded-lg border border-[var(--accent-border)] bg-[var(--accent-soft)] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.12em] text-[var(--accent)]">
+                <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-[0.12em] text-[var(--accent)] font-semibold">
                   <TrendingDown className="w-3.5 h-3.5" />
                   <span>Recommended Revision ({weakTopics.length} Priority Weak Topics)</span>
                 </div>
-                <p className="text-xs text-[var(--foreground)]">
+                <p className="text-xs text-[var(--foreground)] leading-relaxed">
                   {weakTopics.map((t) => t.name).join(" • ")}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setActiveTab("topics")}
-                className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-md text-xs font-medium bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] shrink-0 cursor-pointer"
+                className="mm-btn-press inline-flex items-center gap-1.5 h-8 px-3.5 rounded-md text-xs font-medium bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] hover:border-[var(--accent-border)] shrink-0 cursor-pointer"
               >
                 <span>Inspect Topics</span>
                 <ArrowRight className="w-3 h-3" />
@@ -523,7 +533,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
           )}
 
           {/* Question-by-Question Solution Matrix */}
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 space-y-4">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 sm:p-6 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h3 className="text-sm font-semibold text-[var(--foreground)]">
@@ -533,7 +543,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
                   Select any question number to inspect options, your response, and structured reasoning.
                 </p>
               </div>
-              <div className="flex items-center gap-4 text-[11px] text-[var(--muted-foreground)]">
+              <div className="flex flex-wrap items-center gap-4 text-[11px] text-[var(--muted-foreground)]">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-xs bg-[var(--sage)]" /> Correct ({avgTimeCorrect}s avg)
                 </span>
@@ -546,10 +556,10 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-5 sm:grid-cols-10 md:grid-cols-12 gap-2">
+            <div className="grid grid-cols-5 sm:grid-cols-10 md:grid-cols-12 xl:grid-cols-16 gap-2">
               {questionList.map((mq, idx) => {
                 let badgeClass =
-                  "bg-[var(--background)] text-[var(--muted-foreground)] border-[var(--border)]";
+                  "bg-[var(--background)] text-[var(--muted-foreground)] border-[var(--border)] hover:border-[var(--border-strong)]";
 
                 if (mq.user_answer) {
                   if (mq.is_correct) {
@@ -564,7 +574,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
                     key={mq.id}
                     type="button"
                     onClick={() => setSelectedQuestionIndex(idx)}
-                    className={`h-9 rounded-md border font-mono text-xs font-medium flex items-center justify-center transition-opacity hover:opacity-90 cursor-pointer ${badgeClass}`}
+                    className={`mm-btn-press h-9 rounded-md border font-mono text-xs font-medium flex items-center justify-center cursor-pointer tabular-nums ${badgeClass}`}
                   >
                     {idx + 1}
                   </button>
@@ -578,7 +588,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
       {/* SECTION 2: SUBJECT BREAKDOWN */}
       {activeTab === "subjects" && (
         <div className="space-y-6 animate-editorial">
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 space-y-4">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 sm:p-6 space-y-4">
             <div>
               <h3 className="text-sm font-semibold text-[var(--foreground)]">
                 Subject Accuracy &amp; Net Marks
@@ -592,8 +602,8 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
               {subjectList.map((sub) => (
                 <div key={sub.id} className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-[var(--foreground)]">{sub.name}</span>
-                    <span className="font-mono text-[var(--muted-foreground)]">
+                    <span className="font-medium text-[var(--foreground)] truncate">{sub.name}</span>
+                    <span className="font-mono text-[var(--muted-foreground)] shrink-0 ml-2">
                       <strong className="text-[var(--foreground)]">{sub.accuracy}%</strong> ({sub.correct}/{sub.attempted} correct • Net:{" "}
                       {sub.score > 0 ? `+${sub.score}` : sub.score})
                     </span>
@@ -616,8 +626,8 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
           </div>
 
           <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            <div className="overflow-x-auto touch-scroll">
+              <table className="w-full text-left text-xs min-w-[560px]">
                 <thead className="bg-[var(--muted)]/60 text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)] border-b border-[var(--border)]">
                   <tr>
                     <th className="py-3.5 px-5">Subject</th>
@@ -710,9 +720,9 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
                 <span
                   className={`text-[10px] font-mono uppercase tracking-wider px-2.5 py-1 rounded border ${
                     top.status === "Strong"
-                      ? "bg-[var(--sage-muted)] text-[var(--sage)] border-[var(--sage)]/30"
+                      ? "bg-[var(--sage-soft)] text-[var(--sage)] border-[var(--sage-border)]"
                       : top.status === "Needs Revision"
-                      ? "bg-[var(--accent-muted)] text-[var(--accent)] border-[var(--accent)]/30"
+                      ? "bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent-border)]"
                       : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30"
                   }`}
                 >
@@ -759,7 +769,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
           </div>
 
           {filteredMistakes.length === 0 ? (
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-12 text-center">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-12 text-center animate-fade-in">
               <CheckCircle2 className="w-8 h-8 text-[var(--sage)] mx-auto mb-3" />
               <div className="font-semibold text-sm text-[var(--foreground)]">
                 No mistakes recorded in this filter
@@ -769,11 +779,11 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
               </p>
             </div>
           ) : (
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] divide-y divide-[var(--border)]">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] divide-y divide-[var(--border)] animate-fade-in">
               {filteredMistakes.map((mq) => {
                 const currentCat = (mq.mistake_category || "conceptual") as MistakeCategory;
                 return (
-                  <div key={mq.id} className="p-6 space-y-4">
+                  <div key={mq.id} className="p-5 sm:p-6 space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5">
                         <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-[var(--muted)] text-[var(--foreground)]">
@@ -798,7 +808,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
                               e.target.value as MistakeCategory
                             )
                           }
-                          className="h-8 px-2.5 rounded-md border border-[var(--accent)]/40 bg-[var(--accent-muted)] text-[var(--accent)] text-xs font-medium"
+                          className="h-8 px-2.5 rounded-md border border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent)] text-xs font-medium"
                         >
                           <option value="conceptual">Conceptual Mistake</option>
                           <option value="factual">Factual Mistake</option>
@@ -811,7 +821,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
                       </div>
                     </div>
 
-                    <p className="text-sm sm:text-base text-[var(--foreground)] leading-relaxed">
+                    <p className="text-sm sm:text-base text-[var(--foreground)] leading-relaxed break-words">
                       {mq.question?.question_text}
                     </p>
 
@@ -839,7 +849,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
         </div>
       )}
 
-      {/* SECTION 5: QUESTION REVIEW (COMPACT EXPANDABLE ROWS) */}
+      {/* SECTION 5: QUESTION REVIEW */}
       {activeTab === "review" && (
         <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] divide-y divide-[var(--border)] animate-editorial">
           {questionList.map((mq, idx) => {
@@ -866,14 +876,14 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
                           !mq.user_answer
                             ? "bg-[var(--muted)] text-[var(--muted-foreground)]"
                             : mq.is_correct
-                            ? "bg-[var(--sage-muted)] text-[var(--sage)]"
-                            : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                            ? "bg-[var(--sage-soft)] text-[var(--sage)] border border-[var(--sage-border)]"
+                            : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25"
                         }`}
                       >
                         {statusLabel}
                       </span>
                     </div>
-                    <p className="text-sm text-[var(--foreground)] leading-relaxed">
+                    <p className="text-sm text-[var(--foreground)] leading-relaxed break-words">
                       {q.question_text}
                     </p>
                   </div>
@@ -883,7 +893,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
                     <button
                       type="button"
                       onClick={() => setExpandedReviewId(isExpanded ? null : mq.id)}
-                      className="inline-flex items-center gap-1 h-8 px-3 rounded-md border border-[var(--border)] bg-[var(--background)] text-xs font-medium text-[var(--foreground)] cursor-pointer"
+                      className="mm-btn-press inline-flex items-center gap-1 h-8 px-3 rounded-md border border-[var(--border)] bg-[var(--background)] text-xs font-medium text-[var(--foreground)] cursor-pointer"
                     >
                       <span>{isExpanded ? "Hide" : "Inspect"}</span>
                       {isExpanded ? (
@@ -924,9 +934,12 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedQuestionIndex(null);
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4 overflow-y-auto animate-fade-in"
         >
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg max-w-2xl w-full p-6 shadow-xl my-8 max-h-[90vh] overflow-y-auto">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg max-w-2xl w-full p-5 sm:p-6 shadow-xl my-8 max-h-[90vh] overflow-y-auto touch-scroll animate-scale-in">
             <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
               <div className="flex items-center gap-2.5">
                 <span className="font-mono font-semibold text-xs px-2 py-0.5 rounded bg-[var(--muted)] text-[var(--foreground)]">
@@ -941,7 +954,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
               <button
                 type="button"
                 onClick={() => setSelectedQuestionIndex(null)}
-                className="p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]"
+                className="mm-btn-press p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] cursor-pointer"
                 aria-label="Close modal"
               >
                 <X className="w-4 h-4" />
@@ -949,7 +962,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
             </div>
 
             <div className="py-4 space-y-4">
-              <p className="text-base text-[var(--foreground)] whitespace-pre-line leading-relaxed">
+              <p className="text-sm sm:text-base text-[var(--foreground)] whitespace-pre-line leading-relaxed break-words">
                 {activeReviewQuestion.question.question_text}
               </p>
 
@@ -971,7 +984,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
                     "border-[var(--border)] bg-[var(--background)] text-[var(--foreground)]";
                   if (isRight) {
                     rowClass =
-                      "border-[var(--sage)] bg-[var(--sage-muted)] text-[var(--foreground)] font-medium";
+                      "border-[var(--sage-border)] bg-[var(--sage-soft)] text-[var(--foreground)] font-medium";
                   } else if (isChosen && !isRight) {
                     rowClass =
                       "border-rose-500/50 bg-rose-500/10 text-[var(--foreground)] font-medium";
@@ -982,7 +995,7 @@ export function ResultsClient({ mockTest, questions }: ResultsClientProps) {
                       key={opt}
                       className={`p-3 rounded-md border text-xs sm:text-sm flex items-start justify-between gap-3 ${rowClass}`}
                     >
-                      <div className="flex items-start gap-2.5">
+                      <div className="flex items-start gap-2.5 break-words min-w-0">
                         <span className="font-mono font-semibold">{opt}.</span>
                         <span>{optText}</span>
                       </div>

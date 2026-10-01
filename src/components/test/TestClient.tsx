@@ -36,7 +36,10 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
   const [isSubmittingTest, startSubmitTransition] = useTransition();
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
   const [showSubmitModal, setShowSubmitModal] = useState<boolean>(false);
-  const [paletteOpen, setPaletteOpen] = useState<boolean>(false);
+  // Desktop (lg+): side panel open by default so laptop/desktop users have full exam navigation
+  const [desktopPaletteOpen, setDesktopPaletteOpen] = useState<boolean>(true);
+  // Mobile/Tablet (<lg): bottom sheet drawer closed by default so it never blocks question content
+  const [mobilePaletteOpen, setMobilePaletteOpen] = useState<boolean>(false);
   const { setExamContext, toggleAssistant, isOpen: isAIOpen } = useAIAssistant();
 
   const storageKey = `mockmaster_answers_${mockTest.id}`;
@@ -65,6 +68,17 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
       // ignore local storage read errors
     }
   }, [storageKey]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (showSubmitModal) setShowSubmitModal(false);
+        if (mobilePaletteOpen) setMobilePaletteOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showSubmitModal, mobilePaletteOpen]);
 
   const currentMockQuestion = questions[currentIndex];
   const q = currentMockQuestion?.question;
@@ -187,6 +201,14 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
     }
   };
 
+  const handlePaletteToggle = () => {
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+      setDesktopPaletteOpen((prev) => !prev);
+    } else {
+      setMobilePaletteOpen((prev) => !prev);
+    }
+  };
+
   if (!q) {
     return (
       <div className="min-h-screen flex items-center justify-center p-8 text-center text-xs text-[var(--muted-foreground)]">
@@ -198,29 +220,30 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
   const answeredCount = questions.filter((item) => item.user_answer).length;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--background)] text-[var(--foreground)]">
+    <div className="min-h-dvh-safe flex flex-col bg-[var(--background)] text-[var(--foreground)]">
       {/* Section 11: Minimal Top Examination Bar */}
-      <header className="sticky top-0 z-30 h-14 bg-[var(--background)]/95 backdrop-blur-md border-b border-[var(--border)]">
-        <div className="max-w-[1320px] mx-auto px-4 sm:px-6 h-full flex items-center justify-between gap-3">
+      <header className="sticky top-0 z-30 h-14 backdrop-glass border-b border-[var(--border)]">
+        <div className="mm-container h-full flex items-center justify-between gap-2 sm:gap-3">
           {/* Left: Brand Mark + Mode */}
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" title="Exit to Dashboard" className="focus:outline-none">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <Link href="/dashboard" title="Exit to Dashboard" className="focus:outline-none shrink-0">
               <BrandLogo variant="mark" size="sm" />
             </Link>
-            <span className="text-[11px] font-mono uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
+            <span className="text-[11px] font-mono uppercase tracking-[0.12em] text-[var(--muted-foreground)] hidden xs:inline truncate">
               {isPracticeMode ? "Practice Mode" : "Exam Mode"}
             </span>
           </div>
 
           {/* Center: Question Counter */}
-          <div className="font-mono text-xs sm:text-sm font-medium text-[var(--foreground)] tabular-nums">
-            <span className="text-[var(--muted-foreground)]">Question </span>
+          <div className="font-mono text-xs sm:text-sm font-medium text-[var(--foreground)] tabular-nums shrink-0">
+            <span className="text-[var(--muted-foreground)] hidden sm:inline">Question </span>
+            <span className="text-[var(--muted-foreground)] sm:hidden">Q</span>
             <span className="font-semibold text-[var(--accent)]">{currentIndex + 1}</span>
             <span className="text-[var(--muted-foreground)]"> / {questions.length}</span>
           </div>
 
           {/* Right: Timer, AI Assistant, Collapsible Palette Trigger & Submit */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <ExamTimer
               initialMinutes={mockTest.time_limit_minutes}
               startedAt={mockTest.started_at}
@@ -232,7 +255,7 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
               onClick={toggleAssistant}
               aria-label="Toggle AI Assistant"
               title="Ask MockMaster AI"
-              className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
+              className={`mm-btn-press inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium border cursor-pointer ${
                 isAIOpen
                   ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
                   : "border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:border-[var(--accent-border)]"
@@ -248,17 +271,17 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
 
             <button
               type="button"
-              onClick={() => setPaletteOpen((prev) => !prev)}
-              aria-expanded={paletteOpen}
+              onClick={handlePaletteToggle}
+              aria-expanded={desktopPaletteOpen || mobilePaletteOpen}
               aria-label="Toggle question palette"
-              className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
-                paletteOpen
+              className={`mm-btn-press inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium border cursor-pointer ${
+                mobilePaletteOpen
                   ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--foreground)]"
                   : "border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline font-mono text-[11px]">
+              <span className="font-mono text-[11px] tabular-nums">
                 {answeredCount}/{questions.length}
               </span>
             </button>
@@ -267,7 +290,7 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
               type="button"
               onClick={() => setShowSubmitModal(true)}
               disabled={hasSubmitted || isSubmittingTest}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
+              className="mm-btn-press inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50 cursor-pointer"
             >
               <span>{hasSubmitted ? "Submitting..." : "Submit"}</span>
             </button>
@@ -283,9 +306,9 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
       )}
 
       {/* Main Question-First Workspace */}
-      <div className="flex-1 max-w-[1320px] mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 flex flex-col lg:flex-row gap-8 items-start justify-center">
+      <div className="flex-1 mm-container py-6 sm:py-10 flex flex-col lg:flex-row gap-8 xl:gap-10 items-start justify-center">
         {/* Question Reading Canvas */}
-        <div className="w-full max-w-3xl mx-auto space-y-8">
+        <div key={q.id} className="w-full flex-1 max-w-3xl mx-auto space-y-6 sm:space-y-8 min-w-0 animate-fade-in">
           {/* Metadata Strip */}
           <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[var(--border)]">
             <div className="flex flex-wrap items-center gap-2">
@@ -311,7 +334,7 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
           </div>
 
           {/* Question Text */}
-          <div className="py-2">
+          <div className="py-1 sm:py-2">
             <div className="question-prose text-[var(--foreground)] whitespace-pre-line">
               {q.question_text}
             </div>
@@ -360,14 +383,14 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
                   role="radio"
                   aria-checked={isSelected}
                   onClick={() => handleSelectOption(optKey)}
-                  className={`w-full p-4 rounded-md border text-left flex items-start gap-3.5 transition-colors duration-100 cursor-pointer ${rowStyle}`}
+                  className={`mm-option-card w-full p-3.5 sm:p-4 rounded-lg border text-left flex items-start gap-3.5 cursor-pointer ${rowStyle}`}
                 >
                   <span
                     className={`w-6 h-6 rounded border font-mono text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5 transition-colors ${keyStyle}`}
                   >
                     {optKey}
                   </span>
-                  <span className="text-sm sm:text-[15px] leading-relaxed flex-1">
+                  <span className="text-sm sm:text-[15px] leading-relaxed flex-1 break-words min-w-0">
                     {optText}
                   </span>
                   {isPracticeMode && hasAnsweredCurrent && isCorrectOption && (
@@ -387,7 +410,7 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
 
           {/* Practice Mode Immediate Explanation */}
           {isPracticeMode && hasAnsweredCurrent && (
-            <div className="pt-4">
+            <div className="pt-2">
               <ExplanationPanel
                 explanation={q.explanation}
                 correctAnswer={q.correct_answer}
@@ -406,12 +429,12 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
           )}
 
           {/* Bottom Controls: Previous | Mark for review | Next */}
-          <div className="flex items-center justify-between gap-3 pt-6 border-t border-[var(--border)]">
+          <div className="flex items-center justify-between gap-2 sm:gap-3 pt-6 border-t border-[var(--border)] safe-pb">
             <button
               type="button"
               onClick={handlePrev}
               disabled={currentIndex === 0}
-              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+              className="mm-btn-press inline-flex items-center gap-1.5 h-10 sm:h-9 px-3.5 sm:px-4 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
               <span>Previous</span>
@@ -421,7 +444,7 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
               type="button"
               onClick={handleToggleReview}
               aria-pressed={currentMockQuestion.is_marked_for_review}
-              className={`inline-flex items-center gap-1.5 h-9 px-3.5 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
+              className={`mm-btn-press inline-flex items-center gap-1.5 h-10 sm:h-9 px-3 sm:px-3.5 rounded-md text-xs font-medium border cursor-pointer ${
                 currentMockQuestion.is_marked_for_review
                   ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--foreground)]"
                   : "border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
@@ -432,8 +455,11 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
                   currentMockQuestion.is_marked_for_review ? "fill-[var(--accent)] text-[var(--accent)]" : ""
                 }`}
               />
-              <span>
+              <span className="hidden xs:inline">
                 {currentMockQuestion.is_marked_for_review ? "Marked for review" : "Mark for review"}
+              </span>
+              <span className="xs:hidden">
+                {currentMockQuestion.is_marked_for_review ? "Reviewed" : "Review"}
               </span>
             </button>
 
@@ -441,7 +467,7 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
               <button
                 type="button"
                 onClick={handleNext}
-                className="inline-flex items-center gap-1.5 h-9 px-5 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity cursor-pointer"
+                className="mm-btn-press inline-flex items-center gap-1.5 h-10 sm:h-9 px-4 sm:px-5 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 cursor-pointer"
               >
                 <span>Next</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -451,7 +477,7 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
                 type="button"
                 onClick={() => setShowSubmitModal(true)}
                 disabled={hasSubmitted || isSubmittingTest}
-                className="inline-flex items-center gap-1.5 h-9 px-5 rounded-md text-xs font-medium bg-[var(--sage)] text-white hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
+                className="mm-btn-press inline-flex items-center gap-1.5 h-10 sm:h-9 px-4 sm:px-5 rounded-md text-xs font-medium bg-[var(--sage)] text-white hover:opacity-90 disabled:opacity-50 cursor-pointer"
               >
                 <CheckCircle className="w-3.5 h-3.5" />
                 <span>Finish &amp; Submit</span>
@@ -460,21 +486,9 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
           </div>
         </div>
 
-        {/* Collapsible Side Palette (Only rendered when toggled open) */}
-        {paletteOpen && (
-          <aside className="w-full lg:w-72 shrink-0 lg:sticky lg:top-20 animate-editorial">
-            <div className="flex items-center justify-between mb-2 lg:hidden">
-              <span className="text-xs font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
-                Question Palette
-              </span>
-              <button
-                type="button"
-                onClick={() => setPaletteOpen(false)}
-                className="p-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+        {/* Desktop Side Panel Question Palette (lg 1024px+ sticky right rail) */}
+        {desktopPaletteOpen && (
+          <aside className="hidden lg:block w-72 xl:w-80 shrink-0 lg:sticky lg:top-20 animate-editorial">
             <QuestionPalette
               questions={questions}
               currentIndex={currentIndex}
@@ -487,15 +501,63 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
         )}
       </div>
 
+      {/* Mobile & Tablet Question Palette Bottom Sheet / Drawer (< 1024px) */}
+      {mobilePaletteOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Question Palette Drawer"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setMobilePaletteOpen(false);
+          }}
+          className="fixed inset-0 z-40 lg:hidden bg-black/60 backdrop-blur-[2px] flex flex-col justify-end animate-fade-in"
+        >
+          <div className="bg-[var(--card)] border-t border-[var(--border)] rounded-t-2xl p-4 sm:p-5 shadow-2xl max-h-[82dvh] overflow-y-auto touch-scroll safe-pb animate-sheet-up">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--border)]">
+              <div>
+                <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                  Jump to Question
+                </h3>
+                <p className="text-[11px] text-[var(--muted-foreground)]">
+                  Tap any number to jump directly ({answeredCount} of {questions.length} answered)
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobilePaletteOpen(false)}
+                aria-label="Close question palette"
+                className="mm-btn-press p-1.5 rounded-md border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <QuestionPalette
+              questions={questions}
+              currentIndex={currentIndex}
+              mode={mockTest.mode}
+              className="border-0 p-0"
+              onSelectIndex={(idx) => {
+                setCurrentIndex(idx);
+                setMobilePaletteOpen(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Submit Confirmation Modal */}
       {showSubmitModal && (
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="submit-modal-title"
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowSubmitModal(false);
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4 animate-fade-in"
         >
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg max-w-md w-full p-6 shadow-xl space-y-5 animate-editorial">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg max-w-md w-full p-6 shadow-xl space-y-5 animate-scale-in">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-md bg-[var(--accent-soft)] border border-[var(--accent-border)] flex items-center justify-center text-[var(--accent)] shrink-0">
                 <AlertTriangle className="w-4 h-4" />
@@ -512,7 +574,7 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
 
             <div className="grid grid-cols-3 gap-2 p-3.5 rounded-md bg-[var(--background)] border border-[var(--border)] text-center">
               <div>
-                <div className="text-lg font-mono font-semibold text-[var(--foreground)]">
+                <div className="text-lg font-mono font-semibold text-[var(--foreground)] tabular-nums">
                   {answeredCount}
                 </div>
                 <div className="text-[10px] font-mono uppercase text-[var(--muted-foreground)]">
@@ -520,7 +582,7 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
                 </div>
               </div>
               <div className="border-x border-[var(--border)]">
-                <div className="text-lg font-mono font-semibold text-[var(--muted-foreground)]">
+                <div className="text-lg font-mono font-semibold text-[var(--muted-foreground)] tabular-nums">
                   {questions.length - answeredCount}
                 </div>
                 <div className="text-[10px] font-mono uppercase text-[var(--muted-foreground)]">
@@ -528,7 +590,7 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
                 </div>
               </div>
               <div>
-                <div className="text-lg font-mono font-semibold text-[var(--accent)]">
+                <div className="text-lg font-mono font-semibold text-[var(--accent)] tabular-nums">
                   {questions.filter((item) => item.is_marked_for_review).length}
                 </div>
                 <div className="text-[10px] font-mono uppercase text-[var(--muted-foreground)]">
@@ -541,7 +603,7 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
               <button
                 type="button"
                 onClick={() => setShowSubmitModal(false)}
-                className="h-9 px-4 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors cursor-pointer"
+                className="mm-btn-press h-9 px-4 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] cursor-pointer"
               >
                 Return to Paper
               </button>
@@ -549,7 +611,7 @@ export function TestClient({ mockTest, initialQuestions }: TestClientProps) {
                 type="button"
                 disabled={hasSubmitted || isSubmittingTest}
                 onClick={handleFinalizeMock}
-                className="h-9 px-5 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
+                className="mm-btn-press h-9 px-5 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50 cursor-pointer"
               >
                 {hasSubmitted || isSubmittingTest ? "Scoring..." : "Confirm & Submit"}
               </button>

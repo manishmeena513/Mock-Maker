@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAIProvider, AIAssistantChatRequestSchema } from "@/lib/ai";
 import { GeminiServiceError, getConfiguredGeminiModel } from "@/lib/ai/providers/gemini";
-import { createClient } from "@/lib/supabase/server";
+import { getVerifiedServerUser } from "@/lib/auth/server";
 import { canUserSendAIChatMessage } from "@/lib/plans/limits";
 import { recordAIAssistantUsageLog } from "@/lib/db";
 import { aiChatLimiter } from "@/lib/security/rateLimit";
@@ -31,36 +31,15 @@ async function resolveAuthenticatedUser(req: NextRequest): Promise<{
     }
   }
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const isSupabaseConfigured = Boolean(
-    url &&
-      key &&
-      url !== "https://mockmaster.supabase.co" &&
-      !key.includes("placeholder") &&
-      !key.includes("mock-")
-  );
-
-  if (isSupabaseConfigured) {
-    try {
-      const supabase = await createClient();
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
-      if (error || !user) {
-        return {
-          authenticated: false,
-          error: "Authentication required. Please sign in to use MockMaster AI Assistant.",
-        };
-      }
-      return { authenticated: true, userId: user.id };
-    } catch {
+  const verified = await getVerifiedServerUser();
+  if (verified.isSupabaseConfigured) {
+    if (!verified.authenticated || !verified.userId) {
       return {
         authenticated: false,
-        error: "Authentication session could not be verified.",
+        error: "Authentication required. Please sign in to use MockMaster AI Assistant.",
       };
     }
+    return { authenticated: true, userId: verified.userId };
   }
 
   return { authenticated: true, userId: "default-user" };
@@ -78,15 +57,22 @@ export async function GET(req: NextRequest) {
 
   const quota = await canUserSendAIChatMessage(auth.userId);
   return withRequestIdHeaders(
-    NextResponse.json({
-      success: true,
-      usage: {
-        used: quota.currentCount,
-        limit: quota.maxAllowed,
-        remaining: quota.remaining,
-        tier: quota.tier,
+    NextResponse.json(
+      {
+        success: true,
+        usage: {
+          used: quota.currentCount,
+          limit: quota.maxAllowed,
+          remaining: quota.remaining,
+          tier: quota.tier,
+        },
       },
-    }),
+      {
+        headers: {
+          "Cache-Control": "private, no-store, no-cache, must-revalidate",
+        },
+      }
+    ),
     requestId
   );
 }
@@ -253,6 +239,7 @@ export async function POST(req: NextRequest) {
     const errorCode = isGeminiErr ? err.statusCode : 503;
     const modelAttempted = isGeminiErr ? err.model : configuredModel;
     const isTimeout = isGeminiErr ? err.isTimeout : false;
+    const upstreamMessage = isGeminiErr ? err.upstreamMessage : undefined;
     const userMessage =
       isGeminiErr && err.message
         ? err.message
@@ -267,6 +254,7 @@ export async function POST(req: NextRequest) {
       errorCategory,
       errorCode,
       timeout: isTimeout,
+      upstreamMessage,
       userId: redactUserId(userId),
     });
 
@@ -290,6 +278,12 @@ export async function POST(req: NextRequest) {
           error: userMessage,
           errorCategory,
           requestId,
+          usage: {
+            used: quota.currentCount,
+            limit: quota.maxAllowed,
+            remaining: quota.remaining,
+            tier: quota.tier,
+          },
         },
         { status: 503 }
       ),

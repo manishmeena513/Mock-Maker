@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronUp,
   ArrowUpRight,
+  RotateCcw,
 } from "lucide-react";
 import { useAIAssistant } from "./AIAssistantContext";
 
@@ -24,7 +25,7 @@ function FormattedAIContent({ content }: { content: string }) {
   const blocks = content.split(/(```[\s\S]*?```)/g);
 
   return (
-    <div className="space-y-2.5 text-sm leading-relaxed text-foreground">
+    <div className="space-y-2.5 text-xs sm:text-sm leading-relaxed text-[var(--foreground)] break-words">
       {blocks.map((block, idx) => {
         if (block.startsWith("```") && block.endsWith("```")) {
           const lines = block.slice(3, -3).trim().split("\n");
@@ -34,7 +35,7 @@ function FormattedAIContent({ content }: { content: string }) {
           return (
             <pre
               key={idx}
-              className="overflow-x-auto rounded-lg border border-border bg-secondary/70 p-3 font-mono text-xs text-foreground"
+              className="max-w-full overflow-x-auto touch-scroll rounded-lg border border-[var(--border)] bg-[var(--background)] p-3 font-mono text-xs text-[var(--foreground)]"
             >
               <code>{codeContent}</code>
             </pre>
@@ -58,10 +59,10 @@ function FormattedAIContent({ content }: { content: string }) {
                     key={lineIdx}
                     className={`pt-2 first:pt-0 text-[11px] font-mono font-semibold uppercase tracking-wider ${
                       isAnswer
-                        ? "text-emerald-600 dark:text-emerald-400"
+                        ? "text-[var(--sage)]"
                         : isTakeaway
-                        ? "text-primary"
-                        : "text-muted-foreground"
+                        ? "text-[var(--accent)]"
+                        : "text-[var(--muted-foreground)]"
                     }`}
                   >
                     {label}:
@@ -73,7 +74,7 @@ function FormattedAIContent({ content }: { content: string }) {
                 return (
                   <h4
                     key={lineIdx}
-                    className="pt-1 font-display text-sm font-bold text-foreground"
+                    className="pt-1 font-display text-sm font-bold text-[var(--foreground)]"
                   >
                     {renderInlineMarkdown(trimmed.slice(4))}
                   </h4>
@@ -83,7 +84,7 @@ function FormattedAIContent({ content }: { content: string }) {
               if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
                 return (
                   <div key={lineIdx} className="flex items-start gap-2 pl-1">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent)]/70" />
                     <span className="flex-1">{renderInlineMarkdown(trimmed.slice(2))}</span>
                   </div>
                 );
@@ -94,7 +95,7 @@ function FormattedAIContent({ content }: { content: string }) {
                 if (match) {
                   return (
                     <div key={lineIdx} className="flex items-start gap-2 pl-1">
-                      <span className="font-mono text-xs font-semibold text-primary">
+                      <span className="font-mono text-xs font-semibold text-[var(--accent)]">
                         {match[1]}
                       </span>
                       <span className="flex-1">{renderInlineMarkdown(match[2])}</span>
@@ -117,7 +118,7 @@ function renderInlineMarkdown(text: string): React.ReactNode {
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
-        <strong key={i} className="font-semibold text-foreground">
+        <strong key={i} className="font-semibold text-[var(--foreground)]">
           {part.slice(2, -2)}
         </strong>
       );
@@ -126,7 +127,7 @@ function renderInlineMarkdown(text: string): React.ReactNode {
       return (
         <code
           key={i}
-          className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs text-primary"
+          className="rounded bg-[var(--muted)] px-1.5 py-0.5 font-mono text-xs text-[var(--accent)]"
         >
           {part.slice(1, -1)}
         </code>
@@ -153,15 +154,27 @@ export function AIAssistantDrawer() {
 
   const [input, setInput] = useState("");
   const [showQuestionPreview, setShowQuestionPreview] = useState(false);
+  const [lastUserMessage, setLastUserMessage] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setTimeout(() => inputRef.current?.focus(), 120);
     }
   }, [isOpen, messages.length, isGenerating]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        closeAssistant();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, closeAssistant]);
 
   if (!isOpen) return null;
 
@@ -169,8 +182,14 @@ export function AIAssistantDrawer() {
     if (e) e.preventDefault();
     if (!input.trim() || isGenerating) return;
     const msg = input.trim();
+    setLastUserMessage(msg);
     setInput("");
     await sendMessage(msg);
+  };
+
+  const handleRetryLast = () => {
+    if (!lastUserMessage || isGenerating) return;
+    sendMessage(lastUserMessage);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -204,48 +223,48 @@ export function AIAssistantDrawer() {
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity"
+        className="fixed inset-0 bg-black/50 backdrop-blur-[2px] animate-fade-in"
         onClick={closeAssistant}
         aria-hidden="true"
       />
 
-      {/* Drawer Panel */}
+      {/* Drawer Panel: Responsive width on laptop (480px) and desktop (520px) */}
       <aside
         role="dialog"
         aria-label="MockMaster AI Exam Preparation Assistant"
-        className="relative z-10 flex h-full w-full flex-col border-l border-border bg-card text-card-foreground shadow-2xl sm:max-w-[430px]"
+        className="relative z-10 flex h-full min-h-dvh-safe max-h-dvh-safe w-full flex-col border-l border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] shadow-2xl sm:max-w-[440px] lg:max-w-[480px] xl:max-w-[520px] animate-drawer-right"
       >
         {/* Drawer Header */}
-        <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/12 text-primary border border-primary/25">
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3.5 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent-border)] shrink-0">
               <Sparkles className="h-4 w-4" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="font-display text-sm font-bold tracking-tight text-foreground">
+                <h2 className="font-display text-sm font-bold tracking-tight text-[var(--foreground)]">
                   MockMaster AI
                 </h2>
                 {usage && (
-                  <span className="rounded border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+                  <span className="rounded border border-[var(--border)] bg-[var(--muted)] px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase text-[var(--muted-foreground)]">
                     {usage.tier} · {usage.remaining}/{usage.limit} left
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-[11px] text-[var(--muted-foreground)] truncate">
                 Exam Preparation Assistant
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
               onClick={clearConversation}
               disabled={messages.length === 0 && !isGenerating}
               title="Clear conversation"
               aria-label="Clear conversation"
-              className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-40"
+              className="mm-btn-press inline-flex h-8 items-center gap-1 rounded-md px-2 text-xs font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] disabled:opacity-40 cursor-pointer"
             >
               <Trash2 className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Clear</span>
@@ -255,7 +274,7 @@ export function AIAssistantDrawer() {
               onClick={closeAssistant}
               title="Close AI Assistant"
               aria-label="Close AI Assistant"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              className="mm-btn-press inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
@@ -264,22 +283,22 @@ export function AIAssistantDrawer() {
 
         {/* Active Exam / Question Context Bar */}
         {hasContext && (
-          <div className="border-b border-border bg-secondary/40 px-4 py-2.5">
+          <div className="border-b border-[var(--border)] bg-[var(--muted)]/40 px-4 py-2.5 shrink-0">
             <div className="flex items-center justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px] min-w-0">
+                <BookOpen className="h-3.5 w-3.5 text-[var(--accent)] shrink-0" />
                 {examContext?.exam && (
-                  <span className="rounded bg-primary/10 px-1.5 py-0.5 font-mono font-semibold text-primary">
+                  <span className="rounded bg-[var(--accent-soft)] px-1.5 py-0.5 font-mono font-semibold text-[var(--accent)]">
                     {examContext.exam}
                   </span>
                 )}
                 {examContext?.subject && (
-                  <span className="text-muted-foreground font-medium">
+                  <span className="text-[var(--muted-foreground)] font-medium truncate">
                     {examContext.subject}
                   </span>
                 )}
                 {examContext?.topic && (
-                  <span className="text-muted-foreground">
+                  <span className="text-[var(--muted-foreground)] truncate">
                     · {examContext.topic}
                   </span>
                 )}
@@ -288,7 +307,7 @@ export function AIAssistantDrawer() {
                 <button
                   type="button"
                   onClick={() => setShowQuestionPreview((v) => !v)}
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline shrink-0"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--accent)] hover:underline shrink-0 cursor-pointer"
                 >
                   <span>Active Question</span>
                   {showQuestionPreview ? (
@@ -301,18 +320,18 @@ export function AIAssistantDrawer() {
             </div>
 
             {examContext?.questionText && showQuestionPreview && (
-              <div className="mt-2 rounded-md border border-border bg-card p-2.5 text-xs text-muted-foreground space-y-1">
-                <p className="font-medium text-foreground line-clamp-3">
+              <div className="mt-2 rounded-md border border-[var(--border)] bg-[var(--card)] p-2.5 text-xs text-[var(--muted-foreground)] space-y-1 animate-editorial">
+                <p className="font-medium text-[var(--foreground)] line-clamp-3">
                   {examContext.questionText}
                 </p>
                 {examContext.userAnswer && (
                   <p className="font-mono text-[11px]">
-                    Selected Option: <strong className="text-foreground">{examContext.userAnswer}</strong>
+                    Selected Option: <strong className="text-[var(--foreground)]">{examContext.userAnswer}</strong>
                     {examContext.mode !== "exam" && examContext.correctAnswer && (
                       <>
                         {" "}
                         · Correct Option:{" "}
-                        <strong className="text-emerald-600 dark:text-emerald-400">
+                        <strong className="text-[var(--sage)]">
                           {examContext.correctAnswer}
                         </strong>
                       </>
@@ -325,19 +344,19 @@ export function AIAssistantDrawer() {
         )}
 
         {/* Messages Body */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto touch-scroll px-4 py-4 space-y-4">
           {messages.length === 0 ? (
-            <div className="space-y-4 py-2">
-              <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-2">
-                <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-primary font-semibold">
+            <div className="space-y-4 py-2 animate-editorial">
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--muted)]/30 p-4 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[var(--accent)] font-semibold">
                   <Lightbulb className="h-3.5 w-3.5" />
                   <span>Competitive Exam Mentor</span>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
                   Ask MockMaster AI to break down any MCQ, explain why each option (A/B/C/D) is right or wrong, teach elimination shortcuts, or build concise revision notes.
                 </p>
-                <div className="rounded-lg border border-border/70 bg-card p-2.5 text-[11px] font-mono text-muted-foreground space-y-0.5">
-                  <div className="text-foreground font-semibold">Structured MCQ Format:</div>
+                <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--card)] p-2.5 text-[11px] font-mono text-[var(--muted-foreground)] space-y-0.5">
+                  <div className="text-[var(--foreground)] font-semibold">Structured MCQ Format:</div>
                   <div>• Answer: [correct option]</div>
                   <div>• Why: [concise explanation]</div>
                   <div>• Why other options are incorrect: A / B / C / D</div>
@@ -346,7 +365,7 @@ export function AIAssistantDrawer() {
               </div>
 
               <div className="space-y-2">
-                <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                <p className="text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
                   Suggested Prompts
                 </p>
                 <div className="grid grid-cols-1 gap-1.5">
@@ -356,10 +375,10 @@ export function AIAssistantDrawer() {
                       type="button"
                       onClick={() => sendMessage(promptText)}
                       disabled={isGenerating}
-                      className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-left text-xs text-foreground transition-colors hover:border-primary/40 hover:bg-secondary/50"
+                      className="mm-btn-press flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-left text-xs text-[var(--foreground)] hover:border-[var(--accent)] hover:bg-[var(--muted)]/50 cursor-pointer"
                     >
-                      <span>{promptText}</span>
-                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground shrink-0 ml-2" />
+                      <span className="min-w-0 pr-2">{promptText}</span>
+                      <HelpCircle className="h-3.5 w-3.5 text-[var(--muted-foreground)] shrink-0" />
                     </button>
                   ))}
                 </div>
@@ -369,26 +388,26 @@ export function AIAssistantDrawer() {
             messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex flex-col ${
+                className={`flex flex-col animate-fade-in ${
                   msg.role === "user" ? "items-end" : "items-start"
                 }`}
               >
                 <div
                   className={`max-w-[92%] rounded-xl px-3.5 py-2.5 ${
                     msg.role === "user"
-                      ? "bg-primary text-primary-foreground text-sm"
-                      : "w-full border border-border bg-secondary/25 text-foreground"
+                      ? "bg-[var(--primary)] text-[var(--primary-foreground)] text-xs sm:text-sm"
+                      : "w-full border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]"
                   }`}
                 >
                   {msg.role === "user" ? (
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                    <p className="whitespace-pre-wrap text-xs sm:text-sm leading-relaxed break-words">
                       {msg.content}
                     </p>
                   ) : (
                     <FormattedAIContent content={msg.content} />
                   )}
                 </div>
-                <span className="mt-1 px-1 font-mono text-[10px] text-muted-foreground">
+                <span className="mt-1 px-1 font-mono text-[10px] text-[var(--muted-foreground)]">
                   {msg.role === "user" ? "You" : "MockMaster AI"}
                 </span>
               </div>
@@ -397,19 +416,19 @@ export function AIAssistantDrawer() {
 
           {/* Typing / Generation Indicator */}
           {isGenerating && (
-            <div className="flex items-center justify-between rounded-xl border border-border bg-secondary/30 px-3.5 py-2.5">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="flex gap-1">
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:-0.2s]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:-0.1s]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary" />
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--muted)]/40 px-3.5 py-2.5 animate-editorial">
+              <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)] min-w-0">
+                <span className="flex gap-1 shrink-0">
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--accent)] [animation-delay:-0.2s]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--accent)] [animation-delay:-0.1s]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--accent)]" />
                 </span>
-                <span>Analyzing exam context & formulating explanation...</span>
+                <span className="truncate">Formulating explanation...</span>
               </div>
               <button
                 type="button"
                 onClick={stopGeneration}
-                className="inline-flex items-center gap-1 rounded border border-border bg-card px-2 py-1 text-[11px] font-medium text-foreground hover:bg-secondary"
+                className="mm-btn-press inline-flex items-center gap-1 rounded border border-[var(--border)] bg-[var(--card)] px-2 py-1 text-[11px] font-medium text-[var(--foreground)] hover:bg-[var(--muted)] shrink-0 cursor-pointer"
               >
                 <Square className="h-2.5 w-2.5 fill-current" />
                 <span>Stop generation</span>
@@ -419,33 +438,43 @@ export function AIAssistantDrawer() {
 
           {/* Error / Quota Notice */}
           {error && (
-            <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive space-y-2">
+            <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-[var(--destructive)] space-y-2 animate-fade-in">
               <div className="flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span className="leading-relaxed">{error}</span>
+                <span className="leading-relaxed break-words">{error}</span>
               </div>
-              {quotaExceeded && (
-                <div className="pt-1">
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {lastUserMessage && !quotaExceeded && (
+                  <button
+                    type="button"
+                    onClick={handleRetryLast}
+                    className="mm-btn-press inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] text-xs font-medium cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Retry Request</span>
+                  </button>
+                )}
+                {quotaExceeded && (
                   <Link
                     href="/pricing"
                     onClick={closeAssistant}
-                    className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground hover:opacity-90"
+                    className="mm-btn-press inline-flex items-center gap-1 rounded-md bg-[var(--primary)] px-2.5 py-1 text-xs font-semibold text-[var(--primary-foreground)] hover:opacity-90"
                   >
                     <span>Upgrade Plan for Higher AI Quota</span>
                     <ArrowUpRight className="h-3.5 w-3.5" />
                   </Link>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
 
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Footer */}
+        {/* Input Footer with iOS/Android safe-area bottom support */}
         <form
           onSubmit={handleSend}
-          className="border-t border-border bg-card p-3 space-y-2"
+          className="border-t border-[var(--border)] bg-[var(--card)] p-3 space-y-2 safe-pb shrink-0"
         >
           <div className="relative flex items-end gap-2">
             <textarea
@@ -456,7 +485,7 @@ export function AIAssistantDrawer() {
               onKeyDown={handleKeyDown}
               placeholder="Ask anything about your exam..."
               maxLength={2000}
-              className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+              className="flex-1 resize-none rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-base sm:text-xs text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent)] focus:outline-none"
             />
             {isGenerating ? (
               <button
@@ -464,7 +493,7 @@ export function AIAssistantDrawer() {
                 onClick={stopGeneration}
                 title="Stop generation"
                 aria-label="Stop generation"
-                className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-destructive/40 bg-destructive/10 px-3 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/20 shrink-0"
+                className="mm-btn-press inline-flex h-10 items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 text-xs font-semibold text-rose-600 dark:text-rose-400 shrink-0 cursor-pointer"
               >
                 <Square className="h-3.5 w-3.5 fill-current" />
                 <span>Stop</span>
@@ -475,7 +504,7 @@ export function AIAssistantDrawer() {
                 disabled={!input.trim()}
                 title="Send message"
                 aria-label="Send message"
-                className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40 shrink-0"
+                className="mm-btn-press inline-flex h-10 items-center gap-1.5 rounded-lg bg-[var(--primary)] px-3.5 text-xs font-semibold text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-40 shrink-0 cursor-pointer"
               >
                 <Send className="h-3.5 w-3.5" />
                 <span>Send</span>
@@ -483,16 +512,16 @@ export function AIAssistantDrawer() {
             )}
           </div>
 
-          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+          <div className="flex items-center justify-between text-[10px] text-[var(--muted-foreground)]">
             <span className="flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+              <CheckCircle2 className="h-3 w-3 text-[var(--sage)]" />
               <span>Powered by Gemini · Exam-Aware Context</span>
             </span>
             <button
               type="button"
               onClick={clearConversation}
               disabled={messages.length === 0 && !isGenerating}
-              className="hover:text-foreground disabled:opacity-40"
+              className="hover:text-[var(--foreground)] disabled:opacity-40 cursor-pointer"
             >
               Clear conversation
             </button>

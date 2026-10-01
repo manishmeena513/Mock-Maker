@@ -1,29 +1,21 @@
 import React from "react";
+import { redirect } from "next/navigation";
 import { getUserAnalytics } from "@/lib/db";
 import { getUserPlanStatus } from "@/lib/plans";
-import { createClient } from "@/lib/supabase/server";
+import { getVerifiedServerUser } from "@/lib/auth/server";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 
-export default async function DashboardPage() {
-  let userId = "default-user";
-  let userName = "Aspirant";
+export const dynamic = "force-dynamic";
 
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user?.id) {
-      userId = user.id;
-      const metaName =
-        user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        user.email?.split("@")[0];
-      if (metaName) userName = String(metaName);
-    }
-  } catch {
-    // fallback to default-user in local demo mode
+export default async function DashboardPage() {
+  const verified = await getVerifiedServerUser();
+
+  if (verified.isSupabaseConfigured && (!verified.authenticated || !verified.userId)) {
+    redirect("/auth/login?redirectTo=%2Fdashboard");
   }
+
+  const userId = verified.userId || "default-user";
+  const userName = verified.name || "Aspirant";
 
   const [analytics, planStatus] = await Promise.all([
     getUserAnalytics(userId),

@@ -1,5 +1,6 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isRealSupabaseConfigured, sanitizeRedirectPath } from "@/lib/auth/url";
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -9,6 +10,13 @@ export async function middleware(request: NextRequest) {
   });
 
   const path = request.nextUrl.pathname;
+  const isCallbackRoute = path.startsWith("/auth/callback") || path.startsWith("/auth/confirm");
+
+  // Always let the dedicated callback route handlers execute without middleware interference
+  if (isCallbackRoute) {
+    return response;
+  }
+
   const isProtectedRoute =
     path.startsWith("/dashboard") ||
     path.startsWith("/revision") ||
@@ -23,18 +31,21 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
   // If using placeholder credentials in local dev, allow requests through
-  if (
-    !supabaseUrl ||
-    !supabaseKey ||
-    supabaseKey === "mock-anon-key-placeholder" ||
-    supabaseKey === "mock-anon-key"
-  ) {
+  if (!isRealSupabaseConfigured()) {
     return response;
   }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const pendingCookies: Array<{ name: string; value: string; options: CookieOptions }> = [];
+
+  const applyPendingCookies = (targetResponse: NextResponse): NextResponse => {
+    for (const { name, value, options } of pendingCookies) {
+      targetResponse.cookies.set(name, value, options);
+    }
+    return targetResponse;
+  };
 
   try {
     const supabase = createServerClient(supabaseUrl, supabaseKey, {
@@ -43,7 +54,8 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            pendingCookies.push({ name, value, options });
             request.cookies.set(name, value);
           });
           response = NextResponse.next({
@@ -62,21 +74,46 @@ export async function middleware(request: NextRequest) {
       },
     });
 
-    // IMPORTANT: Always call getUser() for secure JWT verification
+    // Fallback safety: if Supabase OAuth redirected to Site URL (e.g. "/?code=...") instead of "/auth/callback",
+    // exchange the PKCE authorization code on the server right here and redirect with cookies preserved.
+    const oauthCode = request.nextUrl.searchParams.get("code");
+    if (oauthCode && !path.startsWith("/api/")) {
+      const nextDest = sanitizeRedirectPath(
+        request.nextUrl.searchParams.get("next") ||
+          request.nextUrl.searchParams.get("redirectTo"),
+        "/dashboard"
+      );
+      const { error: codeError } = await supabase.auth.exchangeCodeForSession(oauthCode);
+      if (!codeError) {
+        const redirectRes = NextResponse.redirect(new URL(nextDest, request.url));
+        redirectRes.headers.set("Cache-Control", "private, no-store, no-cache, must-revalidate");
+        return applyPendingCookies(redirectRes);
+      }
+    }
+
+    // IMPORTANT: Always call getUser() for verified server-side JWT validation
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const isAuthRoute = path.startsWith("/auth");
+    const isGuestOnlyAuthPage = path === "/auth/login" || path === "/auth/signup";
 
     if (!user && isProtectedRoute) {
       const redirectUrl = new URL("/auth/login", request.url);
       redirectUrl.searchParams.set("redirectTo", path);
-      return NextResponse.redirect(redirectUrl);
+      const redirectRes = NextResponse.redirect(redirectUrl);
+      redirectRes.headers.set("Cache-Control", "private, no-store, no-cache, must-revalidate");
+      return applyPendingCookies(redirectRes);
     }
 
-    if (user && isAuthRoute) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+    if (user && isGuestOnlyAuthPage) {
+      const nextParam = sanitizeRedirectPath(
+        request.nextUrl.searchParams.get("redirectTo") ||
+          request.nextUrl.searchParams.get("next"),
+        "/dashboard"
+      );
+      const redirectRes = NextResponse.redirect(new URL(nextParam, request.url));
+      return applyPendingCookies(redirectRes);
     }
   } catch (error) {
     console.error("Supabase middleware error:", error);

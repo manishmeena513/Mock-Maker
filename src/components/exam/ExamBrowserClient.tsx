@@ -95,7 +95,7 @@ export function ExamBrowserClient({ exams, subjects }: ExamBrowserClientProps) {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search examinations, commissions, or subjects..."
             aria-label="Search examinations"
-            className="w-full h-9 pl-9 pr-3 text-xs rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+            className="w-full h-10 sm:h-9 pl-9 pr-3 text-base sm:text-xs rounded-md border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--accent)] transition-colors"
           />
         </div>
 
@@ -107,7 +107,7 @@ export function ExamBrowserClient({ exams, subjects }: ExamBrowserClientProps) {
             <Link
               key={fe.id}
               href={`/mock/configure?exam=${fe.slug}`}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)] text-[var(--foreground)] font-medium transition-colors"
+              className="mm-btn-press inline-flex items-center gap-1.5 px-2.5 py-1.5 sm:py-1 rounded border border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)] text-[var(--foreground)] font-medium"
             >
               <span>{fe.slug === "upsc-cse" ? "UPSC CSE" : fe.slug === "uppsc" ? "UPPSC" : "SSC CGL"}</span>
               <ArrowRight className="w-3 h-3 text-[var(--accent)]" />
@@ -120,7 +120,7 @@ export function ExamBrowserClient({ exams, subjects }: ExamBrowserClientProps) {
       <div
         role="tablist"
         aria-label="Examination categories"
-        className="flex items-center gap-1 overflow-x-auto pb-1"
+        className="flex items-center gap-1.5 overflow-x-auto touch-scroll pb-1"
       >
         {CATEGORY_TABS.map((tab) => {
           const active = activeGroup === tab.id;
@@ -131,9 +131,9 @@ export function ExamBrowserClient({ exams, subjects }: ExamBrowserClientProps) {
               role="tab"
               aria-selected={active}
               onClick={() => setActiveGroup(tab.id)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
+              className={`mm-btn-press px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap cursor-pointer ${
                 active
-                  ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
+                  ? "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-2xs"
                   : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]/60"
               }`}
             >
@@ -143,83 +143,89 @@ export function ExamBrowserClient({ exams, subjects }: ExamBrowserClientProps) {
         })}
       </div>
 
-      {/* Compact Editorial Examination Rows */}
-      <div className="border-t border-[var(--border)] divide-y divide-[var(--border)]">
-        {filteredExams.length === 0 ? (
-          <div className="py-12 text-center text-xs text-[var(--muted-foreground)]">
-            No examinations match &ldquo;{query}&rdquo;. Try clearing your search filter.
-          </div>
-        ) : (
-          filteredExams.map((exam) => {
+      {/* Responsive Editorial Examination Grid (1-col on mobile/tablet, 2-col on laptop/desktop) */}
+      {filteredExams.length === 0 ? (
+        <div className="py-12 text-center text-xs text-[var(--muted-foreground)] border-t border-[var(--border)] animate-fade-in">
+          No examinations match &ldquo;{query}&rdquo;. Try clearing your search filter.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3.5 animate-fade-in">
+          {filteredExams.map((exam) => {
             const examSubjects = subjectsByExam.get(exam.id) || [];
             const duration = exam.time_limit_minutes || exam.default_time_minutes || 60;
             return (
               <div
                 key={exam.id}
-                className="py-4 px-2 sm:px-3 flex flex-col lg:flex-row lg:items-center justify-between gap-4 hover:bg-[var(--card)]/70 transition-colors group"
+                className="mm-card-interactive p-4 sm:p-5 rounded-lg border border-[var(--border)] bg-[var(--card)] flex flex-col justify-between gap-4 group min-w-0"
               >
-                <div className="space-y-1 max-w-2xl">
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <Link
-                      href={`/exam/${exam.slug}`}
-                      className="text-sm font-semibold text-[var(--foreground)] group-hover:text-[var(--accent)] transition-colors"
-                    >
-                      {exam.name}
-                    </Link>
-                    <span className="text-[11px] text-[var(--muted-foreground)]">
-                      {exam.conducting_body || exam.category}
-                    </span>
-                    <span className="text-[11px] font-mono text-[var(--muted-foreground)] border-l border-[var(--border)] pl-2">
+                <div className="space-y-2 min-w-0">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2 min-w-0">
+                      <Link
+                        href={`/exam/${exam.slug}`}
+                        className="text-sm font-semibold text-[var(--foreground)] group-hover:text-[var(--accent)] transition-colors"
+                      >
+                        {exam.name}
+                      </Link>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-[var(--muted)] text-[var(--muted-foreground)] border border-[var(--border)]">
+                        {exam.conducting_body || exam.category}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-mono text-[var(--muted-foreground)] tabular-nums">
                       +{exam.marking_scheme.correct} / {exam.marking_scheme.wrong} · {duration}m
                     </span>
                   </div>
 
-                  <p className="text-xs text-[var(--muted-foreground)] line-clamp-1">
+                  <p className="text-xs text-[var(--muted-foreground)] line-clamp-2 leading-relaxed">
                     {exam.description}
                   </p>
-
-                  {examSubjects.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
-                        Subjects:
-                      </span>
-                      {examSubjects.slice(0, 5).map((subName) => (
-                        <span
-                          key={subName}
-                          className="text-[11px] text-[var(--foreground)]/80 after:content-['·'] last:after:content-none after:ml-1.5 after:text-[var(--muted-foreground)]"
-                        >
-                          {subName}
-                        </span>
-                      ))}
-                      {examSubjects.length > 5 && (
-                        <span className="text-[11px] text-[var(--muted-foreground)]">
-                          +{examSubjects.length - 5} more
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  <Link
-                    href={`/exam/${exam.slug}`}
-                    className="h-8 px-3 rounded-md text-xs font-medium inline-flex items-center border border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
-                  >
-                    Syllabus
-                  </Link>
-                  <Link
-                    href={`/mock/configure?exam=${exam.slug}`}
-                    className="h-8 px-3.5 rounded-md text-xs font-medium inline-flex items-center gap-1.5 bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
-                  >
-                    <span>Practice</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </Link>
+                <div className="pt-3 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                    {examSubjects.length > 0 && (
+                      <>
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
+                          Subjects:
+                        </span>
+                        {examSubjects.slice(0, 3).map((subName) => (
+                          <span
+                            key={subName}
+                            className="text-[11px] text-[var(--foreground)]/85 after:content-['·'] last:after:content-none after:ml-1.5 after:text-[var(--muted-foreground)]"
+                          >
+                            {subName}
+                          </span>
+                        ))}
+                        {examSubjects.length > 3 && (
+                          <span className="text-[11px] text-[var(--muted-foreground)]">
+                            +{examSubjects.length - 3} more
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link
+                      href={`/exam/${exam.slug}`}
+                      className="mm-btn-press h-8 px-3 rounded-md text-xs font-medium inline-flex items-center border border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                    >
+                      Syllabus
+                    </Link>
+                    <Link
+                      href={`/mock/configure?exam=${exam.slug}`}
+                      className="mm-btn-press h-8 px-3.5 rounded-md text-xs font-medium inline-flex items-center gap-1.5 bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"
+                    >
+                      <span>Practice</span>
+                      <ArrowRight className="w-3 h-3 transition-transform duration-150 group-hover:translate-x-0.5" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </div>
   );
 }

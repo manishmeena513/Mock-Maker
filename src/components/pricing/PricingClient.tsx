@@ -185,7 +185,7 @@ export function PricingClient({
           <button
             type="button"
             onClick={() => setBillingCycle("monthly")}
-            className={`px-4 py-1.5 rounded text-xs font-medium transition cursor-pointer ${
+            className={`px-4 py-1.5 rounded text-xs font-medium transition cursor-pointer mm-btn-press ${
               billingCycle === "monthly"
                 ? "bg-[var(--card)] text-[var(--foreground)] shadow-2xs"
                 : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
@@ -196,14 +196,14 @@ export function PricingClient({
           <button
             type="button"
             onClick={() => setBillingCycle("yearly")}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded text-xs font-medium transition cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-1.5 rounded text-xs font-medium transition cursor-pointer mm-btn-press ${
               billingCycle === "yearly"
                 ? "bg-[var(--card)] text-[var(--foreground)] shadow-2xs"
                 : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
             <span>Yearly Pass</span>
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono uppercase bg-[var(--accent-muted)] text-[var(--accent)]">
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono uppercase bg-[var(--accent-muted)] text-[var(--accent)] font-semibold">
               Save up to ₹189/yr
             </span>
           </button>
@@ -224,7 +224,7 @@ export function PricingClient({
       {/* Editorial 3-Tier Plan Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
         {/* 1. FREE PLAN */}
-        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 sm:p-7 flex flex-col justify-between">
+        <div className="rounded-lg border border-[var(--border)] hover:border-[var(--border-strong)] bg-[var(--card)] p-6 sm:p-7 flex flex-col justify-between transition-all duration-200">
           <div>
             <div className="flex items-center justify-between gap-2">
               <div>
@@ -284,7 +284,7 @@ export function PricingClient({
         </div>
 
         {/* 2. PRO PLAN */}
-        <div className="rounded-lg border border-[var(--border-strong)] bg-[var(--card)] p-6 sm:p-7 flex flex-col justify-between">
+        <div className="rounded-lg border border-[var(--border-strong)] bg-[var(--card)] p-6 sm:p-7 flex flex-col justify-between transition-all duration-200 hover:shadow-md">
           <div>
             <div className="flex items-center justify-between gap-2">
               <div>
@@ -346,7 +346,7 @@ export function PricingClient({
                 normalizedCurrent === "ELITE" ||
                 Boolean(loadingPlan)
               }
-              className="w-full h-10 rounded-md text-xs font-medium border border-[var(--foreground)] bg-transparent hover:bg-[var(--muted)] text-[var(--foreground)] transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full h-10 rounded-md text-xs font-medium border border-[var(--foreground)] bg-transparent hover:bg-[var(--muted)] text-[var(--foreground)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mm-btn-press"
             >
               {loadingPlan?.startsWith("pro_") ? (
                 <>
@@ -371,8 +371,8 @@ export function PricingClient({
         </div>
 
         {/* 3. ELITE PLAN (Highlighted with subtle warm gold accent border) */}
-        <div className="rounded-lg border-2 border-[var(--accent)] bg-[var(--card)] p-6 sm:p-7 flex flex-col justify-between relative">
-          <div className="absolute -top-3 right-5 px-2.5 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-[var(--accent)] text-white">
+        <div className="rounded-lg border-2 border-[var(--accent)] bg-[var(--card)] p-6 sm:p-7 flex flex-col justify-between relative transition-all duration-200 hover:shadow-lg">
+          <div className="absolute -top-3 right-5 px-2.5 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-[var(--accent)] text-white shadow-xs font-semibold">
             Recommended • Unlimited
           </div>
           <div>
@@ -381,11 +381,11 @@ export function PricingClient({
                 <h3 className="font-display text-xl font-semibold text-[var(--foreground)]">
                   Elite
                 </h3>
-                <p className="text-xs text-[var(--accent)] mt-0.5">
+                <p className="text-xs text-[var(--accent)] mt-0.5 font-medium">
                   Unrestricted mocks, all 22 exams &amp; full archive
                 </p>
               </div>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-[var(--accent-muted)] text-[var(--accent)]">
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-[var(--accent-muted)] text-[var(--accent)] font-semibold">
                 ₹99/month | ₹999/year
               </span>
             </div>
@@ -432,7 +432,7 @@ export function PricingClient({
               type="button"
               onClick={() => handleSubscribe("ELITE")}
               disabled={normalizedCurrent === "ELITE" || Boolean(loadingPlan)}
-              className="w-full h-10 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full h-10 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mm-btn-press"
             >
               {loadingPlan?.startsWith("elite_") ? (
                 <>
@@ -463,7 +463,7 @@ export function PricingClient({
           </h3>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto touch-scroll">
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-[var(--border)] bg-[var(--muted)]/50 text-[11px] font-mono uppercase tracking-wider text-[var(--muted-foreground)]">
@@ -530,7 +530,7 @@ export function PricingClient({
               Payment &amp; Billing History
             </h3>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto touch-scroll">
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-[var(--border)] text-[var(--muted-foreground)] font-mono uppercase">

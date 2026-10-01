@@ -2,15 +2,18 @@
 
 import { toggleSaveQuestion, getSavedQuestions, isQuestionSaved } from "@/lib/db";
 import { assertCanSaveQuestion } from "@/lib/plans";
-import { createClient } from "@/lib/supabase/server";
+import { getVerifiedServerUser } from "@/lib/auth/server";
 
-async function getActionUserId(): Promise<string> {
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user?.id) return user.id;
-  } catch {
-    // fallback
+async function getActionUserId(requireAuthWhenConfigured: boolean): Promise<string | null> {
+  const verified = await getVerifiedServerUser();
+  if (verified.authenticated && verified.userId) {
+    return verified.userId;
+  }
+  if (verified.isSupabaseConfigured && requireAuthWhenConfigured) {
+    throw new Error("Sign in first to use this feature.");
+  }
+  if (verified.isSupabaseConfigured) {
+    return null;
   }
   return "default-user";
 }
@@ -19,7 +22,10 @@ export async function toggleBookmarkAction(
   questionId: string,
   category: "important" | "difficult" | "revise_later" = "important"
 ) {
-  const userId = await getActionUserId();
+  const userId = await getActionUserId(true);
+  if (!userId) {
+    throw new Error("Sign in first to use this feature.");
+  }
   const currentlySaved = await isQuestionSaved(questionId, userId);
 
   // If user is trying to save a new question, verify their plan quota
@@ -32,11 +38,13 @@ export async function toggleBookmarkAction(
 }
 
 export async function checkBookmarkAction(questionId: string) {
-  const userId = await getActionUserId();
+  const userId = await getActionUserId(false);
+  if (!userId) return false;
   return isQuestionSaved(questionId, userId);
 }
 
 export async function fetchUserBookmarksAction() {
-  const userId = await getActionUserId();
+  const userId = await getActionUserId(false);
+  if (!userId) return [];
   return getSavedQuestions(userId);
 }

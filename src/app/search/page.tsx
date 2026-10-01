@@ -41,7 +41,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   ]);
 
   return (
-    <div className="max-w-[1140px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="mm-container py-6 sm:py-10 space-y-8 animate-fade-in">
       <div className="pb-6 border-b border-[var(--border)]">
         <div className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--accent)] mb-2">
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />

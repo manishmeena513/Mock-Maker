@@ -17,67 +17,67 @@ export default async function HomePage() {
     <div className="flex flex-col min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* Section 23: Editorial Hero */}
       <section className="border-b border-[var(--border)]">
-        <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
+        <div className="mm-container py-12 sm:py-16 lg:py-22">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 xl:gap-16 items-center">
             {/* Left Column: Editorial Headline & Primary Actions */}
-            <div className="lg:col-span-7 space-y-7">
-              <div className="inline-flex items-center gap-2.5 text-xs font-mono uppercase tracking-[0.16em] text-[var(--accent)]">
+            <div className="lg:col-span-7 space-y-6 sm:space-y-7 animate-editorial">
+              <div className="inline-flex items-center gap-2.5 text-[11px] sm:text-xs font-mono uppercase tracking-[0.16em] text-[var(--accent)]">
                 <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
                 <span>MockMaster · Competitive Examination Platform</span>
               </div>
 
               <div className="space-y-3">
-                <h1 className="font-display text-4xl sm:text-6xl font-normal tracking-tight text-[var(--foreground)] leading-[1.06]">
+                <h1 className="font-display text-fluid-hero font-normal tracking-tight text-[var(--foreground)]">
                   Serious preparation.
                   <br />
                   <span className="italic text-[var(--accent)]">Measurable progress.</span>
                 </h1>
               </div>
 
-              <p className="text-base sm:text-lg text-[var(--muted-foreground)] max-w-xl leading-relaxed">
+              <p className="text-sm sm:text-base lg:text-lg text-[var(--muted-foreground)] max-w-xl leading-relaxed">
                 Practice with verified PYQs, analyze your performance, and identify exactly where you need to improve.
               </p>
 
               <div className="pt-1 flex flex-wrap items-center gap-3">
                 <Link
                   href="/mock/configure"
-                  className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-md font-medium text-sm bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
+                  className="mm-btn-press inline-flex items-center justify-center gap-2 h-11 px-6 rounded-md font-medium text-sm bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 group"
                 >
                   <span>Start Practicing</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4 transition-transform duration-150 group-hover:translate-x-0.5" />
                 </Link>
 
                 <a
                   href="#examinations"
-                  className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-md font-medium text-sm border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)]/60 transition-colors"
+                  className="mm-btn-press inline-flex items-center justify-center gap-2 h-11 px-6 rounded-md font-medium text-sm border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)]/60"
                 >
                   <span>Explore Exams</span>
                 </a>
               </div>
 
-              {/* Inline Editorial Telemetry Strip (Not Boxy Cards) */}
-              <div className="pt-8 border-t border-[var(--border)] grid grid-cols-3 gap-6 max-w-lg">
-                <div>
+              {/* Inline Editorial Telemetry Strip */}
+              <div className="pt-7 sm:pt-8 border-t border-[var(--border)] grid grid-cols-3 gap-4 sm:gap-6 max-w-lg">
+                <div className="min-w-0">
                   <div className="text-xl sm:text-2xl font-mono font-semibold text-[var(--foreground)] tabular-nums">
                     {exams.length}
                   </div>
-                  <div className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                  <div className="text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-0.5">
                     Competitive Exams
                   </div>
                 </div>
-                <div className="border-l border-[var(--border)] pl-6">
+                <div className="border-l border-[var(--border)] pl-4 sm:pl-6 min-w-0">
                   <div className="text-xl sm:text-2xl font-mono font-semibold text-[var(--sage)] tabular-nums">
                     {totalPyqs}+
                   </div>
-                  <div className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                  <div className="text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-0.5">
                     Verified PYQs
                   </div>
                 </div>
-                <div className="border-l border-[var(--border)] pl-6">
+                <div className="border-l border-[var(--border)] pl-4 sm:pl-6 min-w-0">
                   <div className="text-xl sm:text-2xl font-mono font-semibold text-[var(--plum)] tabular-nums">
                     80 : 20
                   </div>
-                  <div className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                  <div className="text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-0.5">
                     Default PYQ : Model
                   </div>
                 </div>
@@ -85,20 +85,20 @@ export default async function HomePage() {
             </div>
 
             {/* Right Column: Sophisticated Architectural Product Preview */}
-            <div className="lg:col-span-5">
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] overflow-hidden">
+            <div className="lg:col-span-5 animate-editorial stagger-2">
+              <div className="mm-card-interactive rounded-lg border border-[var(--border)] bg-[var(--card)] overflow-hidden shadow-xs">
                 {/* Preview Header Bar */}
-                <div className="px-5 py-3.5 border-b border-[var(--border)] flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-semibold text-[var(--foreground)]">
+                <div className="px-4 sm:px-5 py-3.5 border-b border-[var(--border)] flex items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-mono font-semibold text-[var(--foreground)] truncate">
                       UPSC CSE · GS Paper I
                     </span>
                     <span className="text-[var(--muted-foreground)]">·</span>
-                    <span className="font-mono text-[11px] text-[var(--sage)]">
+                    <span className="font-mono text-[11px] text-[var(--sage)] shrink-0">
                       PYQ 2023
                     </span>
                   </div>
-                  <span className="font-mono text-[11px] text-[var(--muted-foreground)]">
+                  <span className="font-mono text-[11px] text-[var(--muted-foreground)] shrink-0">
                     +2.00 / -0.66
                   </span>
                 </div>
@@ -136,7 +136,7 @@ export default async function HomePage() {
                   </div>
 
                   {/* Preview Analytical Footer */}
-                  <div className="pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] text-[var(--muted-foreground)]">
+                  <div className="pt-4 border-t border-[var(--border-subtle)] flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--muted-foreground)]">
                     <span>24th Amendment Act, 1971 · Article 368(2)</span>
                     <span className="font-mono text-[var(--accent)]">
                       {totalModels} Model items ready
@@ -151,7 +151,7 @@ export default async function HomePage() {
 
       {/* Editorial Methodology Strip (Dividers, No Boxy Cards) */}
       <section className="border-b border-[var(--border)] bg-[var(--card)]/50">
-        <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="mm-container py-10 sm:py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:divide-x md:divide-[var(--border)]">
             <div className="space-y-2 md:pr-6">
               <div className="text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--accent)]">
@@ -193,23 +193,23 @@ export default async function HomePage() {
       </section>
 
       {/* Section 9: Compact Searchable Examination Browser */}
-      <section id="examinations" className="py-16">
-        <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      <section id="examinations" className="py-12 sm:py-16">
+        <div className="mm-container space-y-8">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div className="space-y-1">
               <div className="text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--accent)]">
                 Examination Directory
               </div>
-              <h2 className="font-display text-2xl sm:text-3xl font-normal text-[var(--foreground)]">
+              <h2 className="font-display text-fluid-h1 font-normal text-[var(--foreground)]">
                 Select an examination to begin
               </h2>
             </div>
             <Link
               href="/mock/configure"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--accent)] hover:underline"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--accent)] hover:underline group"
             >
               <span>Open Custom Mock Builder</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
             </Link>
           </div>
 

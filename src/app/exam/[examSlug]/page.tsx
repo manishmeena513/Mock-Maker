@@ -42,7 +42,7 @@ export default async function ExamHubPage({ params }: ExamHubProps) {
   );
 
   return (
-    <div className="max-w-[1120px] mx-auto px-4 sm:px-6 py-10 space-y-10 animate-editorial">
+    <div className="mm-container py-8 sm:py-10 space-y-10 animate-editorial">
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
         <Link href="/#examinations" className="hover:text-[var(--foreground)] transition-colors">
@@ -69,14 +69,14 @@ export default async function ExamHubPage({ params }: ExamHubProps) {
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <Link
             href={`/search?exam=${exam.id}`}
-            className="inline-flex items-center gap-2 h-9 px-4 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-md text-xs font-medium border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)] hover:border-[var(--border-strong)] transition-all mm-btn-press"
           >
             <Search className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
             <span>Browse Questions</span>
           </Link>
           <Link
             href={`/mock/configure?exam=${exam.slug}`}
-            className="inline-flex items-center gap-2 h-9 px-4 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity mm-btn-press"
           >
             <Sliders className="w-3.5 h-3.5" />
             <span>Practice {exam.name}</span>

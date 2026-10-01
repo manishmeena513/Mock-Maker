@@ -1,15 +1,29 @@
 import React from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getSavedQuestions, getUserMistakes } from "@/lib/db";
+import { getVerifiedServerUser } from "@/lib/auth/server";
 import { RevisionHubClient } from "@/components/revision/RevisionHubClient";
 import { Search, ArrowRight } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default async function RevisionPage() {
-  const savedBookmarks = await getSavedQuestions();
-  const userMistakes = await getUserMistakes();
+  const verified = await getVerifiedServerUser();
+
+  if (verified.isSupabaseConfigured && (!verified.authenticated || !verified.userId)) {
+    redirect("/auth/login?redirectTo=%2Frevision");
+  }
+
+  const userId = verified.userId || "default-user";
+
+  const [savedBookmarks, userMistakes] = await Promise.all([
+    getSavedQuestions(userId),
+    getUserMistakes(userId),
+  ]);
 
   return (
-    <div className="max-w-[1140px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="mm-container py-6 sm:py-10 space-y-8 animate-fade-in">
       {/* Editorial Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-[var(--border)]">
         <div>

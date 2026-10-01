@@ -33,7 +33,7 @@ export default async function PricingPage() {
   ]);
 
   return (
-    <div className="max-w-[1140px] mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
+    <div className="mm-container py-8 sm:py-12 space-y-10 animate-fade-in">
       <div className="max-w-2xl space-y-3 pb-6 border-b border-[var(--border)]">
         <div className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--accent)]">
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -26,6 +26,16 @@ const editorialSerif = Newsreader({
 });
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mockmaster.in";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7f5f0" },
+    { media: "(prefers-color-scheme: dark)", color: "#0d0d0c" },
+  ],
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),

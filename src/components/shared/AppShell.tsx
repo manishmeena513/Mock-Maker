@@ -18,7 +18,7 @@ const WORKSPACE_PREFIXES = [
 /**
  * Clean, distraction-free editorial workspace shell.
  * Eliminates the duplicate desktop left sidebar that previously crowded the viewport,
- * while providing a subtle mobile bottom bar on small screens.
+ * while providing a safe-area-aware mobile bottom bar on small screens.
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -26,72 +26,78 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isWorkspaceRoute = WORKSPACE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
   if (!isWorkspaceRoute) {
-    return <main className="flex-1 flex flex-col">{children}</main>;
+    return <main className="flex-1 flex flex-col min-w-0">{children}</main>;
   }
 
-  return (
-    <div className="flex-1 flex flex-col w-full">
-      <main className="flex-1 min-w-0 pb-14 md:pb-0">{children}</main>
+  const navItems = [
+    {
+      href: "/dashboard",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      active: pathname.startsWith("/dashboard"),
+    },
+    {
+      href: "/mock/configure",
+      label: "Practice",
+      icon: Sliders,
+      active: pathname.startsWith("/mock/configure"),
+    },
+    {
+      href: "/revision",
+      label: "Revision",
+      icon: Bookmark,
+      active: pathname.startsWith("/revision"),
+    },
+    {
+      href: "/search",
+      label: "Search",
+      icon: Search,
+      active: pathname.startsWith("/search"),
+    },
+  ];
 
-      {/* Subtle Mobile Bottom Navigation Bar */}
+  return (
+    <div className="flex-1 flex flex-col w-full min-w-0">
+      <main className="flex-1 min-w-0 pb-16 md:pb-0">{children}</main>
+
+      {/* Subtle Mobile Bottom Navigation Bar with iOS/Android safe-area support */}
       <nav
         aria-label="Mobile Quick Navigation"
-        className="md:hidden fixed bottom-0 inset-x-0 z-30 h-13 bg-[var(--background)]/95 backdrop-blur-md border-t border-[var(--border)] grid grid-cols-5 px-2"
+        className="md:hidden fixed bottom-0 inset-x-0 z-30 backdrop-glass border-t border-[var(--border)] grid grid-cols-5 px-1.5 safe-pb"
       >
-        <Link
-          href="/dashboard"
-          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
-            pathname.startsWith("/dashboard")
-              ? "text-[var(--foreground)] font-semibold"
-              : "text-[var(--muted-foreground)]"
-          }`}
-        >
-          <LayoutDashboard className="w-3.5 h-3.5" />
-          <span>Dashboard</span>
-        </Link>
-        <Link
-          href="/mock/configure"
-          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
-            pathname.startsWith("/mock/configure")
-              ? "text-[var(--foreground)] font-semibold"
-              : "text-[var(--muted-foreground)]"
-          }`}
-        >
-          <Sliders className="w-3.5 h-3.5" />
-          <span>Practice</span>
-        </Link>
-        <Link
-          href="/revision"
-          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
-            pathname.startsWith("/revision")
-              ? "text-[var(--foreground)] font-semibold"
-              : "text-[var(--muted-foreground)]"
-          }`}
-        >
-          <Bookmark className="w-3.5 h-3.5" />
-          <span>Revision</span>
-        </Link>
-        <Link
-          href="/search"
-          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
-            pathname.startsWith("/search")
-              ? "text-[var(--foreground)] font-semibold"
-              : "text-[var(--muted-foreground)]"
-          }`}
-        >
-          <Search className="w-3.5 h-3.5" />
-          <span>Search</span>
-        </Link>
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`relative flex flex-col items-center justify-center gap-0.5 h-14 text-[10px] font-medium transition-colors ${
+                item.active
+                  ? "text-[var(--foreground)] font-semibold"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              {item.active && (
+                <span className="absolute top-0 inset-x-4 h-[2px] rounded-b-full bg-[var(--accent)]" />
+              )}
+              <Icon className={`w-4 h-4 ${item.active ? "text-[var(--accent)]" : ""}`} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
         <button
           type="button"
           onClick={toggleAssistant}
-          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium cursor-pointer ${
+          className={`relative flex flex-col items-center justify-center gap-0.5 h-14 text-[10px] font-medium cursor-pointer transition-colors ${
             isAIOpen
               ? "text-[var(--accent)] font-semibold"
-              : "text-[var(--muted-foreground)]"
+              : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
+          {isAIOpen && (
+            <span className="absolute top-0 inset-x-4 h-[2px] rounded-b-full bg-[var(--accent)]" />
+          )}
+          <Sparkles className="w-4 h-4 text-[var(--accent)]" />
           <span>AI Mentor</span>
         </button>
       </nav>

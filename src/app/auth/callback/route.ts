@@ -99,6 +99,7 @@ export async function GET(request: NextRequest) {
     return buildRedirectResponse(loginErrorUrl);
   }
 
+  // If neither code nor token_hash was present, check if user already has a valid session
   const {
     data: { user },
   } = await supabase.auth.getUser();
